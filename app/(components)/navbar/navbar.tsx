@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Dock, DockIcon } from "../ui/dock";
 import { Brand } from "../brand";
@@ -10,17 +10,26 @@ import { PanchangDropdown } from "../panchang";
 import { SearchDialog } from "../search-dialog";
 
 const navItems = [
-  { icon: Home, label: "Home", active: true, id: "home" },
-  { icon: Search, label: "Explore", active: false, id: "explore" },
-  { icon: Users, label: "Service", active: false, id: "service" },
-  { icon: Calendar, label: "Panchang", active: false, id: "panchang" },
-  { icon: User, label: "Profile", active: false, id: "profile" },
+  { icon: Home, label: "Home", id: "home" },
+  { icon: Search, label: "Explore", id: "explore" },
+  { icon: Users, label: "Service", id: "service" },
+  { icon: Calendar, label: "Panchang", id: "panchang" },
+  { icon: User, label: "Profile", id: "profile" },
 ];
 
 export function Navbar() {
   const [panchangOpen, setPanchangOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isRouteActive = (id: string) => {
+    if (id === "home") return pathname === "/" || pathname.startsWith("/landing");
+    if (id === "service") return pathname.startsWith("/services");
+    if (id === "profile") return pathname.startsWith("/profile");
+    if (id === "panchang") return pathname.startsWith("/panchang");
+    return false;
+  };
 
   const handleIconClick = (id: string) => {
     // Close other popups first
@@ -36,7 +45,7 @@ export function Navbar() {
     } else if (id === "service") {
       router.push("/services");
     } else if (id === "profile") {
-      router.push("/account");
+      router.push("/profile");
     } else {
       // Handle other navigation here
     }
@@ -71,7 +80,7 @@ export function Navbar() {
               {navItems.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = 
-                  item.active || 
+                  isRouteActive(item.id) || 
                   (item.id === "panchang" && panchangOpen) ||
                   (item.id === "explore" && searchOpen);
                 

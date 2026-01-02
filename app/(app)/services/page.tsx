@@ -43,17 +43,6 @@ const services = [
 export default function ServicesPage() {
   return (
     <>
-      {/* Back Button */}
-      <div className="w-full px-6 pt-3">
-        <Link
-          href="/"
-          className="inline-flex items-center text-sm font-medium text-[#5f6d2b] hover:underline"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Home
-        </Link>
-      </div>
-
       {/* Services Section */}
       <section className="w-full px-6 pt-6 pb-16">
         {/* Header */}
