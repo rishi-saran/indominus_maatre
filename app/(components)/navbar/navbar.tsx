@@ -33,6 +33,10 @@ export function Navbar() {
       router.push("/landing");
     } else if (id === "explore") {
       setSearchOpen(true);
+    } else if (id === "service") {
+      router.push("/services");
+    } else if (id === "profile") {
+      router.push("/account");
     } else {
       // Handle other navigation here
     }
