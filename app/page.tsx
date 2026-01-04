@@ -1,5 +1,15 @@
-import LandingPage from "./(app)/landing/page";
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
-  return <LandingPage />;
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to login page
+    router.push('/login');
+  }, [router]);
+
+  return null;
 }

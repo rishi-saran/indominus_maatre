@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface Notification {
   id: string;
@@ -724,7 +725,7 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ icon, iconBg, iconColor, title, value, badge, hoverIconBg }) => (
-  <div className="bg-white p-3 rounded-2xl shadow-sm transition-all group cursor-pointer hover:bg-amber-100">
+  <div className="bg-white/60 backdrop-blur-md p-3 rounded-2xl shadow-sm transition-all group cursor-pointer hover:bg-amber-100">
     <div className="flex items-start justify-between mb-2">
       <div className={`${iconBg} p-1.5 rounded-xl ${iconColor} ${hoverIconBg} transition-colors`}>
         <span className="material-symbols-outlined text-[18px] group-hover:scale-125 transition-transform" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20" }}>{icon}</span>
@@ -801,7 +802,7 @@ const UpcomingRitual: React.FC<UpcomingRitualProps> = ({ handleButtonClick, isAc
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleButtonClick?.('💬 Chat Opened')} className="bg-white hover:bg-amber-200 text-[#5f6d2b] px-4 py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-2 justify-center flex-1 md:flex-none cursor-pointer group hover:shadow-md">
+            <button onClick={() => handleButtonClick?.('💬 Chat Opened')} className="bg-white/60 backdrop-blur-md hover:bg-amber-200 text-[#5f6d2b] px-4 py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-2 justify-center flex-1 md:flex-none cursor-pointer group hover:shadow-md">
               <span className="material-symbols-outlined text-[16px]">chat</span>
               Chat with Pandit
             </button>
@@ -897,7 +898,7 @@ interface ProfileDetailItemProps {
 }
 
 const ProfileDetailItem: React.FC<ProfileDetailItemProps> = ({ icon, label, value }) => (
-      <div className="flex items-center gap-3 p-3 bg-white rounded-2xl hover:bg-amber-200 transition-colors cursor-pointer group">
+      <div className="flex items-center gap-3 p-3 bg-white/60 backdrop-blur-md rounded-2xl hover:bg-amber-200 transition-colors cursor-pointer group">
     <div className="w-7 h-7 rounded-full bg-cream-dark flex items-center justify-center text-[#5f6d2b] group-hover:bg-primary group-hover:text-white transition-colors">
       <span className="material-symbols-outlined text-[16px] group-hover:scale-125 transition-transform">{icon}</span>
     </div>
@@ -928,29 +929,48 @@ const Preferences: React.FC<PreferencesProps> = ({
   isActive,
   activePreference,
   setActivePreference,
-}) => (
-  <section className="bg-white/60 backdrop-blur-md rounded-2xl p-3 shadow-sm flex flex-col">
-    <h3 className="text-base font-serif font-semibold text-[#5f6d2b] mb-3">Preferences</h3>
-    <div className="space-y-2 flex-1">
-      <PreferenceToggle
-        icon="notifications"
-        label="Notifications"
-        enabled={notificationsEnabled}
-        onChange={setNotificationsEnabled}
-        isActive={activePreference === 'notifications'}
-        onActive={() => setActivePreference?.('notifications')}
-      />
-      <PreferenceToggle
-        icon="security"
-        label="Two-Factor Auth"
-        enabled={twoFactorEnabled}
-        onChange={setTwoFactorEnabled}
-        isActive={activePreference === 'twofa'}
-        onActive={() => setActivePreference?.('twofa')}
-      />
-    </div>
-  </section>
-);
+}) => {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    // Clear auth data if stored
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userProfile');
+    // Redirect to login
+    router.push('/login');
+  };
+
+  return (
+    <section className="bg-white/60 backdrop-blur-md rounded-2xl p-3 shadow-sm flex flex-col">
+      <h3 className="text-base font-serif font-semibold text-[#5f6d2b] mb-3">Preferences</h3>
+      <div className="space-y-2 flex-1">
+        <PreferenceToggle
+          icon="notifications"
+          label="Notifications"
+          enabled={notificationsEnabled}
+          onChange={setNotificationsEnabled}
+          isActive={activePreference === 'notifications'}
+          onActive={() => setActivePreference?.('notifications')}
+        />
+        <PreferenceToggle
+          icon="security"
+          label="Two-Factor Auth"
+          enabled={twoFactorEnabled}
+          onChange={setTwoFactorEnabled}
+          isActive={activePreference === 'twofa'}
+          onActive={() => setActivePreference?.('twofa')}
+        />
+      </div>
+      <button
+        onClick={handleLogout}
+        className="w-full mt-4 px-4 py-2.5 bg-white/60 backdrop-blur-md rounded-xl shadow-sm text-[var(--spiritual-green-dark)] font-semibold transition-all duration-300 hover:bg-amber-200 hover:scale-[1.02] flex items-center justify-center gap-2 group"
+      >
+        <span className="material-symbols-outlined text-[18px] group-hover:scale-125 transition-transform">logout</span>
+        Logout
+      </button>
+    </section>
+  );
+};
 
 interface PreferenceToggleProps {
   icon: string;
@@ -962,7 +982,7 @@ interface PreferenceToggleProps {
 }
 
 const PreferenceToggle: React.FC<PreferenceToggleProps> = ({ icon, label, enabled, onChange, isActive, onActive }) => (
-  <div className={`flex items-center justify-between p-2 bg-white rounded-xl cursor-pointer group transition-all hover:bg-amber-200 ${
+  <div className={`flex items-center justify-between p-2 bg-white/60 backdrop-blur-md rounded-xl cursor-pointer group transition-all hover:bg-amber-200 ${
     isActive ? 'bg-amber-100' : ''
   }`} onClick={() => onActive?.()}>
     <div className="flex items-center gap-2">
@@ -989,7 +1009,7 @@ interface PreferenceItemProps {
 }
 
 const PreferenceItem: React.FC<PreferenceItemProps> = ({ icon, label, value }) => (
-  <div className="flex items-center justify-between p-2 bg-white rounded-xl cursor-pointer group">
+  <div className="flex items-center justify-between p-2 bg-white/60 backdrop-blur-md rounded-xl cursor-pointer group">
     <div className="flex items-center gap-2">
       <span className="material-symbols-outlined text-primary text-[18px] group-hover:scale-125 transition-transform">{icon}</span>
       <span className="text-xs font-medium text-[#5f6d2b]">{label}</span>
@@ -1056,7 +1076,7 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewF
           </tbody>
         </table>
       </div>
-      <div className="p-2 text-center rounded transition-all cursor-pointer bg-white">
+      <div className="p-2 text-center rounded transition-all cursor-pointer bg-white/60 backdrop-blur-md">
         <a onClick={(e) => { e.preventDefault(); onViewFullOrders?.(); }} className="text-xs font-bold text-[#5f6d2b] hover:text-[#4f5d2f] transition-colors inline-flex items-center gap-1 cursor-pointer group" href="#">
           View Full Order History
           <span className="material-symbols-outlined text-[14px] arrow-right group-hover:translate-x-1 text-[#5f6d2b] group-hover:text-[#4f5d2f]">arrow_forward</span>
