@@ -1,3 +1,4 @@
+//(app)\services\page.tsx
 "use client";
 
 import Link from "next/link";
@@ -13,28 +14,28 @@ const services = [
     description:
       "Sacred Vedic chants performed with devotion to bring peace, clarity, and positive energy.",
     href: "/services/chanting",
-    image: "/services/chanting1.svg",
+    image: "/services/chanting1.png",
   },
   {
     title: "Parihara Pooja",
     description:
       "Traditional remedies and poojas performed to resolve doshas and life obstacles.",
     href: "/services/parihara-pooja",
-    image: "/services/parihara-pooja.svg",
+    image: "/services/parihara-pooja.png",
   },
   {
     title: "Rituals / Homam",
     description:
       "Powerful fire rituals conducted by expert priests for spiritual upliftment.",
     href: "/services/homam",
-    image: "/services/homam.svg",
+    image: "/services/homam.png",
   },
   {
     title: "Virtual",
     description:
       "Participate in sacred rituals and homams remotely through live virtual services.",
     href: "/services/virtual",
-    image: "/services/virtual.svg",
+    image: "/services/virtual.png",
   },
 ];
 
@@ -61,41 +62,42 @@ export default function ServicesPage() {
 
           {services.map((service) => (
             <Link key={service.title} href={service.href}>
-              <HoverCard>
-                <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+              <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf]">
+                <CardContent className="flex h-[420px] flex-col p-6">
 
-                  <CardContent className="flex h-full flex-col justify-between p-6">
-                    
-              {/* Image container */}
-<div className="mb-6 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
-  <Image
-    src={service.image}
-    alt={service.title}
-    width={400}
-    height={260}
-    className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105"
-    unoptimized
-  />
-</div>
+                  {/* Image */}
+                  <div className="mb-5 h-40 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
+                    <Image
+                      src={service.image}
+                      alt={service.title}
+                      width={400}
+                      height={260}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      unoptimized
+                    />
+                  </div>
 
-                    {/* Text */}
-                    <div>
-                      <h2 className="mb-2 text-xl font-semibold text-[#2f3a1f]">
-                        {service.title}
-                      </h2>
-                      <p className="text-sm text-[#4f5d2f]">
-                        {service.description}
-                      </p>
-                    </div>
+                  {/* Title + Description */}
+                  <div>
+                    <h2 className="mb-2 text-xl font-semibold text-[#2f3a1f]">
+                      {service.title}
+                    </h2>
 
-                    {/* CTA */}
-                    <div className="mt-6 flex items-center text-sm font-medium text-[#6b7a2c]">
+                    <p className="text-sm leading-relaxed text-[#4f5d2f]">
+                      {service.description}
+                    </p>
+                  </div>
+
+                  {/* CTA – pinned to bottom */}
+                  <div className="mt-auto pt-6">
+                    <span className="inline-flex items-center gap-2 text-sm font-medium text-[#2f9e44]">
                       View Service
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </HoverCard>
+                      <ArrowRight className="h-4 w-4" />
+                    </span>
+                  </div>
+
+                </CardContent>
+              </Card>
             </Link>
           ))}
         </div>

@@ -24,17 +24,7 @@ const categories = [
 export default function VirtualPage() {
   return (
     <section className="w-full px-6 pt-4 pb-10">
-      {/* Back Button */}
-      <div className="mb-2">
-        <Link
-          href="/services"
-          className="inline-flex items-center text-sm font-medium text-[#5f6d2b] hover:underline"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Services
-        </Link>
-      </div>
-
+    
       {/* Page Title */}
       <div className="mx-auto mb-6 max-w-5xl text-center">
         <div className="mx-auto mb-3 h-px w-24 bg-[#cfd8a3]" />
