@@ -199,7 +199,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}
-              className="relative max-w-md mx-auto lg:mx-0"
+              className="relative w-full max-w-xl lg:max-w-[720px] mx-auto lg:mx-0"
             >
               <VideoCard
                 videoSrc="https://www.youtube.com/embed/Fnir46ENxfg?autoplay=1"

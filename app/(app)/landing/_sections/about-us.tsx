@@ -87,8 +87,8 @@ export function AboutUsSection() {
             {/* Main Image Container */}
             <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-black/10">
               <img
-                src="https://images.unsplash.com/photo-1609766857041-ed402ea8069a?w=600&h=700&fit=crop"
-                alt="Traditional Indian Temple"
+                src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=1400&q=80"
+                alt="Hindu god deity statue"
                 className="w-full h-[500px] object-cover"
               />
               {/* Overlay */}

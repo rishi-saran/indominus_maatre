@@ -4,23 +4,23 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AuthService } from '@/lib/services/auth.service';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('maatre@gamil.com');
+  const [password, setPassword] = useState('maatre@2026');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    setSuccess('');
     
     try {
-      const response = await AuthService.login(email);
-      setSuccess(`Welcome back! User ID: ${response.user_id}`);
+      const response = await AuthService.login(email, password);
       
       // Store user data in localStorage or context
       localStorage.setItem('user', JSON.stringify(response));
@@ -61,12 +61,6 @@ export default function LoginPage() {
               {error}
             </div>
           )}
-          
-          {success && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded text-xs mb-3">
-              {success}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
@@ -80,14 +74,37 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-3 py-2 text-sm border border-[var(--spiritual-yellow)]/30 rounded-lg bg-[var(--spiritual-yellow-light)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--spiritual-yellow)] focus:border-transparent text-gray-900"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent text-gray-900"
               />
+            </div>
+
+            <div className="relative">
+              <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent text-gray-900"
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 bottom-2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-3 py-2 bg-white rounded-xl shadow-sm text-[var(--spiritual-green-dark)] font-semibold text-sm transition-all duration-300 hover:bg-amber-200 hover:scale-[1.02] disabled:opacity-50 mt-4 group"
+              className="w-full px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer rounded-lg"
             >
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
@@ -105,7 +122,7 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full px-3 py-2 bg-white rounded-xl shadow-sm font-medium text-sm text-gray-700 transition-all duration-300 hover:bg-amber-200 hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 group"
+            className="w-full px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer rounded-lg group"
           >
             <svg className="w-4 h-4 group-hover:scale-125 transition-transform" viewBox="0 0 24 24">
               <path fill="#EA4335" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

@@ -7,51 +7,27 @@ import { Sparkles } from "lucide-react";
 const services = [
   {
     id: 1,
-    title: "Mahalakshmi Puja",
-    description: "Invoke blessings of wealth and prosperity",
-    image: null, // Add image path later: "/assets/services/mahalakshmi.jpg"
+    title: "Rudrabhishekam",
+    description: "Holy abhishekam to Lord Shiva",
+    image: "/popular/Abhishekam.png",
   },
   {
     id: 2,
-    title: "Ayusha Homam",
-    description: "Sacred fire ritual for longevity",
-    image: null, // Add image path later
+    title: "Engagement",
+    description: "Blessings for your engagement ceremony",
+    image: "/popular/Engagement.png",
   },
   {
     id: 3,
-    title: "Rudrabhishekam",
-    description: "Holy abhishekam to Lord Shiva",
-    image: null, // Add image path later
+    title: "Ganapathi Homam",
+    description: "Seek Lord Ganesha's blessings",
+    image: "/popular/Ganapathi Homom.png",
   },
   {
     id: 4,
-    title: "Satyanarayan Puja",
-    description: "Puja for peace and prosperity",
-    image: null, // Add image path later
-  },
-  {
-    id: 5,
-    title: "Navgraha Shanti",
-    description: "Planetary peace and harmony",
-    image: null, // Add image path later
-  },
-  {
-    id: 6,
-    title: "Griha Pravesh",
-    description: "Blessings for your new home",
-    image: null, // Add image path later
-  },
-  {
-    id: 7,
-    title: "Ganapathi Homam",
-    description: "Seek Lord Ganesha's blessings",
-    image: null, // Add image path later
-  },
-  {
-    id: 8,
-    title: "Ayyappa Pooja",
-    description: "Devotion to Lord Ayyappa",
-    image: null, // Add image path later
+    title: "Namakarana",
+    description: "Baby naming ceremony with divine blessings",
+    image: "/popular/Namakarana.png",
   },
 ];
 
@@ -83,9 +59,9 @@ export function PopularServicesSection() {
           </p>
         </motion.div>
 
-        {/* Services Grid - 4 columns, 2 rows */}
+        {/* Services Grid - show only 4 items */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          {services.map((service, index) => (
+          {services.slice(0, 4).map((service, index) => (
             <motion.div
               key={service.id}
               initial={{ opacity: 0, y: 30 }}
@@ -151,7 +127,7 @@ export function PopularServicesSection() {
           viewport={{ once: true }}
           className="text-center mt-12"
         >
-          <button className="px-8 py-4 glass border border-[var(--spiritual-green)]/30 text-[var(--spiritual-green-dark)] rounded-full font-semibold hover:bg-[var(--spiritual-green)] hover:text-white hover:border-transparent transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[var(--spiritual-green)]/20">
+          <button className="px-8 py-4 bg-white/50 backdrop-blur-sm border border-[var(--spiritual-green)]/30 text-[var(--spiritual-green-dark)] rounded-full font-semibold hover:bg-[var(--spiritual-green)] hover:text-white hover:border-transparent transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[var(--spiritual-green)]/20">
             View All Services →
           </button>
         </motion.div>

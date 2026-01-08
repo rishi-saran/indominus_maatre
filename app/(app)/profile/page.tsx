@@ -187,7 +187,7 @@ export default function MyAccount() {
   };
 
   return (
-    <div className="text-[#5f6d2b] font-display antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-accent/30 bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+    <div className="text-sm text-[#2f3a1f] antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-accent/30 bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
       {/* Notification Popups */}
       <div className="fixed top-8 right-8 z-80 space-y-3 pointer-events-none">
         {popupNotifications.map((notification: Notification) => {
@@ -802,7 +802,7 @@ const UpcomingRitual: React.FC<UpcomingRitualProps> = ({ handleButtonClick, isAc
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleButtonClick?.('💬 Chat Opened')} className="bg-white/60 backdrop-blur-md hover:bg-amber-200 text-[#5f6d2b] px-4 py-2 rounded-lg font-medium text-xs transition-all flex items-center gap-2 justify-center flex-1 md:flex-none cursor-pointer group hover:shadow-md">
+            <button onClick={() => handleButtonClick?.('💬 Chat Opened')} className="px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center gap-2 justify-center flex-1 md:flex-none cursor-pointer rounded-lg">
               <span className="material-symbols-outlined text-[16px]">chat</span>
               Chat with Pandit
             </button>
@@ -963,7 +963,7 @@ const Preferences: React.FC<PreferencesProps> = ({
       </div>
       <button
         onClick={handleLogout}
-        className="w-full mt-4 px-4 py-2.5 bg-white/60 backdrop-blur-md rounded-xl shadow-sm text-[var(--spiritual-green-dark)] font-semibold transition-all duration-300 hover:bg-amber-200 hover:scale-[1.02] flex items-center justify-center gap-2 group"
+        className="w-full mt-4 px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 cursor-pointer rounded-lg group"
       >
         <span className="material-symbols-outlined text-[18px] group-hover:scale-125 transition-transform">logout</span>
         Logout
@@ -982,8 +982,8 @@ interface PreferenceToggleProps {
 }
 
 const PreferenceToggle: React.FC<PreferenceToggleProps> = ({ icon, label, enabled, onChange, isActive, onActive }) => (
-  <div className={`flex items-center justify-between p-2 bg-white/60 backdrop-blur-md rounded-xl cursor-pointer group transition-all hover:bg-amber-200 ${
-    isActive ? 'bg-amber-100' : ''
+  <div className={`flex items-center justify-between p-2 bg-amber-50 rounded-lg cursor-pointer group transition-colors ${
+    isActive ? 'bg-amber-100' : 'hover:bg-amber-100'
   }`} onClick={() => onActive?.()}>
     <div className="flex items-center gap-2">
       <span className="material-symbols-outlined text-[#5f6d2b] text-[18px] group-hover:scale-125 transition-transform">{icon}</span>
@@ -1009,7 +1009,7 @@ interface PreferenceItemProps {
 }
 
 const PreferenceItem: React.FC<PreferenceItemProps> = ({ icon, label, value }) => (
-  <div className="flex items-center justify-between p-2 bg-white/60 backdrop-blur-md rounded-xl cursor-pointer group">
+  <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg cursor-pointer group transition-colors hover:bg-amber-100">
     <div className="flex items-center gap-2">
       <span className="material-symbols-outlined text-primary text-[18px] group-hover:scale-125 transition-transform">{icon}</span>
       <span className="text-xs font-medium text-[#5f6d2b]">{label}</span>

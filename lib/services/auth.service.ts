@@ -6,13 +6,13 @@ export class AuthService {
   /**
    * Login user with email
    */
-  static async login(email: string): Promise<LoginResponse> {
+  static async login(email: string, password: string): Promise<LoginResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email } as LoginRequest),
+      body: JSON.stringify({ email, password } as LoginRequest),
     });
 
     if (!response.ok) {

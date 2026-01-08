@@ -82,25 +82,25 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label htmlFor="first_name" className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
-              <input id="first_name" type="text" placeholder="Enter first name" name="first_name" value={formData.first_name} onChange={handleChange} required className="w-full px-3 py-2 text-sm border border-[var(--spiritual-yellow)]/30 rounded-lg bg-[var(--spiritual-yellow-light)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--spiritual-yellow)] text-gray-900"/>
+              <input id="first_name" type="text" placeholder="Enter first name" name="first_name" value={formData.first_name} onChange={handleChange} required className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-900"/>
             </div>
 
             <div>
               <label htmlFor="last_name" className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
-              <input id="last_name" type="text" placeholder="Enter last name" name="last_name" value={formData.last_name} onChange={handleChange} required className="w-full px-3 py-2 text-sm border border-[var(--spiritual-yellow)]/30 rounded-lg bg-[var(--spiritual-yellow-light)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--spiritual-yellow)] text-gray-900"/>
+              <input id="last_name" type="text" placeholder="Enter last name" name="last_name" value={formData.last_name} onChange={handleChange} required className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-900"/>
             </div>
 
             <div>
               <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-              <input id="email" type="email" placeholder="your@email.com" name="email" value={formData.email} onChange={handleChange} required className="w-full px-3 py-2 text-sm border border-[var(--spiritual-yellow)]/30 rounded-lg bg-[var(--spiritual-yellow-light)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--spiritual-yellow)] text-gray-900"/>
+              <input id="email" type="email" placeholder="your@email.com" name="email" value={formData.email} onChange={handleChange} required className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-900"/>
             </div>
 
             <div>
               <label htmlFor="phone" className="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
-              <input id="phone" type="tel" placeholder="9876543210" name="phone" value={formData.phone} onChange={handleChange} pattern="[0-9]{10}" required className="w-full px-3 py-2 text-sm border border-[var(--spiritual-yellow)]/30 rounded-lg bg-[var(--spiritual-yellow-light)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--spiritual-yellow)] text-gray-900"/>
+              <input id="phone" type="tel" placeholder="9876543210" name="phone" value={formData.phone} onChange={handleChange} pattern="[0-9]{10}" required className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-900"/>
             </div>
 
-            <button type="submit" disabled={isLoading} className="w-full px-3 py-2 bg-white rounded-xl shadow-sm text-[var(--spiritual-green-dark)] font-semibold text-sm transition-all duration-300 hover:bg-amber-200 hover:scale-[1.02] disabled:opacity-50 mt-4 group">
+            <button type="submit" disabled={isLoading} className="w-full px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer rounded-lg">
               {isLoading ? 'Creating account...' : 'Sign Up'}
             </button>
           </form>
@@ -110,7 +110,7 @@ export default function SignupPage() {
             <div className="relative flex justify-center text-xs"><span className="px-2 bg-white text-gray-500">Or continue with</span></div>
           </div>
 
-          <button onClick={handleGoogleSignup} disabled={isLoading} className="w-full px-3 py-2 bg-white rounded-xl shadow-sm font-medium text-sm text-gray-700 transition-all duration-300 hover:bg-amber-200 hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 group">
+          <button onClick={handleGoogleSignup} disabled={isLoading} className="w-full px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer rounded-lg group">
             <svg className="w-4 h-4 group-hover:scale-125 transition-transform" viewBox="0 0 24 24">
               <path fill="#EA4335" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
