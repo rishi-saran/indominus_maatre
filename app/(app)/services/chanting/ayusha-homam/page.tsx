@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 import {
   Select,
@@ -14,8 +15,50 @@ import {
 } from "@/components/ui/select";
 
 export default function AyushaHomamPage() {
+  const router = useRouter();
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    location: '',
+    venue: '',
+    priestPreference: 'Tamil',
+    date: '',
+    package: 'Economy',
+    flowers: 'No'
+  });
+
+  const handleBookService = () => {
+    // Save service details to localStorage with current timestamp as ID
+    const serviceId = Date.now();
+    const serviceData = {
+      id: serviceId,
+      title: 'AYUSHA HOMAM',
+      description: 'Ayusha Homam is performed to revere divine energies for vitality, wellness, and longevity.',
+      image: '/services/chanting/ayusha-homam.png',
+      formData: formData,
+      addedAt: new Date().toISOString()
+    };
+    
+    // Get existing services from localStorage
+    const existingServices = JSON.parse(localStorage.getItem('addedServices') || '[]');
+    existingServices.push(serviceData);
+    localStorage.setItem('addedServices', JSON.stringify(existingServices));
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new Event('servicesUpdated'));
+    
+    // Clear form after adding
+    setFormData({
+      location: '',
+      venue: '',
+      priestPreference: 'Tamil',
+      date: '',
+      package: 'Economy',
+      flowers: 'No'
+    });
+  };
 
 
   return (
@@ -78,13 +121,21 @@ export default function AyushaHomamPage() {
             {/* Location */}
             <div className="mb-4">
               <label className="mb-1 block text-sm font-medium">Location *</label>
-              <input className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" />
+              <input 
+                value={formData.location}
+                onChange={(e) => setFormData({...formData, location: e.target.value})}
+                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" 
+              />
             </div>
 
             {/* Venue */}
             <div className="mb-4">
               <label className="mb-1 block text-sm font-medium">Pooja Venue *</label>
-              <input className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" />
+              <input 
+                value={formData.venue}
+                onChange={(e) => setFormData({...formData, venue: e.target.value})}
+                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" 
+              />
             </div>
 
             {/* All in one row */}
@@ -93,7 +144,7 @@ export default function AyushaHomamPage() {
                 <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
                   Priest Preference *
                 </label>
-                <Select defaultValue="Tamil">
+                <Select value={formData.priestPreference} onValueChange={(value) => setFormData({...formData, priestPreference: value})}>
                   <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
                     <SelectValue placeholder="Select Language" />
                   </SelectTrigger>
@@ -109,6 +160,8 @@ export default function AyushaHomamPage() {
                 <label className="mb-1 block text-sm font-medium">Select Date *</label>
                 <input
                   type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
                   className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
                 />
               </div>
@@ -117,35 +170,49 @@ export default function AyushaHomamPage() {
                 <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
                   Select Package
                 </label>
-                <Select defaultValue="Economy">
-                  <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg border border-[#cfd8a3] bg-white">
-                    <SelectItem value="Economy">Economy</SelectItem>
-                    <SelectItem value="Standard">Standard</SelectItem>
-                    <SelectItem value="Premium">Premium</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select 
+                  value={formData.package}
+                  onChange={(e) => setFormData({...formData, package: e.target.value})}
+                  className="w-full h-11 rounded-lg border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                >
+                  <option value="Economy">Economy</option>
+                  <option value="Standard">Standard</option>
+                  <option value="Premium">Premium</option>
+                </select>
               </div>
 
               <div>
                 <label className="mb-1 block text-sm font-medium">Add-on: Flowers</label>
                 <div className="mt-2 flex gap-4">
                   <label className="flex items-center gap-2">
-                    <input type="radio" name="flowers" /> Yes (+₹250)
+                    <input 
+                      type="radio" 
+                      name="flowers" 
+                      checked={formData.flowers === 'Yes'}
+                      onChange={() => setFormData({...formData, flowers: 'Yes'})}
+                    /> 
+                    Yes (+₹250)
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="radio" name="flowers" defaultChecked /> No
+                    <input 
+                      type="radio" 
+                      name="flowers" 
+                      checked={formData.flowers === 'No'}
+                      onChange={() => setFormData({...formData, flowers: 'No'})}
+                    /> 
+                    No
                   </label>
                 </div>
               </div>
             </div>
 
-            <button className="w-full rounded-full bg-[#2f9e44] py-3 text-sm font-medium text-white hover:bg-[#256b32]">
+            <button 
+              onClick={handleBookService}
+              className="w-full rounded-full bg-[#2f9e44] py-3 text-sm font-medium text-white hover:bg-[#256b32]">
               Book Service
             </button>
           </div>
+        </div>
       </div>
 
       {/* TABS */}
@@ -198,10 +265,10 @@ export default function AyushaHomamPage() {
       traditional Vedic practices.”
     </p>
 
-  </div>
-)}
+        </div>
+      )}
 
-{tab === "reviews" && (
+      {tab === "reviews" && (
   <div className="mt-6 space-y-6 text-sm text-[#4f5d2f]">
 
    {/* No reviews message */}
@@ -321,17 +388,14 @@ export default function AyushaHomamPage() {
 )}
 </div>
       </div>
-    </div>
 
- {/* PRICING / PACKAGES */}
-<section className="mt-20">
-  <h2 className="mb-10 text-center text-2xl font-serif text-[#2f3a1f]">
-    PRICING / PACKAGES
-  </h2>
+      {/* PRICING / PACKAGES */}
+      <section className="mt-20">
+        <h2 className="mb-10 text-center text-2xl font-serif text-[#2f3a1f]">
+          PRICING / PACKAGES
+        </h2>
 
-  <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-    
-    {/* Economy */}
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
     <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
       <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
         Economy
@@ -409,11 +473,11 @@ export default function AyushaHomamPage() {
           <li>Kalasa Pooja</li>
           <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
         </ul>
+        </div>
       </div>
-    </div>
 
-  </div>
-</section>
-</section>
+        </div>
+      </section>
+    </section>
   );
 }

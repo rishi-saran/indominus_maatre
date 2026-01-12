@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import ServiceCard from '@/app/components/ui/ServiceCard';
 
 interface Notification {
   id: string;
@@ -17,6 +18,15 @@ interface Order {
   product_name?: string;
   category?: string;
   image?: string;
+}
+
+interface Booking {
+  service: string;
+  person: string;
+  image: string;
+  date: string; // e.g., 'Jan 15, 2026'
+  time: string; // e.g., '09:00 AM'
+  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING';
 }
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
@@ -46,6 +56,85 @@ export default function MyAccount() {
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
   const [isRitualDetailsModalOpen, setIsRitualDetailsModalOpen] = useState(false);
   const [isBookingsModalOpen, setIsBookingsModalOpen] = useState(false);
+  const [isAddServicesModalOpen, setIsAddServicesModalOpen] = useState(false);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
+  const [checkoutStep, setCheckoutStep] = useState<0 | 1 | 2 | 3 | 4>(0);
+  
+  // Service configurations
+  const [serviceConfigs, setServiceConfigs] = useState<Record<number, { flowers: string; package: string }>>({});
+  
+  // Coupon state
+  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  
+  // Available services from backend
+  const [availableServices, setAvailableServices] = useState<Array<{
+    id: number;
+    title: string;
+    description: string;
+    image: string;
+    price?: number;
+    packages?: Array<{ name: string; price: number }>;
+    formData?: {
+      location?: string;
+      venue?: string;
+      priestPreference?: string;
+      date?: string;
+      package?: string;
+      flowers?: string;
+    };
+  }>>([]);
+
+  // Demo bookings data (can be replaced with API later)
+  const allBookings: Booking[] = [
+    {
+      service: 'Griha Pravesh',
+      person: 'Ravi Shastri',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBr4CkQZdDBtyiP5TG4kI2jPAKgO9PG9gqOpQCew_k5Kiy09t3kAKd00vzySn_4n25u1rLkqJj9PX3TDadhkGudDl73w3_GvNPR5Te9lbQcdggPDFqrKQ9Cg_l7kWMor-qRbuQ1185SHbniviSZULKNaZRHRFuychoxjarIklVnd5_PLo4dvL9_5Xy59xkmbQEvydncDEu8MXVgtxwunPfQLUoY4vuZAjN_X54uPsCYkVVDHzcpkhSXRr1qjPmw3lfH5q_kR0EHWb7W',
+      date: 'Jan 15, 2026',
+      time: '09:00 AM',
+      status: 'CONFIRMED',
+    },
+    {
+      service: 'Vivah Sanskar',
+      person: 'Mohan Singh',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDs9pbArOnpyzqf-ilR_9wLZtu8V-lAkNDUEaEnZWO3zz7yU4c3jZmvartaUD0tnLHpa39vpdhpsiVC56Zj4IV_V7ivdInaFs9XBCkRvB1BK9R35Pyvgb6RHzriAwFyOnk2LQFy2H5Y4h-BlZfHy-thh_iV8BATUYHWHDWty-3aDae9TPLxLpsqgf1jwRLdfSeJQR7v8ZR9-hNxwj4d8XwXXyaSuvKRkYTTypTjpPvK2vi6qn8WL3-_HJopfprOCw7-cv2rOkauoPIu',
+      date: 'Feb 28, 2026',
+      time: '10:30 AM',
+      status: 'PENDING',
+    },
+    {
+      service: 'Satyanarayan Pooja',
+      person: 'Rajesh Sharma',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w',
+      date: 'Mar 10, 2026',
+      time: '06:00 PM',
+      status: 'PENDING',
+    },
+    {
+      service: 'Durga Pooja',
+      person: 'Vikram Gupta',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCqo0FhTUrz6-nWNfy8ywHrahiAxYCMI5AvPPfyqpTbRnrLGCsddTnwFM7_yjcWsNfOGGrj9NyDl6Ujj6iF_qiXzeTsdTiznHx4Bvx9ZTRFURZwrairL2hkhD45x63r4TJdZENhaQDHyITjN3bcQg-MwjBs-1urarRYEwTRqn3cwaPjfCaQjEaUlKKTbOFaNLtwZoVSFtc8cWW_ztYuza0bYII2larCYNCQaB1PZ6KpnlKVhyS6hpNijA3BnxJ-ZUoVTXQ7g0tns-cs',
+      date: 'Mar 25, 2026',
+      time: '05:00 PM',
+      status: 'CONFIRMED',
+    },
+  ];
+
+  const isToday = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+  };
+
+  const pendingBookings: Booking[] = allBookings
+    .filter(b => b.status === 'PENDING')
+    .map(b => ({
+      ...b,
+      status: isToday(b.date) ? 'PROCESSING' : b.status,
+    }));
+  const confirmedBooking: Booking | undefined = allBookings.find(b => b.status === 'CONFIRMED');
 
   // Authenticate user on component mount
   useEffect(() => {
@@ -133,6 +222,33 @@ export default function MyAccount() {
     fetchOrders();
   }, []);
 
+  // Load available services
+  useEffect(() => {
+    const loadServices = () => {
+      try {
+        const savedServices = JSON.parse(localStorage.getItem('addedServices') || '[]');
+        setAvailableServices(savedServices);
+      } catch (e) {
+        setAvailableServices([]);
+      }
+    };
+
+    loadServices();
+    
+    // Listen for service updates
+    const handleStorageChange = () => {
+      loadServices();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('servicesUpdated', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('servicesUpdated', handleStorageChange);
+    };
+  }, []);
+
   // Load Material Symbols font
   useEffect(() => {
     const link = document.createElement('link');
@@ -156,6 +272,11 @@ export default function MyAccount() {
   const closeRitualDetailsModal = () => setIsRitualDetailsModalOpen(false);
   const openBookingsModal = () => setIsBookingsModalOpen(true);
   const closeBookingsModal = () => setIsBookingsModalOpen(false);
+  const openAddServicesModal = () => { 
+    setIsAddServicesModalOpen(true); 
+    setCheckoutStep(0); 
+  };
+  const closeAddServicesModal = () => { setIsAddServicesModalOpen(false); setSelectedServiceIds([]); setCheckoutStep(0); };
   const saveProfile = () => {
     const updated = {
       user_id: profile.user_id,
@@ -200,7 +321,7 @@ export default function MyAccount() {
               tabIndex={0}
               onClick={() => { if (isProfile) openEditModal(); }}
               onKeyDown={(e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && isProfile) { e.preventDefault(); openEditModal(); } }}
-              className={`animate-pop-strong popup-green px-6 py-4 rounded-2xl font-semibold text-base text-[#5f6d2b] flex items-center gap-3 pointer-events-auto shadow-2xl border-2 border-amber-200 hover:shadow-amber-100/50 cursor-pointer`}
+              className={`animate-pop-strong popup-green px-6 py-4 rounded-2xl font-semibold text-sm text-[#4f5d2f] flex items-center gap-3 pointer-events-auto shadow-2xl border-2 border-amber-200 hover:shadow-amber-100/50 cursor-pointer`}
             >
               <span className="text-2xl animate-pulse">{notification.emoji}</span>
               <span className="flex-1">{notification.message}</span>
@@ -236,7 +357,7 @@ export default function MyAccount() {
         <div className="fixed inset-0 z-60 flex items-center justify-center">
           <div className="absolute inset-0 modal-backdrop" onClick={closeEditModal}></div>
           <div className="relative z-70 w-full max-w-md p-6 rounded-2xl bg-white shadow-2xl">
-            <h2 className="text-lg font-semibold mb-3">Edit Profile</h2>
+            <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-3">Edit Profile</h2>
             <form
               onSubmit={(e: React.FormEvent) => {
                 e.preventDefault();
@@ -245,22 +366,400 @@ export default function MyAccount() {
               className="space-y-3"
             >
               <div>
-                <label className="text-xs text-text-light">User ID</label>
-                <input name="user_id" defaultValue={profile.user_id} className="w-full p-2 border rounded mt-1 bg-gray-50" readOnly />
+                <label className="text-sm text-[#4f5d2f] font-medium">User ID</label>
+                <input name="user_id" defaultValue={profile.user_id} className="w-full p-2 border rounded mt-1 bg-gray-50 text-sm" readOnly />
               </div>
               <div>
-                <label className="text-xs text-text-light">Email</label>
+                <label className="text-sm text-[#4f5d2f] font-medium">Email</label>
                 <input 
                   value={editEmail}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditEmail(e.target.value)}
-                  className="w-full p-2 border rounded mt-1" 
+                  className="w-full p-2 border rounded mt-1 text-sm" 
                 />
               </div>
               <div className="flex justify-end gap-2 mt-2">
-                <button type="button" onClick={closeEditModal} className="px-4 py-2 rounded bg-gray-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-primary text-white">Save</button>
+                <button type="button" onClick={closeEditModal} className="px-4 py-2 rounded bg-gray-100 text-sm">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded bg-[#2f9e44] text-white hover:bg-[#268a3b] text-sm">Save</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add To Services Modal */}
+      {isAddServicesModalOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center">
+          <div className="absolute inset-0 modal-backdrop" onClick={closeAddServicesModal}></div>
+          <div className="relative z-70 w-full max-w-4xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[85vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
+            {checkoutStep === 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-serif font-semibold text-[#2f3a1f]">Add Services</h2>
+                  {selectedServiceIds.length > 0 && (
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Clear selected services
+                        setSelectedServiceIds([]);
+                        setServiceConfigs({});
+                        setShowCouponInput(false);
+                        setCouponCode('');
+                        setAppliedCoupon(null);
+                        // Clear from localStorage and update available services
+                        localStorage.removeItem('addedServices');
+                        setAvailableServices([]);
+                        window.dispatchEvent(new Event('servicesUpdated'));
+                      }}
+                      className="px-4 py-2 text-sm font-semibold text-white bg-[#2f9e44] hover:bg-[#268a3b] rounded-lg transition-all shadow-md hover:shadow-lg"
+                    >
+                      Clear All ({selectedServiceIds.length})
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                  <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {availableServices.length === 0 ? (
+                      <p className="col-span-2 text-center text-sm text-[#4f5d2f] py-8">No services available yet. Please add services from the services page.</p>
+                    ) : availableServices.map((svc) => {
+                      const checked = selectedServiceIds.includes(svc.id);
+                      const config = serviceConfigs[svc.id] || { flowers: 'No', package: 'Economy' };
+                      
+                      if (!checked) {
+                        // Compact view when not selected
+                        return (
+                          <div
+                            key={svc.id}
+                            onClick={() => {
+                              setSelectedServiceIds((prev) => {
+                                // Use formData from service if available, otherwise use defaults
+                                const serviceFormData = svc.formData || { flowers: 'No', package: 'Economy' };
+                                setServiceConfigs(configs => ({
+                                  ...configs,
+                                  [svc.id]: { 
+                                    flowers: serviceFormData.flowers || 'No', 
+                                    package: serviceFormData.package || 'Economy' 
+                                  }
+                                }));
+                                return [...prev, svc.id];
+                              });
+                            }}
+                            className="rounded-xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf] transition-all p-3 cursor-pointer"
+                          >
+                            <div className="relative mb-2">
+                              <input 
+                                type="checkbox" 
+                                checked={checked} 
+                                readOnly
+                                className="absolute top-2 right-2 z-10 w-5 h-5 rounded border-[#cfd8a3] cursor-pointer" 
+                              />
+                              <img src={svc.image} alt={svc.title} className="w-full h-20 rounded-lg object-cover border border-[#cfd8a3]" />
+                            </div>
+                            <h3 className="text-sm font-semibold text-[#2f3a1f] mb-1">{svc.title}</h3>
+                            <p className="text-xs text-[#4f5d2f]">{svc.description}</p>
+                          </div>
+                        );
+                      }
+                      
+                      // Expanded view when selected
+                      return (
+                        <div
+                          key={svc.id}
+                          className="sm:col-span-2 rounded-2xl border border-[#2f9e44] bg-white ring-1 ring-[#2f9e44] transition-all p-4"
+                        >
+                          <div className="flex gap-4">
+                            {/* Checkbox + Image */}
+                            <div className="flex-shrink-0">
+                              <input 
+                                type="checkbox" 
+                                checked={checked} 
+                                onChange={() => {
+                                  setSelectedServiceIds((prev) => prev.filter(id => id !== svc.id));
+                                }}
+                                className="w-5 h-5 rounded border-[#cfd8a3] cursor-pointer mb-3" 
+                              />
+                              <img src={svc.image} alt={svc.title} className="w-20 h-20 rounded-lg object-cover border border-[#cfd8a3]" />
+                            </div>
+
+                            {/* Details */}
+                            <div className="flex-1">
+                              <h3 className="text-base font-semibold text-[#2f3a1f] mb-1">{svc.title}</h3>
+                              <p className="text-xs text-[#4f5d2f] mb-2">{svc.description}</p>
+                              
+                              <div className="space-y-2">
+                                {/* Add-on: Flowers */}
+                                <div>
+                                  <label className="text-xs font-semibold text-[#2f3a1f] mb-1 block">Add-on: Flowers</label>
+                                  <div className="flex gap-3">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input 
+                                        type="radio" 
+                                        name={`flowers-${svc.id}`} 
+                                        checked={config.flowers === 'Yes'}
+                                        onChange={() => setServiceConfigs(configs => ({
+                                          ...configs,
+                                          [svc.id]: { ...config, flowers: 'Yes' }
+                                        }))}
+                                        className="cursor-pointer"
+                                      />
+                                      <span className="text-xs text-[#4f5d2f]">Yes (+₹250)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input 
+                                        type="radio" 
+                                        name={`flowers-${svc.id}`} 
+                                        checked={config.flowers === 'No'}
+                                        onChange={() => setServiceConfigs(configs => ({
+                                          ...configs,
+                                          [svc.id]: { ...config, flowers: 'No' }
+                                        }))}
+                                        className="cursor-pointer"
+                                      />
+                                      <span className="text-xs text-[#4f5d2f]">No</span>
+                                    </label>
+                                  </div>
+                                </div>
+
+                                {/* Select Package */}
+                                <div>
+                                  <label className="text-xs font-semibold text-[#2f3a1f] mb-1 block">Select Package</label>
+                                  <select 
+                                    value={config.package}
+                                    onChange={(e) => setServiceConfigs(configs => ({
+                                      ...configs,
+                                      [svc.id]: { ...config, package: e.target.value }
+                                    }))}
+                                    className="w-full px-2 py-1 rounded text-xs border border-[#cfd8a3] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                                  >
+                                    <option value="Economy">Economy - ₹9,999</option>
+                                    <option value="Standard">Standard - ₹12,999</option>
+                                    <option value="Premium">Premium - ₹20,000</option>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="lg:col-span-1">
+                    <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] sticky top-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="material-symbols-outlined text-[#2f9e44]">task_alt</span>
+                        <span className="text-sm font-semibold text-[#2f3a1f]">Selected ({selectedServiceIds.length})</span>
+                      </div>
+                      <ul className="space-y-2 mb-4 text-xs">
+                        {selectedServiceIds.length === 0 && (
+                          <li className="text-text-light">No services selected.</li>
+                        )}
+                        {selectedServiceIds.map(id => {
+                          const svc = availableServices.find(s => s.id === id)!;
+                          return <li key={id} className="text-[#4f5d2f]">• {svc?.title || 'Service'}</li>;
+                        })}
+                      </ul>
+                      <button
+                        disabled={selectedServiceIds.length === 0}
+                        onClick={() => setCheckoutStep(1)}
+                        className={`w-full px-4 py-2 rounded-lg font-semibold text-sm transition-all ${selectedServiceIds.length === 0 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#2f9e44] text-white hover:bg-[#268a3b] hover:-translate-y-0.5'}`}
+                      >
+                        Proceed to Checkout
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {checkoutStep === 1 && (
+              <div>
+                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Contact Details</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                    <label className="text-xs font-bold text-text-light uppercase">Full Name</label>
+                    <input className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" defaultValue="Priya Sharma" />
+                  </div>
+                  <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                    <label className="text-xs font-bold text-text-light uppercase">Email</label>
+                    <input 
+                      type="email"
+                      className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" 
+                      value={profile.email}
+                      readOnly
+                    />
+                  </div>
+                  <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                    <label className="text-xs font-bold text-text-light uppercase">Phone</label>
+                    <input className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" defaultValue="9876543210" />
+                  </div>
+                  <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                    <label className="text-xs font-bold text-text-light uppercase">Address</label>
+                    <textarea className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" rows={3} defaultValue="123, Green Meadows, Chennai" />
+                  </div>
+                </div>
+                <div className="flex justify-between gap-2 mt-4">
+                  <button onClick={() => setCheckoutStep(0)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
+                  <button onClick={() => setCheckoutStep(2)} className="px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b]">Continue to Payment</button>
+                </div>
+              </div>
+            )}
+            {checkoutStep === 2 && (
+              <div>
+                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Payment Method</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {['UPI', 'Credit/Debit Card', 'Cash on Delivery'].map((m, i) => (
+                    <button key={i} className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all text-left">
+                      <span className="text-sm font-semibold text-[#2f3a1f]">{m}</span>
+                      <p className="text-xs text-[#4f5d2f] mt-1">Secure and fast checkout</p>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-between gap-2 mt-4">
+                  <button onClick={() => setCheckoutStep(1)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
+                  <button onClick={() => setCheckoutStep(3)} className="px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b]">Review Order</button>
+                </div>
+              </div>
+            )}
+            {checkoutStep === 3 && (
+              <div>
+                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-6">Review & Place Order</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Selected Services */}
+                  <div className="lg:col-span-2">
+                    <h3 className="text-sm font-semibold mb-4 text-[#2f3a1f]">SERVICES</h3>
+                    <div className="space-y-4">
+                      {selectedServiceIds.map(id => {
+                        const svc = availableServices.find(s => s.id === id)!;
+                        const config = serviceConfigs[id] || { flowers: 'No', package: 'Economy' };
+                        return (
+                          <div key={id} className="flex gap-4 p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                            {/* Product Image */}
+                            <div className="flex-shrink-0">
+                              <img src={svc.image} alt={svc.title} className="w-24 h-24 rounded-lg object-cover border border-[#cfd8a3]" />
+                            </div>
+                            
+                            {/* Product Details */}
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-[#2f3a1f] mb-2">{svc.title}</h4>
+                              <p className="text-sm text-[#4f5d2f] mb-3">{svc.description}</p>
+                              
+                              {/* Details like in the screenshot */}
+                              <div className="space-y-1 text-xs text-[#4f5d2f]">
+                                <p><strong>Add-on:</strong> Flowers: {config.flowers}</p>
+                                <p><strong>Select Package:</strong> {config.package}</p>
+                              </div>
+                              
+                              {/* Remove Button */}
+                              <button 
+                                onClick={() => setSelectedServiceIds(prev => prev.filter(sid => sid !== id))}
+                                className="text-xs text-[#2f9e44] hover:text-[#268a3b] mt-3 underline"
+                              >
+                                Remove item
+                              </button>
+                            </div>
+                            
+                            {/* Price */}
+                            <div className="text-right flex-shrink-0">
+                              <p className="font-semibold text-[#2f3a1f]">₹15,000.00</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Cart Totals */}
+                  <div className="lg:col-span-1">
+                    <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] sticky top-4">
+                      <h3 className="text-sm font-semibold mb-4 text-[#2f3a1f]">CART TOTALS</h3>
+                      
+                      <div className="space-y-3 mb-4 pb-4 border-b border-[#cfd8a3]">
+                        {!showCouponInput && !appliedCoupon && (
+                          <button 
+                            onClick={() => setShowCouponInput(true)}
+                            className="text-xs text-[#2f9e44] hover:text-[#268a3b] font-semibold"
+                          >
+                            Add coupons ▼
+                          </button>
+                        )}
+                        
+                        {showCouponInput && (
+                          <div className="flex gap-2">
+                            <input 
+                              type="text"
+                              placeholder="Enter coupon code"
+                              value={couponCode}
+                              onChange={(e) => setCouponCode(e.target.value)}
+                              className="flex-1 px-2 py-1 rounded text-xs border border-[#cfd8a3] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                            />
+                            <button 
+                              onClick={() => {
+                                if (couponCode.trim()) {
+                                  setAppliedCoupon(couponCode);
+                                  setShowCouponInput(false);
+                                  setCouponCode('');
+                                }
+                              }}
+                              className="px-3 py-1 rounded text-xs bg-[#2f9e44] text-white hover:bg-[#268a3b]"
+                            >
+                              Apply
+                            </button>
+                          </div>
+                        )}
+                        
+                        {appliedCoupon && (
+                          <div className="flex items-center justify-between bg-[#eef4cf] px-3 py-2 rounded">
+                            <span className="text-xs text-[#2f3a1f]">Coupon: <strong>{appliedCoupon}</strong></span>
+                            <button 
+                              onClick={() => setAppliedCoupon(null)}
+                              className="text-xs text-[#2f9e44] hover:text-[#268a3b] underline"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="mb-6">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-xs text-[#4f5d2f]">Subtotal</span>
+                          <span className="font-semibold text-[#2f3a1f]">₹{selectedServiceIds.length * 15000}.00</span>
+                        </div>
+                        {appliedCoupon && (
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="text-xs text-[#4f5d2f]">Discount</span>
+                            <span className="font-semibold text-[#2f9e44]">-₹1,500.00</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center pt-3 border-t border-[#cfd8a3]">
+                          <span className="font-semibold text-[#2f3a1f]">Estimated total</span>
+                          <span className="font-semibold text-lg text-[#2f3a1f]">
+                            ₹{appliedCoupon ? (selectedServiceIds.length * 15000 - 1500).toFixed(2) : (selectedServiceIds.length * 15000).toFixed(2)}.00
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <button onClick={() => setCheckoutStep(4)} className="w-full px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b] transition-all">
+                        Confirm Order
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between gap-2 mt-6">
+                  <button onClick={() => setCheckoutStep(2)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
+                </div>
+              </div>
+            )}
+            {checkoutStep === 4 && (
+              <div className="text-center">
+                <span className="material-symbols-outlined text-[#2f9e44] text-5xl">check_circle</span>
+                <h2 className="mt-3 text-xl font-serif font-semibold text-[#2f3a1f]">Order Placed Successfully</h2>
+                <p className="text-sm text-[#4f5d2f] mt-1">You will receive a confirmation email shortly.</p>
+                <div className="mt-4">
+                  <button onClick={closeAddServicesModal} className="px-4 py-2 rounded bg-[#2f9e44] text-white hover:bg-[#268a3b]">Close</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -270,7 +769,7 @@ export default function MyAccount() {
         <div className="fixed inset-0 z-60 flex items-center justify-center">
           <div className="absolute inset-0 modal-backdrop" onClick={closeOrdersModal}></div>
           <div className="relative z-70 w-full max-w-2xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto">
-            <h2 className="text-lg font-semibold mb-4">Order History</h2>
+            <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Order History</h2>
             
             {ordersLoading && <p className="text-center text-text-light">Loading orders...</p>}
             {ordersError && <p className="text-center text-red-500">Error: {ordersError}</p>}
@@ -284,11 +783,11 @@ export default function MyAccount() {
                 <table className="w-full text-left">
                   <thead className="bg-primary/5">
                     <tr>
-                      <th className="px-4 py-2 text-[9px] font-bold text-text-light uppercase tracking-wider">Product/Service</th>
-                      <th className="px-4 py-2 text-[9px] font-bold text-text-light uppercase tracking-wider">Order ID</th>
-                      <th className="px-4 py-2 text-[9px] font-bold text-text-light uppercase tracking-wider">Date</th>
-                      <th className="px-4 py-2 text-[9px] font-bold text-text-light uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-2 text-[9px] font-bold text-text-light uppercase tracking-wider text-right">Amount</th>
+                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Product/Service</th>
+                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Order ID</th>
+                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider text-right">Amount</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/60">
@@ -334,8 +833,8 @@ export default function MyAccount() {
       {isRitualDetailsModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center">
           <div className="absolute inset-0 modal-backdrop" onClick={closeRitualDetailsModal}></div>
-          <div className="relative z-70 w-full max-w-2xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto">
-            <h2 className="text-lg font-semibold mb-4">Griha Pravesh Pooja - Details</h2>
+          <div className="relative z-70 w-full max-w-2xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
+            <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Griha Pravesh Pooja - Details</h2>
             <div className="space-y-4">
               <div className="rounded-xl overflow-hidden shadow-lg mb-4">
                 <img
@@ -345,41 +844,41 @@ export default function MyAccount() {
                 />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-[#5f6d2b] mb-2">Booking Information</h3>
+                <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">Booking Information</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer">
-                    <p className="text-[9px] text-text-light font-bold uppercase">Booking ID</p>
-                    <p className="text-sm font-semibold text-[#5f6d2b]">#BK-8902</p>
+                  <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                    <p className="text-xs text-text-light font-bold uppercase">Booking ID</p>
+                    <p className="text-sm font-semibold text-[#4f5d2f]">#BK-8902</p>
                   </div>
-                  <div className="p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer">
-                    <p className="text-[9px] text-text-light font-bold uppercase">Status</p>
-                    <p className="text-sm font-semibold text-[#5f6d2b]">Confirmed</p>
+                  <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                    <p className="text-xs text-text-light font-bold uppercase">Status</p>
+                    <p className="text-sm font-semibold text-[#4f5d2f]">Confirmed</p>
                   </div>
-                  <div className="p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer">
-                    <p className="text-[9px] text-text-light font-bold uppercase">Date</p>
-                    <p className="text-sm font-semibold text-[#5f6d2b]">Jan 15, 2026</p>
+                  <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                    <p className="text-xs text-text-light font-bold uppercase">Date</p>
+                    <p className="text-sm font-semibold text-[#4f5d2f]">Jan 15, 2026</p>
                   </div>
-                  <div className="p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer">
-                    <p className="text-[9px] text-text-light font-bold uppercase">Time</p>
-                    <p className="text-sm font-semibold text-[#5f6d2b]">09:00 AM IST</p>
+                  <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                    <p className="text-xs text-text-light font-bold uppercase">Time</p>
+                    <p className="text-sm font-semibold text-[#4f5d2f]">09:00 AM IST</p>
                   </div>
                 </div>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-[#5f6d2b] mb-2">Pandit Information</h3>
-                <div className="p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer">
-                  <p className="text-sm font-semibold text-[#5f6d2b]">Pandit Ravi Shastri & Team</p>
+                <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">Pandit Information</h3>
+                <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                  <p className="text-sm font-semibold text-[#4f5d2f]">Pandit Ravi Shastri & Team</p>
                   <p className="text-xs text-text-light mt-1">Experience: 15+ years</p>
                 </div>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-[#5f6d2b] mb-2">About This Pooja</h3>
-                <p className="text-sm text-[#5f6d2b] leading-relaxed p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer">Griha Pravesh is a sacred Hindu ritual performed to purify and bless a new home. This ceremony invokes divine blessings for prosperity, peace, and well-being in the household.</p>
+                <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">About This Pooja</h3>
+                <p className="text-sm text-[#4f5d2f] leading-relaxed p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">Griha Pravesh is a sacred Hindu ritual performed to purify and bless a new home. This ceremony invokes divine blessings for prosperity, peace, and well-being in the household.</p>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-[#5f6d2b] mb-2">What's Included</h3>
-                <div className="p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-all cursor-pointer">
-                  <ul className="text-sm text-[#5f6d2b] space-y-1">
+                <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">What's Included</h3>
+                <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                  <ul className="text-sm text-[#4f5d2f] space-y-1">
                     <li>✓ Full Griha Pravesh ceremony</li>
                     <li>✓ All required materials and offerings</li>
                     <li>✓ Prasad for all attendees</li>
@@ -399,91 +898,72 @@ export default function MyAccount() {
       {isBookingsModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center">
           <div className="absolute inset-0 modal-backdrop" onClick={closeBookingsModal}></div>
-          <div className="relative z-70 w-full max-w-3xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto font-display">
-            <h2 className="text-lg font-semibold mb-4">All Upcoming Bookings</h2>
+          <div className="relative z-70 w-full max-w-3xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
+            <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">All Upcoming Bookings</h2>
             <div className="space-y-3">
-              {/* Booking 1 */}
-              <div className="flex items-center justify-between p-3 bg-white/60 backdrop-blur-md rounded-xl hover:bg-amber-100 transition-all cursor-pointer group shadow-sm">
-                <div className="flex items-center gap-2 flex-1">
-                  <img alt="Griha Pravesh" className="w-6 h-6 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBr4CkQZdDBtyiP5TG4kI2jPAKgO9PG9gqOpQCew_k5Kiy09t3kAKd00vzySn_4n25u1rLkqJj9PX3TDadhkGudDl73w3_GvNPR5Te9lbQcdggPDFqrKQ9Cg_l7kWMor-qRbuQ1185SHbniviSZULKNaZRHRFuychoxjarIklVnd5_PLo4dvL9_5Xy59xkmbQEvydncDEu8MXVgtxwunPfQLUoY4vuZAjN_X54uPsCYkVVDHzcpkhSXRr1qjPmw3lfH5q_kR0EHWb7W" />
-                  <div>
-                    <p className="text-xs font-semibold text-[#5f6d2b]">Griha Pravesh</p>
-                    <p className="text-[9px] text-text-light">Ravi Shastri</p>
-                  </div>
+              {/* Column Headers */}
+              <div className="flex items-center justify-between px-3 py-1.5 bg-primary/5 rounded-lg">
+                <div className="flex items-center gap-2 flex-[2]">
+                  <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Service</span>
                 </div>
                 <div className="flex-1 text-center">
-                  <span className="text-xs text-[#5f6d2b] font-medium">Jan 15, 2026</span>
+                  <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Date</span>
                 </div>
                 <div className="flex-1 text-center">
-                  <span className="text-xs text-[#5f6d2b] font-medium">09:00 AM</span>
+                  <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Time</span>
                 </div>
                 <div className="flex-1 text-center">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-bold bg-amber-100 text-[#5f6d2b]">CONFIRMED</span>
+                  <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Status</span>
                 </div>
               </div>
-
-              {/* Booking 2 */}
-              <div className="flex items-center justify-between p-3 bg-white/60 backdrop-blur-md rounded-xl hover:bg-amber-100 transition-all cursor-pointer group shadow-sm">
-                <div className="flex items-center gap-2 flex-1">
-                  <img alt="Vivah Sanskar" className="w-6 h-6 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDs9pbArOnpyzqf-ilR_9wLZtu8V-lAkNDUEaEnZWO3zz7yU4c3jZmvartaUD0tnLHpa39vpdhpsiVC56Zj4IV_V7ivdInaFs9XBCkRvB1BK9R35Pyvgb6RHzriAwFyOnk2LQFy2H5Y4h-BlZfHy-thh_iV8BATUYHWHDWty-3aDae9TPLxLpsqgf1jwRLdfSeJQR7v8ZR9-hNxwj4d8XwXXyaSuvKRkYTTypTjpPvK2vi6qn8WL3-_HJopfprOCw7-cv2rOkauoPIu" />
-                  <div>
-                    <p className="text-xs font-semibold text-[#5f6d2b]">Vivah Sanskar</p>
-                    <p className="text-[9px] text-text-light">Mohan Singh</p>
+              {confirmedBooking && (
+                <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] transition-all cursor-pointer group">
+                  <div className="flex items-center gap-2 flex-[2]">
+                    <img alt={confirmedBooking.service} className="w-6 h-6 rounded-lg object-cover" src={confirmedBooking.image} />
+                    <div>
+                      <p className="text-xs font-semibold text-[#2f3a1f]">{confirmedBooking.service}</p>
+                      <p className="text-[10px] text-text-light">{confirmedBooking.person}</p>
+                    </div>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span className="text-xs text-[#4f5d2f] font-medium">{confirmedBooking.date}</span>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span className="text-xs text-[#4f5d2f] font-medium">{confirmedBooking.time}</span>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-[#4f5d2f]">CONFIRMED</span>
                   </div>
                 </div>
-                <div className="flex-1 text-center">
-                  <span className="text-xs text-[#5f6d2b] font-medium">Feb 28, 2026</span>
+              )}
+              {pendingBookings.length === 0 && (
+                <div className="p-3 text-center text-text-light bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
+                  No pending bookings.
                 </div>
-                <div className="flex-1 text-center">
-                  <span className="text-xs text-[#5f6d2b] font-medium">10:30 AM</span>
-                </div>
-                <div className="flex-1 text-center">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-bold bg-amber-100 text-[#5f6d2b]">PENDING</span>
-                </div>
-              </div>
-
-              {/* Booking 3 */}
-              <div className="flex items-center justify-between p-3 bg-white/60 backdrop-blur-md rounded-xl hover:bg-amber-100 transition-all cursor-pointer group shadow-sm">
-                <div className="flex items-center gap-2 flex-1">
-                  <img alt="Satyanarayan Pooja" className="w-6 h-6 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w" />
-                  <div>
-                    <p className="text-xs font-semibold text-[#5f6d2b]">Satyanarayan Pooja</p>
-                    <p className="text-[9px] text-text-light">Rajesh Sharma</p>
+              )}
+              {pendingBookings.map((b, idx) => (
+                <div key={`${b.service}-${idx}`} className="flex items-center justify-between p-2 bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] transition-all cursor-pointer group">
+                  <div className="flex items-center gap-2 flex-[2]">
+                    <img alt={b.service} className="w-6 h-6 rounded-lg object-cover" src={b.image} />
+                    <div>
+                      <p className="text-xs font-semibold text-[#2f3a1f]">{b.service}</p>
+                      <p className="text-[10px] text-text-light">{b.person}</p>
+                    </div>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span className="text-xs text-[#4f5d2f] font-medium">{b.date}</span>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span className="text-xs text-[#4f5d2f] font-medium">{b.time}</span>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-[#4f5d2f]">{b.status}</span>
                   </div>
                 </div>
-                <div className="flex-1 text-center">
-                  <span className="text-xs text-[#5f6d2b] font-medium">Mar 10, 2026</span>
-                </div>
-                <div className="flex-1 text-center">
-                  <span className="text-xs text-[#5f6d2b] font-medium">06:00 PM</span>
-                </div>
-                <div className="flex-1 text-center">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-bold bg-amber-100 text-[#5f6d2b]">PROCESSING</span>
-                </div>
-              </div>
-
-              {/* Booking 4 */}
-              <div className="flex items-center justify-between p-3 bg-white/60 backdrop-blur-md rounded-xl hover:bg-amber-100 transition-all cursor-pointer group shadow-sm">
-                <div className="flex items-center gap-2 flex-1">
-                  <img alt="Durga Pooja" className="w-6 h-6 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqo0FhTUrz6-nWNfy8ywHrahiAxYCMI5AvPPfyqpTbRnrLGCsddTnwFM7_yjcWsNfOGGrj9NyDl6Ujj6iF_qiXzeTsdTiznHx4Bvx9ZTRFURZwrairL2hkhD45x63r4TJdZENhaQDHyITjN3bcQg-MwjBs-1urarRYEwTRqn3cwaPjfCaQjEaUlKKTbOFaNLtwZoVSFtc8cWW_ztYuza0bYII2larCYNCQaB1PZ6KpnlKVhyS6hpNijA3BnxJ-ZUoVTXQ7g0tns-cs" />
-                  <div>
-                    <p className="text-xs font-semibold text-[#5f6d2b]">Durga Pooja</p>
-                    <p className="text-[9px] text-text-light">Vikram Gupta</p>
-                  </div>
-                </div>
-                <div className="flex-1 text-center">
-                  <span className="text-xs text-[#5f6d2b] font-medium">Mar 25, 2026</span>
-                </div>
-                <div className="flex-1 text-center">
-                  <span className="text-xs text-[#5f6d2b] font-medium">05:00 PM</span>
-                </div>
-                <div className="flex-1 text-center">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-bold bg-amber-100 text-[#5f6d2b]">CONFIRMED</span>
-                </div>
-              </div>
+              ))}
             </div>
             <div className="flex justify-end gap-2 mt-4">
-              <button type="button" onClick={closeBookingsModal} className="px-4 py-2 rounded bg-gray-100">Close</button>
+              <button type="button" onClick={closeBookingsModal} className="px-4 py-2 font-semibold text-sm text-[#2f9e44] border border-[#2f9e44] rounded-lg bg-white hover:bg-[#eef4cf]">Close</button>
             </div>
           </div>
         </div>
@@ -519,6 +999,16 @@ export default function MyAccount() {
             </div>
             <div id="section-orders">
               <RecentOrders isActive={activeSection === 'orders'} onActive={() => setActiveSection('orders')} onViewFullOrders={openOrdersModal} />
+              <AddToServices 
+                onOpen={openAddServicesModal}
+                selectedServiceIds={selectedServiceIds}
+                availableServices={availableServices}
+                setSelectedServiceIds={setSelectedServiceIds}
+                setServiceConfigs={setServiceConfigs}
+                setShowCouponInput={setShowCouponInput}
+                setCouponCode={setCouponCode}
+                setAppliedCoupon={setAppliedCoupon}
+              />
             </div>
           </div>
         </div>
@@ -559,10 +1049,10 @@ interface NavLinkProps {
 
 const NavLink: React.FC<NavLinkProps> = ({ icon, label, active = false, onClick }) => (
   <a
-    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 font-medium text-xs cursor-pointer group hover:bg-amber-200 ${
+    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 font-medium text-sm cursor-pointer group hover:bg-amber-200 ${
       active
         ? 'bg-primary-dark text-white shadow-md shadow-primary-dark/20'
-        : 'text-[#5f6d2b] hover:text-[#5f6d2b]'
+        : 'text-[#4f5d2f] hover:text-[#4f5d2f]'
     }`}
     href="#"
     onClick={(e) => { e.preventDefault(); onClick?.(); }}
@@ -583,7 +1073,7 @@ interface UserProfileCardProps {
 
 const UserProfileCard: React.FC<UserProfileCardProps> = ({ handleButtonClick, profile, onEdit, isActive, onActive }) => (
   <div
-    className={`glass-card p-4 rounded-2xl text-center cursor-pointer transition-all ${
+    className={`p-4 rounded-2xl text-center cursor-pointer transition-all border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] ${
       isActive ? 'bg-amber-100' : ''
     }`}
     role="button"
@@ -599,10 +1089,10 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({ handleButtonClick, pr
       />
     </div>
     <div className="flex items-center justify-center gap-2">
-      <h3 className="font-serif font-semibold text-base text-[#5f6d2b] m-0">{profile.email}</h3>
+      <h3 className="font-serif font-semibold text-lg text-[#2f3a1f] m-0">{profile.email}</h3>
     </div>
-    <p className="text-text-light text-[11px] mb-2">Devotee since 2022</p>
-    <div className="inline-flex items-center gap-1 bg-primary-soft text-[#5f6d2b] text-[9px] font-bold px-2 py-0.5 rounded-full">
+    <p className="text-text-light text-xs mb-2">Devotee since 2022</p>
+    <div className="inline-flex items-center gap-1 bg-primary-soft text-[#4f5d2f] text-xs font-bold px-2 py-0.5 rounded-full">
       <span className="material-symbols-outlined text-[10px] filled">stars</span>
       Premium Member
     </div>
@@ -628,7 +1118,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ onItemClick, isActive, onActi
   };
 
   return (
-    <div className={`glass-card rounded-2xl overflow-hidden p-1.5 flex flex-col gap-0.5 transition-all ${
+    <div className={`rounded-2xl overflow-hidden p-1.5 flex flex-col gap-0.5 transition-all border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] ${
       isActive ? 'bg-amber-100' : ''
     }`} onClick={() => onActive?.()}>
       <SidebarItem icon="dashboard" label="Dashboard" active={true} onItemClick={() => { handleScroll('section-stats', 'stats'); }} />
@@ -653,7 +1143,7 @@ interface SidebarItemProps {
 
 const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active = false, badge, isLogout = false, onItemClick }) => (
   <a
-    className={`flex items-center gap-3 px-3 py-1.5 rounded-lg transition-all font-medium text-xs cursor-pointer group ${
+    className={`flex items-center gap-3 px-3 py-1.5 rounded-lg transition-all font-medium text-xs cursor-pointer group hover:-translate-y-0.5 hover:drop-shadow-md ${
       isLogout
         ? 'text-red-400 hover:bg-amber-200'
         : active
@@ -696,7 +1186,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({ isActive, onActive }) => (
     <StatCard
       icon="shopping_bag"
       iconBg="bg-amber-100"
-      iconColor="text-[#5f6d2b]"
+      iconColor="text-[#4f5d2f]"
       title="Active Orders"
       value="3"
       badge="Pending"
@@ -705,7 +1195,7 @@ const StatsCards: React.FC<StatsCardsProps> = ({ isActive, onActive }) => (
     <StatCard
       icon="volunteer_activism"
       iconBg="bg-amber-100"
-      iconColor="text-[#5f6d2b]"
+      iconColor="text-[#4f5d2f]"
       title="Contribution"
       value="₹5k+"
       badge="Donations"
@@ -725,15 +1215,15 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ icon, iconBg, iconColor, title, value, badge, hoverIconBg }) => (
-  <div className="bg-white/60 backdrop-blur-md p-3 rounded-2xl shadow-sm transition-all group cursor-pointer hover:bg-amber-100">
+  <div className="bg-white p-3 rounded-2xl shadow-sm transition-all group cursor-pointer border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:border-[#2f9e44] hover:ring-[#2f9e44]">
     <div className="flex items-start justify-between mb-2">
-      <div className={`${iconBg} p-1.5 rounded-xl ${iconColor} ${hoverIconBg} transition-colors`}>
-        <span className="material-symbols-outlined text-[18px] group-hover:scale-125 transition-transform" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20" }}>{icon}</span>
+      <div className={`${iconBg} p-1.5 rounded-xl ${iconColor} transition-colors`}>
+        <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20" }}>{icon}</span>
       </div>
-      <span className="text-[9px] font-bold text-text-light bg-cream-dark px-2 py-0.5 rounded-md">{badge}</span>
+      <span className="text-xs font-bold text-text-light bg-cream-dark px-2 py-0.5 rounded-md">{badge}</span>
     </div>
-    <p className="text-text-light text-xs font-medium">{title}</p>
-    <h4 className="text-xl font-serif font-semibold text-[#5f6d2b]">{value}</h4>
+    <p className="text-[#4f5d2f] text-sm font-medium">{title}</p>
+    <h4 className="text-xl font-serif font-semibold text-[#2f3a1f]">{value}</h4>
   </div>
 );
 
@@ -747,16 +1237,16 @@ interface UpcomingRitualProps {
 }
 
 const UpcomingRitual: React.FC<UpcomingRitualProps> = ({ handleButtonClick, isActive, onActive, onViewDetails, onViewAllBookings }) => (
-  <section className="glass-card rounded-2xl p-4">
+  <section className="rounded-2xl p-4 border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all">
     <div className="flex items-center justify-between mb-3">
-      <h3 className="text-lg font-serif font-semibold text-[#5f6d2b]">Upcoming Ritual</h3>
-      <button onClick={() => onViewAllBookings?.()} className="text-xs font-bold text-[#5f6d2b] hover:text-[#4f5d2f] transition-colors cursor-pointer bg-none border-none p-0 inline-flex items-center gap-1">
-        <span className="material-symbols-outlined text-[14px] text-[#5f6d2b]">event</span>
+      <h3 className="text-xl font-serif font-semibold text-[#2f3a1f]">Upcoming Ritual</h3>
+      <button onClick={() => onViewAllBookings?.()} className="text-sm font-medium text-black hover:text-gray-800 transition-all cursor-pointer bg-none border-none p-0 inline-flex items-center gap-1 hover:-translate-y-0.5 hover:drop-shadow-md">
+        <span className="material-symbols-outlined text-[14px] text-black">event</span>
         View All Bookings
       </button>
     </div>
-    <div className="glass-card rounded-2xl p-1 overflow-hidden group hover:bg-amber-200 transition-all cursor-pointer" onClick={() => onActive?.()}>
-      <div className="glass-card rounded-xl flex flex-col md:flex-row gap-3 p-3 md:p-4 relative overflow-hidden">
+    <div className="rounded-2xl overflow-hidden group hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] transition-all cursor-pointer border border-[#cfd8a3] ring-1 ring-[#e3ebbd]" onClick={() => onActive?.()}>
+      <div className="rounded-xl flex flex-col md:flex-row gap-3 p-3 md:p-4 relative overflow-hidden bg-white">
         <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
 
         <div className="w-full md:w-1/3 h-32 md:h-auto rounded-xl overflow-hidden relative shadow-lg">
@@ -766,47 +1256,47 @@ const UpcomingRitual: React.FC<UpcomingRitualProps> = ({ handleButtonClick, isAc
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuBr4CkQZdDBtyiP5TG4kI2jPAKgO9PG9gqOpQCew_k5Kiy09t3kAKd00vzySn_4n25u1rLkqJj9PX3TDadhkGudDl73w3_GvNPR5Te9lbQcdggPDFqrKQ9Cg_l7kWMor-qRbuQ1185SHbniviSZULKNaZRHRFuychoxjarIklVnd5_PLo4dvL9_5Xy59xkmbQEvydncDEu8MXVgtxwunPfQLUoY4vuZAjN_X54uPsCYkVVDHzcpkhSXRr1qjPmw3lfH5q_kR0EHWb7W"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-          <div className="absolute top-2 left-2 bg-white/90 backdrop-blur text-[#5f6d2b] text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+          <div className="absolute top-2 left-2 bg-white/90 backdrop-blur text-[#4f5d2f] text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span>
             CONFIRMED
           </div>
           <div className="absolute bottom-2 left-2 text-white">
-            <p className="text-[9px] font-medium opacity-90">Booking ID: #BK-8902</p>
+            <p className="text-xs font-medium opacity-90">Booking ID: #BK-8902</p>
           </div>
         </div>
 
         <div className="flex-1 flex flex-col justify-between gap-2 relative z-10">
           <div>
             <div className="flex items-start justify-between">
-              <h4 className="text-lg font-serif font-bold text-[#5f6d2b] mb-0.5">Griha Pravesh Pooja</h4>
-              <div className="bg-primary/10 text-[#5f6d2b] p-1.5 rounded-md">
+              <h4 className="text-xl font-serif font-bold text-[#2f3a1f] mb-0.5">Griha Pravesh Pooja</h4>
+              <div className="bg-primary/10 text-[#4f5d2f] p-1.5 rounded-md">
                 <span className="material-symbols-outlined text-[16px]">calendar_clock</span>
               </div>
             </div>
-            <p className="text-text-light mb-2 text-xs font-light">Performed by Pandit Ravi Shastri &amp; Team</p>
+            <p className="text-sm text-text-light mb-2 font-medium">Performed by Pandit Ravi Shastri &amp; Team</p>
             <div className="grid grid-cols-2 gap-2 mb-2">
               <div className="flex items-center gap-2 bg-white/60 backdrop-blur-md p-2 rounded-lg">
                 <span className="material-symbols-outlined text-accent-dark text-[16px]">event</span>
                 <div>
-                  <p className="text-[9px] text-text-light font-bold uppercase">Date</p>
-                  <p className="text-[11px] font-semibold text-[#5f6d2b]">Jan 15, 2026</p>
+                  <p className="text-xs text-text-light font-bold uppercase">Date</p>
+                  <p className="text-sm font-semibold text-[#4f5d2f]">Jan 15, 2026</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 bg-white/60 backdrop-blur-md p-2 rounded-lg">
                 <span className="material-symbols-outlined text-accent-dark text-[16px]">schedule</span>
                 <div>
-                  <p className="text-[9px] text-text-light font-bold uppercase">Time</p>
-                  <p className="text-[11px] font-semibold text-[#5f6d2b]">09:00 AM IST</p>
+                  <p className="text-xs text-text-light font-bold uppercase">Time</p>
+                  <p className="text-sm font-semibold text-[#4f5d2f]">09:00 AM IST</p>
                 </div>
               </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleButtonClick?.('💬 Chat Opened')} className="px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center gap-2 justify-center flex-1 md:flex-none cursor-pointer rounded-lg">
+            <button onClick={() => handleButtonClick?.('💬 Chat Opened')} className="px-4 py-2 font-semibold text-sm text-[#2f9e44] hover:text-[#2f9e44] bg-white border border-[#2f9e44] hover:bg-white hover:border-[#2f9e44] hover:ring-1 hover:ring-[#2f9e44] transition-all flex items-center gap-2 justify-center flex-1 md:flex-none cursor-pointer rounded-lg hover:-translate-y-1">
               <span className="material-symbols-outlined text-[16px]">chat</span>
               Chat with Pandit
             </button>
-            <button onClick={(e) => { e.stopPropagation(); onActive?.(); onViewDetails?.(); }} className="px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center gap-2 justify-center flex-1 md:flex-none cursor-pointer rounded-lg">
+            <button onClick={(e) => { e.stopPropagation(); onActive?.(); onViewDetails?.(); }} className="px-4 py-2 font-semibold text-sm text-[#2f9e44] hover:text-[#2f9e44] bg-white border border-[#2f9e44] hover:bg-white hover:border-[#2f9e44] hover:ring-1 hover:ring-[#2f9e44] transition-all flex items-center gap-2 justify-center flex-1 md:flex-none cursor-pointer rounded-lg hover:-translate-y-1">
               View Details
             </button>
           </div>
@@ -875,11 +1365,11 @@ const ProfileDetails: React.FC<ProfileDetailsProps> = ({ profile, onEdit, handle
       tabIndex={0}
       onClick={() => onEdit?.()}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit?.(); } }}
-      className="bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-sm cursor-pointer transition-all"
+      className="bg-white rounded-2xl p-4 shadow-sm cursor-pointer transition-all border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44]"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
-        <h3 className="text-base font-serif font-semibold text-[#5f6d2b] flex-1">Profile Details</h3>
-        <button onClick={(e) => { e.stopPropagation(); onEdit?.(); }} className="text-primary hover:text-[#5f6d2b] p-2 hover:bg-primary-soft rounded-full transition-colors cursor-pointer group flex-shrink-0" aria-label="Edit profile details">
+        <h3 className="text-xl font-serif font-semibold text-[#2f3a1f] flex-1">Profile Details</h3>
+        <button onClick={(e) => { e.stopPropagation(); onEdit?.(); }} className="text-primary hover:text-[#4f5d2f] p-2 hover:bg-primary-soft rounded-full transition-all cursor-pointer group flex-shrink-0 hover:-translate-y-0.5 hover:drop-shadow-md" aria-label="Edit profile details">
           <span className="material-symbols-outlined text-[16px] group-hover:scale-125 transition-transform">edit_square</span>
         </button>
       </div>
@@ -898,12 +1388,12 @@ interface ProfileDetailItemProps {
 }
 
 const ProfileDetailItem: React.FC<ProfileDetailItemProps> = ({ icon, label, value }) => (
-      <div className="flex items-center gap-3 p-3 bg-white/60 backdrop-blur-md rounded-2xl hover:bg-amber-200 transition-colors cursor-pointer group">
+      <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:bg-amber-200 transition-all cursor-pointer group hover:-translate-y-0.5 hover:shadow-md hover:border-[#2f9e44] hover:ring-[#2f9e44]">
     <div className="w-7 h-7 rounded-full bg-cream-dark flex items-center justify-center text-[#5f6d2b] group-hover:bg-primary group-hover:text-white transition-colors">
       <span className="material-symbols-outlined text-[16px] group-hover:scale-125 transition-transform">{icon}</span>
     </div>
     <div>
-      <p className="text-[9px] text-text-light font-bold uppercase">{label}</p>
+      <p className="text-xs text-text-light font-bold uppercase">{label}</p>
       <p className="text-xs text-[#5f6d2b] font-medium">{value}</p>
     </div>
   </div>
@@ -941,8 +1431,8 @@ const Preferences: React.FC<PreferencesProps> = ({
   };
 
   return (
-    <section className="bg-white/60 backdrop-blur-md rounded-2xl p-3 shadow-sm flex flex-col">
-      <h3 className="text-base font-serif font-semibold text-[#5f6d2b] mb-3">Preferences</h3>
+    <section className="rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] p-6 transition-all flex flex-col">
+      <h3 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Preferences</h3>
       <div className="space-y-2 flex-1">
         <PreferenceToggle
           icon="notifications"
@@ -963,7 +1453,7 @@ const Preferences: React.FC<PreferencesProps> = ({
       </div>
       <button
         onClick={handleLogout}
-        className="w-full mt-4 px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 cursor-pointer rounded-lg group"
+        className="w-full mt-4 px-4 py-2 font-semibold text-sm text-white bg-[#2f9e44] hover:bg-[#268a3b] transition-all flex items-center justify-center gap-2 cursor-pointer rounded-lg group hover:-translate-y-1"
       >
         <span className="material-symbols-outlined text-[18px] group-hover:scale-125 transition-transform">logout</span>
         Logout
@@ -982,16 +1472,16 @@ interface PreferenceToggleProps {
 }
 
 const PreferenceToggle: React.FC<PreferenceToggleProps> = ({ icon, label, enabled, onChange, isActive, onActive }) => (
-  <div className={`flex items-center justify-between p-2 bg-amber-50 rounded-lg cursor-pointer group transition-colors ${
-    isActive ? 'bg-amber-100' : 'hover:bg-amber-100'
-  }`} onClick={() => onActive?.()}>
+  <div className={`flex items-center justify-between p-3 bg-white rounded-2xl cursor-pointer group transition-all border ${
+    isActive ? 'border-[#2f9e44] ring-1 ring-[#2f9e44]' : 'border-[#cfd8a3] ring-1 ring-[#e3ebbd]'
+  } hover:-translate-y-0.5 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44]`} onClick={() => onActive?.()}>
     <div className="flex items-center gap-2">
-      <span className="material-symbols-outlined text-[#5f6d2b] text-[18px] group-hover:scale-125 transition-transform">{icon}</span>
-      <span className="text-xs font-medium text-[#5f6d2b]">{label}</span>
+      <span className="material-symbols-outlined text-[#4f5d2f] text-[18px] group-hover:text-[#2f9e44] transition-colors">{icon}</span>
+      <span className="text-sm font-medium text-[#2f3a1f] group-hover:text-[#2f9e44] transition-colors">{label}</span>
     </div>
     <button
       onClick={(e) => { e.stopPropagation(); onChange(!enabled); onActive?.(); }}
-      className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors cursor-pointer ${enabled ? 'bg-[#5f6d2b]' : 'bg-gray-200'}`}
+      className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors cursor-pointer ${enabled ? 'bg-[#2f9e44]' : 'bg-gray-200'}`}
     >
       <span
         className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
@@ -1009,12 +1499,12 @@ interface PreferenceItemProps {
 }
 
 const PreferenceItem: React.FC<PreferenceItemProps> = ({ icon, label, value }) => (
-  <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg cursor-pointer group transition-colors hover:bg-amber-100">
+  <div className="flex items-center justify-between p-3 bg-white rounded-2xl cursor-pointer group transition-all border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-0.5 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44]">
     <div className="flex items-center gap-2">
-      <span className="material-symbols-outlined text-primary text-[18px] group-hover:scale-125 transition-transform">{icon}</span>
-      <span className="text-xs font-medium text-[#5f6d2b]">{label}</span>
+      <span className="material-symbols-outlined text-[#4f5d2f] text-[18px] group-hover:text-[#2f9e44] transition-colors">{icon}</span>
+      <span className="text-sm font-medium text-[#2f3a1f] group-hover:text-[#2f9e44] transition-colors">{label}</span>
     </div>
-    <span className="text-[9px] font-bold text-text-light bg-cream-dark px-2 py-0.5 rounded-full">{value}</span>
+    <span className="text-sm font-semibold text-text-light bg-[#eef4cf] px-2 py-0.5 rounded-full">{value}</span>
   </div>
 );
 
@@ -1026,60 +1516,64 @@ interface RecentOrdersProps {
 }
 
 const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewFullOrders }) => (
-  <section className="glass-card rounded-2xl p-4">
+  <section className="rounded-2xl p-4 border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all">
     <div className="flex items-center justify-between mb-3">
-      <h3 className="text-lg font-serif font-semibold text-[#5f6d2b]">Recent Orders</h3>
+      <h3 className="text-xl font-serif font-semibold text-[#2f3a1f]">Recent Orders</h3>
     </div>
-    <div className="bg-white/50 rounded-2xl overflow-hidden" onClick={() => onActive?.()}>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-primary/5">
-            <tr>
-              <th className="px-4 py-2 text-[11px] font-bold text-text-light uppercase tracking-wider">Product/Service</th>
-              <th className="px-4 py-2 text-[11px] font-bold text-text-light uppercase tracking-wider text-center">Order ID</th>
-              <th className="px-4 py-2 text-[11px] font-bold text-text-light uppercase tracking-wider text-center">Date</th>
-              <th className="px-4 py-2 text-[11px] font-bold text-text-light uppercase tracking-wider text-center">Status</th>
-              <th className="px-4 py-2 text-[11px] font-bold text-text-light uppercase tracking-wider text-center">Amount</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/60">
-            <OrderRow
-              image="https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w"
-              productName="Premium Rudraksha Mala"
-              category="Spiritual Accessories"
-              orderId="#ORD-2891"
-              date="Oct 12, 2024"
-              status="Delivered"
-              statusColor="green"
-              amount="₹1,299"
-            />
-            <OrderRow
-              image="https://lh3.googleusercontent.com/aida-public/AB6AXuDs9pbArOnpyzqf-ilR_9wLZtu8V-lAkNDUEaEnZWO3zz7yU4c3jZmvartaUD0tnLHpa39vpdhpsiVC56Zj4IV_V7ivdInaFs9XBCkRvB1BK9R35Pyvgb6RHzriAwFyOnk2LQFy2H5Y4h-BlZfHy-thh_iV8BATUYHWHDWty-3aDae9TPLxLpsqgf1jwRLdfSeJQR7v8ZR9-hNxwj4d8XwXXyaSuvKRkYTTypTjpPvK2vi6qn8WL3-_HJopfprOCw7-cv2rOkauoPIu"
-              productName="Vivah Sanskar Package"
-              category="Ritual Service"
-              orderId="#ORD-2845"
-              date="Sep 28, 2024"
-              status="Completed"
-              statusColor="blue"
-              amount="₹15,000"
-            />
-            <OrderRow
-              image="https://lh3.googleusercontent.com/aida-public/AB6AXuCqo0FhTUrz6-nWNfy8ywHrahiAxYCMI5AvPPfyqpTbRnrLGCsddTnwFM7_yjcWsNfOGGrj9NyDl6Ujj6iF_qiXzeTsdTiznHx4Bvx9ZTRFURZwrairL2hkhD45x63r4TJdZENhaQDHyITjN3bcQg-MwjBs-1urarRYEwTRqn3cwaPjfCaQjEaUlKKTbOFaNLtwZoVSFtc8cWW_ztYuza0bYII2larCYNCQaB1PZ6KpnlKVhyS6hpNijA3BnxJ-ZUoVTXQ7g0tns-cs"
-              productName="Brass Pooja Thali Set"
-              category="Home Decor"
-              orderId="#ORD-2711"
-              date="Sep 15, 2024"
-              status="Shipped"
-              statusColor="yellow"
-              amount="₹2,499"
-            />
-          </tbody>
-        </table>
+    <div className="space-y-3" onClick={() => onActive?.()}>
+      {/* Column Headers */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-primary/5 rounded-lg">
+        <div className="flex items-center gap-2 flex-[2]">
+          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Product/Service</span>
+        </div>
+        <div className="flex-1 text-center">
+          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Order ID</span>
+        </div>
+        <div className="flex-1 text-center">
+          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Date</span>
+        </div>
+        <div className="flex-1 text-center">
+          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Status</span>
+        </div>
+        <div className="flex-1 text-center">
+          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Amount</span>
+        </div>
       </div>
-      <div className="p-2 text-center rounded transition-all cursor-pointer bg-white/60 backdrop-blur-md">
-        <a onClick={(e) => { e.preventDefault(); onViewFullOrders?.(); }} className="text-xs font-bold text-[#5f6d2b] hover:text-[#4f5d2f] transition-colors inline-flex items-center gap-1 cursor-pointer group" href="#">
+      
+      <OrderRow
+        image="https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w"
+        productName="Premium Rudraksha Mala"
+        category="Spiritual Accessories"
+        orderId="#ORD-2891"
+        date="Oct 12, 2024"
+        status="Completed"
+        statusColor="green"
+        amount="₹1,299"
+      />
+      <OrderRow
+        image="https://lh3.googleusercontent.com/aida-public/AB6AXuDs9pbArOnpyzqf-ilR_9wLZtu8V-lAkNDUEaEnZWO3zz7yU4c3jZmvartaUD0tnLHpa39vpdhpsiVC56Zj4IV_V7ivdInaFs9XBCkRvB1BK9R35Pyvgb6RHzriAwFyOnk2LQFy2H5Y4h-BlZfHy-thh_iV8BATUYHWHDWty-3aDae9TPLxLpsqgf1jwRLdfSeJQR7v8ZR9-hNxwj4d8XwXXyaSuvKRkYTTypTjpPvK2vi6qn8WL3-_HJopfprOCw7-cv2rOkauoPIu"
+        productName="Vivah Sanskar Package"
+        category="Ritual Service"
+        orderId="#ORD-2845"
+        date="Sep 28, 2024"
+        status="Completed"
+        statusColor="green"
+        amount="₹15,000"
+      />
+      <OrderRow
+        image="https://lh3.googleusercontent.com/aida-public/AB6AXuCqo0FhTUrz6-nWNfy8ywHrahiAxYCMI5AvPPfyqpTbRnrLGCsddTnwFM7_yjcWsNfOGGrj9NyDl6Ujj6iF_qiXzeTsdTiznHx4Bvx9ZTRFURZwrairL2hkhD45x63r4TJdZENhaQDHyITjN3bcQg-MwjBs-1urarRYEwTRqn3cwaPjfCaQjEaUlKKTbOFaNLtwZoVSFtc8cWW_ztYuza0bYII2larCYNCQaB1PZ6KpnlKVhyS6hpNijA3BnxJ-ZUoVTXQ7g0tns-cs"
+        productName="Brass Pooja Thali Set"
+        category="Home Decor"
+        orderId="#ORD-2711"
+        date="Sep 15, 2024"
+        status="Completed"
+        statusColor="green"
+        amount="₹2,499"
+      />
+      <div className="p-2 text-center rounded-lg transition-all cursor-pointer bg-white border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:border-[#2f9e44] hover:ring-[#2f9e44]">
+        <a onClick={(e) => { e.preventDefault(); onViewFullOrders?.(); }} className="text-sm font-medium text-[#2f9e44] hover:text-[#2f9e44] transition-colors inline-flex items-center gap-1 cursor-pointer group" href="#">
           View Full Order History
-          <span className="material-symbols-outlined text-[14px] arrow-right group-hover:translate-x-1 text-[#5f6d2b] group-hover:text-[#4f5d2f]">arrow_forward</span>
+          <span className="material-symbols-outlined text-[14px] arrow-right group-hover:translate-x-1 text-[#2f9e44] group-hover:text-[#2f9e44]">arrow_forward</span>
         </a>
       </div>
     </div>
@@ -1119,37 +1613,94 @@ const OrderRow: React.FC<OrderRowProps> = ({
   amount,
 }) => {
   const statusColors = {
-    green: 'bg-amber-100 text-[#5f6d2b] border-amber-200 bg-amber-300',
-    blue: 'bg-blue-100 text-blue-700 border-blue-200 bg-blue-600',
-    yellow: 'bg-amber-100 text-[#5f6d2b] border-amber-200 bg-amber-300',
+    green: 'bg-amber-100 text-[#4f5d2f]',
+    blue: 'bg-blue-100 text-blue-700',
+    yellow: 'bg-amber-100 text-[#4f5d2f]',
   };
 
   return (
-    <tr className="hover:bg-amber-200/50 transition-all cursor-pointer group">
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <img alt="Item" className="w-6 h-6 rounded-lg object-cover" src={image} />
-          <div>
-            <p className="text-xs font-semibold text-[#5f6d2b]">{productName}</p>
-            <p className="text-[9px] text-text-light">{category}</p>
-          </div>
+    <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:border-[#2f9e44] hover:ring-[#2f9e44] transition-all cursor-pointer group">
+      <div className="flex items-center gap-2 flex-[2]">
+        <img alt={productName} className="w-6 h-6 rounded-lg object-cover" src={image} />
+        <div>
+          <p className="text-xs font-semibold text-[#2f3a1f]">{productName}</p>
+          <p className="text-[10px] text-text-light">{category}</p>
         </div>
-      </td>
-      <td className="px-4 py-3 text-center">
-        <span className="text-xs text-[#5f6d2b] font-medium">{orderId}</span>
-      </td>
-      <td className="px-4 py-3 text-center">
-        <span className="text-xs text-[#5f6d2b] font-medium">{date}</span>
-      </td>
-      <td className="px-4 py-3 text-center">
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-bold`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${statusColors[statusColor]}`}></span>
+      </div>
+      <div className="flex-1 text-center">
+        <span className="text-xs text-[#4f5d2f] font-medium">{orderId}</span>
+      </div>
+      <div className="flex-1 text-center">
+        <span className="text-xs text-[#4f5d2f] font-medium">{date}</span>
+      </div>
+      <div className="flex-1 text-center">
+        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${statusColors[statusColor]}`}>
           {status}
         </span>
-      </td>
-      <td className="px-4 py-3 text-center">
-        <span className="text-xs text-[#5f6d2b] font-semibold">{amount}</span>
-      </td>
-    </tr>
+      </div>
+      <div className="flex-1 text-center">
+        <span className="text-xs text-[#4f5d2f] font-semibold">{amount}</span>
+      </div>
+    </div>
   );
 };
+
+// Component: Add To Services
+const AddToServices: React.FC<{ 
+  onOpen?: () => void;
+  selectedServiceIds: number[];
+  availableServices: any[];
+  setSelectedServiceIds: (ids: number[]) => void;
+  setServiceConfigs: (configs: any) => void;
+  setShowCouponInput: (show: boolean) => void;
+  setCouponCode: (code: string) => void;
+  setAppliedCoupon: (coupon: string | null) => void;
+}> = ({ 
+  onOpen, 
+  selectedServiceIds, 
+  availableServices, 
+  setSelectedServiceIds, 
+  setServiceConfigs,
+  setShowCouponInput,
+  setCouponCode,
+  setAppliedCoupon
+}) => (
+  <section className="rounded-2xl p-4 mt-4 border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all cursor-pointer hover:shadow-lg hover:-translate-y-1" onClick={() => onOpen?.()}>
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="text-xl font-serif font-semibold text-[#2f3a1f]">
+        Add to Services
+      </h3>
+    </div>
+    
+    {availableServices.length === 0 ? (
+      <div className="py-8 text-center">
+        <p className="text-sm text-[#4f5d2f] mb-1">No services available yet</p>
+        <p className="text-xs text-text-light">Book services from the Services page</p>
+      </div>
+    ) : (
+      <div>
+        <p className="text-sm text-[#4f5d2f] mb-3">Available Services:</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {availableServices.map((svc) => (
+            <div 
+              key={svc.id} 
+              className="flex flex-col items-center p-2 rounded-lg border border-[#cfd8a3] bg-[#fafcf0] hover:bg-[#eef4cf] transition-all"
+            >
+              <img 
+                src={svc.image} 
+                alt={svc.title} 
+                className="w-16 h-16 rounded-lg object-cover border border-[#cfd8a3] mb-2"
+              />
+              <span className="text-xs font-semibold text-[#2f3a1f] text-center line-clamp-2">
+                {svc.title}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-text-light mt-3 text-center">
+          Click to select services and proceed to checkout
+        </p>
+      </div>
+    )}
+  </section>
+);

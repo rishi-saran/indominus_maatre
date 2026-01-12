@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 // Temporary synthetic credentials to allow frontend login while backend is unavailable
-const MOCK_EMAIL = 'maatre@gamil.com';
-const MOCK_PASSWORD = 'maatre@2026';
+const MOCK_EMAIL = 'maathre@gmail.com';
+const MOCK_PASSWORD = 'maathre@2026';
 const MOCK_USER: LoginResponse = {
   user_id: 'mock-user-id',
   email: MOCK_EMAIL,

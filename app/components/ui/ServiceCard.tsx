@@ -8,7 +8,7 @@ export default function ServiceCard({
   image,
 }: ServiceCardProps) {
   return (
-    <div className="relative h-[280px] w-[260px] rounded-3xl overflow-hidden">
+    <div className="relative w-full h-full rounded-3xl overflow-hidden">
       <img
         src={image}
         alt={title}

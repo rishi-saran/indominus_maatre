@@ -63,23 +63,23 @@ export default function HomamPage() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {homamServices.map((service) => (
           <HoverCard key={service.title}>
-            <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-shadow hover:shadow-md">
-              <CardContent className="flex h-full flex-col p-4">
+            <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44]">
+              <CardContent className="flex h-80 flex-col items-center justify-between p-6">
                 
                 {/* Image container */}
-                <div className="mb-6 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
+                <div className="w-full h-52 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
                   <Image
                     src={service.image}
                     alt={service.title}
                     width={280}
                     height={320}
-                    className="w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     unoptimized
                   />
                 </div>
 
                 {/* Title */}
-                <h2 className="mt-auto text-center text-base font-semibold text-[#2f3a1f]">
+                <h2 className="mt-4 text-center text-sm font-semibold text-[#2f3a1f] line-clamp-2">
                   {service.title}
                 </h2>
               </CardContent>

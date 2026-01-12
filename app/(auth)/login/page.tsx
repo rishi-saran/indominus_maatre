@@ -8,8 +8,8 @@ import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('maatre@gamil.com');
-  const [password, setPassword] = useState('maatre@2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -70,7 +70,6 @@ export default function LoginPage() {
               <input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -85,7 +84,6 @@ export default function LoginPage() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -104,7 +102,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-4 py-2 font-bold text-xs text-[#5f6d2b] hover:text-[#5f6d2b] bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer rounded-lg"
+              className="w-full px-4 py-2 font-bold text-xs text-white bg-[#2f9e44] hover:bg-[#268a3b] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer rounded-lg hover:-translate-y-1"
             >
               {isLoading ? 'Logging in...' : 'Login'}
             </button>

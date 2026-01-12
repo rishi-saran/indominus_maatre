@@ -103,7 +103,7 @@ function ReviewCard({
   }, [initials, name]);
 
   return (
-    <article className="bg-white p-6 rounded-2xl flex flex-col gap-4 hover:-translate-y-2 transition-all duration-300 ease-out border border-gray-100" style={{ height: '100%', minHeight: '320px' }}>
+    <article className="bg-white p-6 rounded-2xl flex flex-col gap-4 hover:-translate-y-1 transition-all duration-300 ease-out border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:shadow-lg" style={{ height: '100%', minHeight: '320px' }}>
       {/* Star Rating */}
       <div className="flex gap-1 text-[var(--spiritual-gold)]">
         {[...Array(5)].map((_, i) => (
