@@ -10,8 +10,8 @@ import { HoverCard } from "@/components/ui/magic/hover-card";
 const allHomamServices = [
   // Page 1
   { title: "AAVAHANTHI HOMAM", image: "/services/homam/aavanthii-homam.png", href: "/services/homam/aavahanthi-homam" },
-  { title: "Aavani Avittam", image: "/services/homam/avvari-avilam.png", href: "/services/homam/aavani-avittam" },
-  { title: "ABDHA POORTHI AYUSH HOMAM", image: "/services/homam/arhapoorthi-ayush-homam.png", href: "/services/homam/abdha-poorthi-ayush-homam" },
+  { title: "Aavani Avittam", image: "/services/homam/aavani-avittam.png", href: "/services/homam/aavani-avittam" },
+  { title: "ABDHA POORTHI AYUSH HOMAM", image: "/services/homam/abdha poorthi-ayush-homam.png", href: "/services/homam/abdha-poorthi-ayush-homam" },
   { title: "Ayusha Homam (also called Ayushya Homam)", image: "/services/homam/ayushya-homam.png", href: "/services/homam/ayusha-homam" },
   { title: "AYYAPPA POOJA", image: "/services/homam/ayyapra-pooja.png", href: "/services/homam/ayyappa-pooja" },
   { title: "Bheemaratha Shanti", image: "/services/homam/bheemerattha-shanti.png", href: "/services/homam/bheemaratha-shanti" },
@@ -80,13 +80,7 @@ export default function HomamPage() {
 
   return (
     <section className="w-full px-6 pt-4 pb-12">
-      <div className="mb-2">
-        <Link href="/services" className="inline-flex items-center text-sm font-medium text-[#5f6d2b] hover:underline">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Services
-        </Link>
-      </div>
-
+      
       <div className="mx-auto mb-10 max-w-5xl text-center">
         <div className="mx-auto mb-3 h-px w-24 bg-[#cfd8a3]" />
         <h1 className="text-3xl font-serif tracking-wide text-[#2f3a1f]">RITUALS / HOMAM</h1>
@@ -96,26 +90,33 @@ export default function HomamPage() {
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {pageItems.map((service, index) => (
           <Link key={`${service.title}-${index}`} href={service.href}>
-            <HoverCard>
-              <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-shadow hover:shadow-md cursor-pointer">
-                <CardContent className="flex h-full flex-col p-4">
-                  <div className="mb-6 aspect-square overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
-                    <Image
-                      src={service.image}
-                      alt={service.title}
-                      width={240}
-                      height={240}
-                      className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                      unoptimized
-                    />
-                  </div>
-                  <h2 className="text-center text-sm font-semibold text-[#2f3a1f] line-clamp-2">
-                    {service.title}
-                  </h2>
-                </CardContent>
-              </Card>
-            </HoverCard>
-          </Link>
+  <HoverCard>
+    <Card className="group h-full cursor-pointer rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf]">
+     <CardContent className="flex h-full flex-col p-4">
+
+  {/* Fixed image */}
+  <div className="mb-4 h-44 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf] flex items-center justify-center">
+    <Image
+      src={service.image}
+      alt={service.title}
+      width={240}
+      height={240}
+      className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+      unoptimized
+    />
+  </div>
+
+  {/* Fixed-height title */}
+  <h2 className="mt-auto min-h-[3rem] flex items-center justify-center text-center text-sm font-semibold leading-snug text-[#2f3a1f] line-clamp-2">
+    {service.title}
+  </h2>
+
+</CardContent>
+
+    </Card>
+  </HoverCard>
+</Link>
+
         ))}
       </div>
 
@@ -134,42 +135,50 @@ export default function HomamPage() {
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        <div className="flex gap-2">
-          {[1, 2, 3].map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                currentPage === page ? "bg-[#6b7a2c] text-white" : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-        </div>
+      <div className="flex gap-2">
+  {[1, 2, 3].map((page) => (
+    <button
+      key={page}
+      onClick={() => setCurrentPage(page)}
+      className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+        currentPage === page
+          ? "bg-[#2f9e44] text-white shadow-sm"
+          : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
+      }`}
+    >
+      {page}
+    </button>
+  ))}
+</div>
 
-        <button
-          onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="flex items-center justify-center rounded-full border border-[#cfd8a3] bg-white p-2 text-[#4f5d2f] transition hover:bg-[#eef4cf] disabled:opacity-50"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
+<button
+  onClick={() =>
+    currentPage < totalPages && setCurrentPage(currentPage + 1)
+  }
+  disabled={currentPage === totalPages}
+  className="flex items-center justify-center rounded-full border border-[#cfd8a3] bg-white p-2 text-[#4f5d2f] transition hover:bg-[#eef4cf] disabled:opacity-50"
+>
+  <ChevronRight className="h-5 w-5" />
+</button>
+
       </div>
 
       <div className="mx-auto mt-14 flex max-w-5xl flex-wrap justify-center gap-4">
-        {categories.map((cat) => (
-          <Link
-            key={cat.name}
-            href={cat.href}
-            className={`rounded-full px-6 py-2 text-sm font-medium transition ${
-              cat.active ? "bg-[#6b7a2c] text-white" : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
-            }`}
-          >
-            {cat.name}
-          </Link>
-        ))}
-      </div>
+  {categories.map((cat) => (
+    <Link
+      key={cat.name}
+      href={cat.href}
+      className={`rounded-full px-6 py-2 text-sm font-medium transition ${
+        cat.active
+          ? "bg-[#2f9e44] text-white shadow-sm"
+          : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
+      }`}
+    >
+      {cat.name}
+    </Link>
+  ))}
+</div>
+
     </section>
   );
 }

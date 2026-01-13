@@ -38,10 +38,10 @@ export default function VirtualPage() {
 <div className="mx-auto flex max-w-5xl justify-center">
   {virtualServices.map((service) => (
     <HoverCard key={service.title}>
-      <Card className="group w-full max-w-md rounded-3xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-shadow hover:shadow-md">
-        <CardContent className="p-5">
+      <Card className="group w-full max-w-md cursor-pointer rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf]">
+        <CardContent className="flex flex-col p-5">
           
-          {/* Image container – SAME as Services */}
+          {/* Image – SAME hover behavior */}
           <div className="mb-4 overflow-hidden rounded-2xl border border-[#cfd8a3] bg-[#eef4cf]">
             <Image
               src={service.image}
@@ -54,7 +54,7 @@ export default function VirtualPage() {
           </div>
 
           {/* Title */}
-          <h2 className="mt-3 text-center text-base font-semibold text-[#2f3a1f]">
+          <h2 className="mt-auto text-center text-base font-semibold text-[#2f3a1f]">
             {service.title}
           </h2>
 
@@ -67,20 +67,21 @@ export default function VirtualPage() {
 
       {/* Category Switch */}
       <div className="mx-auto mt-14 flex max-w-5xl flex-wrap justify-center gap-4">
-        {categories.map((cat) => (
-          <Link
-            key={cat.name}
-            href={cat.href}
-            className={`rounded-full px-6 py-2 text-sm font-medium transition ${
-              cat.active
-                ? "bg-[#6b7a2c] text-white"
-                : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
-            }`}
-          >
-            {cat.name}
-          </Link>
-        ))}
-      </div>
+  {categories.map((cat) => (
+    <Link
+      key={cat.name}
+      href={cat.href}
+      className={`rounded-full px-6 py-2 text-sm font-medium transition ${
+        cat.active
+          ? "bg-[#2f9e44] text-white shadow-sm"
+          : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
+      }`}
+    >
+      {cat.name}
+    </Link>
+  ))}
+</div>
+
     </section>
   );
 }

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Star } from "lucide-react";
 import {
   Select,
@@ -18,6 +19,7 @@ export default function AyushaHomamPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
+  
   
   // Form state
   const [formData, setFormData] = useState({
@@ -48,6 +50,13 @@ export default function AyushaHomamPage() {
     
     // Dispatch custom event to notify other components
     window.dispatchEvent(new Event('servicesUpdated'));
+
+    toast.success("Service booked successfully", {
+  description: "Your booking has been added successfully",
+  duration: 3000, // 3 seconds
+});
+toast.dismiss(); // clears existing toasts
+
     
     // Clear form after adding
     setFormData({
@@ -170,15 +179,23 @@ export default function AyushaHomamPage() {
                 <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
                   Select Package
                 </label>
-                <select 
-                  value={formData.package}
-                  onChange={(e) => setFormData({...formData, package: e.target.value})}
-                  className="w-full h-11 rounded-lg border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                >
-                  <option value="Economy">Economy</option>
-                  <option value="Standard">Standard</option>
-                  <option value="Premium">Premium</option>
-                </select>
+                <Select
+  value={formData.package}
+  onValueChange={(value) =>
+    setFormData({ ...formData, package: value })
+  }
+>
+  <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
+    <SelectValue placeholder="Select Package" />
+  </SelectTrigger>
+
+  <SelectContent className="rounded-lg border border-[#cfd8a3] bg-white">
+    <SelectItem value="Economy">Economy</SelectItem>
+    <SelectItem value="Standard">Standard</SelectItem>
+    <SelectItem value="Premium">Premium</SelectItem>
+  </SelectContent>
+</Select>
+
               </div>
 
               <div>
