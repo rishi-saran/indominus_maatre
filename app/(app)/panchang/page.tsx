@@ -1,3 +1,3 @@
-import { VideoSettingsRequestCameraFacingEnum } from "@stream-io/video-client";
-
-VideoSettingsRequestCameraFacingEnum
+export default function PanchangPage() {
+  return <div>Panchang Page</div>;
+}

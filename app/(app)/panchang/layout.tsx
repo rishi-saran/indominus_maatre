@@ -1,3 +1,10 @@
 import { readFileSync } from "fs";
+import { ReactNode } from "react";
 
-readFileSync
+export default function PanchangLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return <>{children}</>;
+}
