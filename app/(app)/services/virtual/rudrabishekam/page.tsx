@@ -15,13 +15,11 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-export default function AyushaHomamPage() {
+export default function RudrabishekamPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
   
-  
-  // Form state
   const [formData, setFormData] = useState({
     location: '',
     venue: '',
@@ -32,33 +30,27 @@ export default function AyushaHomamPage() {
   });
 
   const handleBookService = () => {
-    // Save service details to localStorage with current timestamp as ID
     const serviceId = Date.now();
     const serviceData = {
       id: serviceId,
-      title: 'AYUSHA HOMAM',
-      description: 'Ayusha Homam is performed to revere divine energies for vitality, wellness, and longevity.',
-      image: '/services/chanting/ayusha-homam.png',
+      title: 'Rudrabishekam',
+      description: 'Sacred abhishekam ritual to Lord Shiva with Rudram chanting for blessings, purification, and peace.',
+      image: '/services/virtual/Rudrabishekam.jpeg',
       formData: formData,
       addedAt: new Date().toISOString()
     };
     
-    // Get existing services from localStorage
     const existingServices = JSON.parse(localStorage.getItem('addedServices') || '[]');
     existingServices.push(serviceData);
     localStorage.setItem('addedServices', JSON.stringify(existingServices));
-    
-    // Dispatch custom event to notify other components
     window.dispatchEvent(new Event('servicesUpdated'));
 
     toast.success("Service booked successfully", {
       description: "Your booking has been added to cart",
-      duration: 3000, // 3 seconds
+      duration: 3000,
     });
-    toast.dismiss(); // clears existing toasts
+    toast.dismiss();
 
-    
-    // Clear form after adding
     setFormData({
       location: '',
       venue: '',
@@ -68,44 +60,37 @@ export default function AyushaHomamPage() {
       flowers: 'No'
     });
 
-    // Redirect to cart page
     setTimeout(() => {
       router.push('/cart');
     }, 1000);
   };
 
-
   return (
     <section className="w-full px-6 pt-4 pb-16">
-      {/* Back Button */}
       <div className="fixed top-6 left-6 z-50">
-        <Link href="/services/chanting" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
+        <Link href="/services/virtual" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
           <ArrowLeft className="h-5 w-5" />
         </Link>
       </div>
      
-      {/* Title */}
       <div className="mx-auto mt-4 mb-8 max-w-6xl text-center">
        <h1 className="text-3xl font-serif tracking-wide leading-tight text-[#2f3a1f]">
-        AYUSHA HOMAM
+        Rudrabishekam
         </h1>
         <p className="mt-2 text-sm text-[#4f5d2f]">
-          Ayusha Homam is performed to revere divine energies for vitality,
-          wellness, and longevity.
+          Sacred abhishekam ritual to Lord Shiva with Rudram chanting for blessings, purification, and peace.
         </p>
       </div>
 
-      {/* Main Layout */}
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 gap-8 items-start">
           
-          {/* Image */}
           <div className="flex justify-center">
             <div className="w-[300px] rounded-2xl border border-[#cfd8a3] bg-white p-4 shadow-sm">
               <div className="aspect-square overflow-hidden rounded-xl bg-[#eef4cf]">
                 <Image
-                  src="/services/chanting/ayusha-homam.png"
-                  alt="Ayusha Homam"
+                  src="/services/virtual/Rudrabishekam.jpeg"
+                  alt="Rudrabishekam"
                   width={400}
                   height={400}
                   className="h-full w-full object-cover"
@@ -115,24 +100,21 @@ export default function AyushaHomamPage() {
             </div>
           </div>
 
-          {/* Info */}
           <div className="space-y-4 text-center">
             <p className="text-lg font-semibold text-[#2f3a1f]">
-              ₹9,500.00 – ₹20,000.00
+              ₹15,000.00 – ₹35,000.00
             </p>
 
             <p className="text-sm text-[#4f5d2f]">
-              <strong>Duration:</strong> 2 hrs
+              <strong>Duration:</strong> 2.5-3 hrs
             </p>
 
             <p className="text-sm text-[#4f5d2f]">
-              <strong>Objective:</strong> To promote health and extend the longevity of life.
+              <strong>Objective:</strong> To seek Lord Shiva\'s blessings, purify and cleanse the soul, and attain peace and well-being.
             </p>
           </div>
 
-          {/* BOOKING CARD */}
           <div className="rounded-3xl border border-[#cfd8a3] bg-white p-6">
-            {/* Location */}
             <div className="mb-4">
               <label className="mb-1 block text-sm font-medium">Location *</label>
               <input 
@@ -142,7 +124,6 @@ export default function AyushaHomamPage() {
               />
             </div>
 
-            {/* Venue */}
             <div className="mb-4">
               <label className="mb-1 block text-sm font-medium">Pooja Venue *</label>
               <input 
@@ -152,7 +133,6 @@ export default function AyushaHomamPage() {
               />
             </div>
 
-            {/* All in one row */}
             <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
@@ -184,23 +164,16 @@ export default function AyushaHomamPage() {
                 <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
                   Select Package
                 </label>
-                <Select
-  value={formData.package}
-  onValueChange={(value) =>
-    setFormData({ ...formData, package: value })
-  }
->
-  <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
-    <SelectValue placeholder="Select Package" />
-  </SelectTrigger>
-
-  <SelectContent className="rounded-lg border border-[#cfd8a3] bg-white">
-    <SelectItem value="Economy">Economy</SelectItem>
-    <SelectItem value="Standard">Standard</SelectItem>
-    <SelectItem value="Premium">Premium</SelectItem>
-  </SelectContent>
-</Select>
-
+                <Select value={formData.package} onValueChange={(value) => setFormData({ ...formData, package: value })}>
+                  <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
+                    <SelectValue placeholder="Select Package" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-lg border border-[#cfd8a3] bg-white">
+                    <SelectItem value="Economy">Economy</SelectItem>
+                    <SelectItem value="Standard">Standard</SelectItem>
+                    <SelectItem value="Premium">Premium</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -237,7 +210,6 @@ export default function AyushaHomamPage() {
         </div>
       </div>
 
-      {/* TABS */}
       <div className="mx-auto mt-14 max-w-6xl">
         <div className="flex gap-6 border-b text-sm">
           {["description", "reviews", "faq"].map((t) => (
@@ -257,34 +229,36 @@ export default function AyushaHomamPage() {
           ))}
         </div>
 
-        {/* TAB CONTENT */}
         <div className="mt-6 text-sm text-[#4f5d2f]">
          {tab === "description" && (
   <div className="space-y-5 text-sm text-[#4f5d2f] leading-relaxed">
     
     <p>
-      <strong>Ayusha Homam</strong> is performed to Revered for bestowing vitality
-      and wellness.
+      <strong>Rudrabishekam</strong> is a sacred abhishekam (ritual bathing) performed to the Shiva Linga with the chanting of powerful Rudram mantras, seeking the blessings of Lord Shiva for peace, prosperity, and spiritual growth.
     </p>
 
     <p>
-      <strong>Suitable for:</strong> Individuals of all ages.
+      <strong>Deity Worshipped:</strong> Lord Shiva (The destroyer of evil, transformer, and embodiment of divine consciousness)
     </p>
 
     <p>
-      <strong>Scheduling:</strong> The ceremony date is determined based on the
-      individual’s birth star for optimal efficacy.
+      <strong>Purpose:</strong> This ritual is performed to seek Lord Shiva\'s divine blessings, purify and cleanse body, mind, and soul, attain inner peace and tranquility, remove negative energies and obstacles, and achieve spiritual growth and liberation.
     </p>
 
     <p>
-      <strong>Deity Worshipped:</strong> Ayur Devata (God of Fire)
+      <strong>Benefits:</strong> Spiritual growth and consciousness elevation, mental peace and emotional balance, purification of body and mind, protection from negative influences, improved health and well-being, fulfillment of desires with divine grace, and removal of obstacles in life.
     </p>
 
     <p>
-      <strong>Primary Offerings:</strong> Steamed rice and ghee are the main
-      sacrificial elements used during the ritual. “This sacred ceremony aims
-      to invoke divine blessings for a robust and enduring life through
-      traditional Vedic practices.”
+      <strong>When performed:</strong> Mondays (day of Lord Shiva), Maha Shivaratri (most auspicious), Pradosham (twilight worship), special occasions or personal milestones, or as recommended based on individual horoscope.
+    </p>
+
+    <p>
+      <strong>Ritual includes:</strong> Preparation and decoration of Shiva Linga, chanting of Sri Rudram (powerful Vedic hymns), elaborate Abhishekam with sacred substances like water, milk, yogurt, honey, ghee, sugarcane juice, and sacred ash, offering of bilva leaves and flowers, and concluding with Aarti and distribution of prasad.
+    </p>
+
+    <p>
+      <strong>Suitable for:</strong> Devotees of Lord Shiva, individuals seeking spiritual advancement, those desiring peace and tranquility, people facing obstacles or difficulties, anyone seeking purification and divine blessings.
     </p>
 
         </div>
@@ -292,24 +266,19 @@ export default function AyushaHomamPage() {
 
       {tab === "reviews" && (
   <div className="mt-6 space-y-6 text-sm text-[#4f5d2f]">
-
-   {/* No reviews message */}
 <div className="rounded-lg bg-[#2f9e44] px-4 py-3 text-white shadow-sm">
   There are no reviews yet.
 </div>
-
 
     <p>
       Your email address will not be published. Required fields are marked{" "}
       <span className="text-red-500">*</span>
     </p>
 
-    {/* Rating */}
 <div className="mb-6">
   <label className="mb-2 block text-sm font-medium text-[#2f3a1f]">
     Your rating <span className="text-red-500">*</span>
   </label>
-
   <div className="flex gap-1">
     {[1, 2, 3, 4, 5].map((star) => (
       <Star
@@ -318,16 +287,14 @@ export default function AyushaHomamPage() {
         onClick={() => setRating(star)}
         className={`cursor-pointer transition ${
           star <= rating
-            ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
-            : "text-[#9ca67a]"                  // visible grey
+            ? "fill-[#f4c430] text-[#f4c430]"
+            : "text-[#9ca67a]"
         }`}
       />
     ))}
   </div>
 </div>
 
-
-    {/* Review textarea */}
     <div>
       <label className="mb-2 block font-medium text-[#2f3a1f]">
         Your review <span className="text-red-500">*</span>
@@ -338,7 +305,6 @@ export default function AyushaHomamPage() {
       />
     </div>
 
-    {/* Name & Email */}
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
         <label className="mb-1 block font-medium text-[#2f3a1f]">
@@ -368,7 +334,6 @@ export default function AyushaHomamPage() {
   </div>
 )}
 
-
          {tab === "faq" && (
   <div className="space-y-6 text-sm leading-relaxed text-[#2f3a1f]">
     <div>
@@ -380,7 +345,7 @@ export default function AyushaHomamPage() {
         Yes, you can pay the partial amount as a token advance to confirm your
         booking. You can pay the balance amount after the Homam with cash
         directly to our Priests or through an Online transfer (Click on the
-        “Pay-Balance” button in your My- Account section corresponding to your
+        "Pay-Balance" button in your My- Account section corresponding to your
         order number).
       </p>
     </div>
@@ -390,7 +355,7 @@ export default function AyushaHomamPage() {
         2. How Long does the Homam take to complete?
       </p>
       <p className="mt-2 text-[#4f5d2f]">
-        Homams are typically performed for 2+ hours at the same time it also
+        Homams are typically performed for 2.5-3 hours at the same time it also
         depends on the package selected for the homam.
       </p>
     </div>
@@ -398,7 +363,7 @@ export default function AyushaHomamPage() {
     <div>
       <p className="font-semibold">
         3. When will I get the Prasad for my Homam if I select Vedic Pooja Center
-        since I'm abroad?
+        since I\'m abroad?
       </p>
       <p className="mt-2 text-[#4f5d2f]">
         You will receive the Prasad for your Homam within 14 working days after
@@ -411,94 +376,87 @@ export default function AyushaHomamPage() {
 </div>
       </div>
 
-      {/* PRICING / PACKAGES */}
       <section className="mt-20">
         <h2 className="mb-10 text-center text-2xl font-serif text-[#2f3a1f]">
           PRICING / PACKAGES
         </h2>
 
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm min-h-[460px]">
       <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
         Economy
       </div>
 
       <div className="p-6">
         <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 9,999
+          Rs. 15,000
         </p>
 
         <p className="mb-3 font-medium">1 Vadhyar</p>
         <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Economy package 1 Vadhyar will be there, 2000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
+          In Economy package 1 Vadhyar will be there, complete Rudram chanting and abhishekam will be performed for 2:30 to 3 hours.
         </p>
 
         <p className="mb-2 font-medium">Procedure involved:</p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
-          <li>Punyaha Vachanam, Maha Sankalpam</li>
-          <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+          <li>Shiva Linga preparation</li>
+          <li>Rudram chanting</li>
+          <li>Abhishekam with sacred substances</li>
+          <li>Bilva leaf offerings</li>
         </ul>
       </div>
     </div>
 
-    {/* Standard (Highlighted) */}
-    <div className="overflow-hidden rounded-2xl border-2 border-[#2f9e44] bg-white shadow-lg">
+    <div className="overflow-hidden rounded-2xl border-2 border-[#2f9e44] bg-white shadow-lg min-h-[460px]">
       <div className="bg-[#2f9e44] py-4 text-center text-lg font-medium text-white">
         Standard
       </div>
 
       <div className="p-6">
         <p className="mb-4 text-center text-2xl font-semibold text-[#2f9e44]">
-          Rs. 12,999
+          Rs. 25,000
         </p>
 
         <p className="mb-3 font-medium">2 Vadhyar</p>
         <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Standard package 2 Vadhyar will be there, 2000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
+          In Standard package 2 Vadhyar will be there, complete Rudram chanting and abhishekam will be performed for 2:30 to 3 hours.
         </p>
 
         <p className="mb-2 font-medium">Procedure involved:</p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
-          <li>Punyaha Vachanam, Maha Sankalpam</li>
-          <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+          <li>Shiva Linga preparation</li>
+          <li>Rudram chanting</li>
+          <li>Abhishekam with sacred substances</li>
+          <li>Bilva leaf offerings</li>
         </ul>
       </div>
     </div>
 
-    {/* Premium */}
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm min-h-[460px]">
       <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
         Premium
       </div>
 
       <div className="p-6">
         <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 20,000
+          Rs. 35,000
         </p>
 
         <p className="mb-3 font-medium">4 Vadhyar</p>
         <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Premium package 4 Vadhyar will be there, 2000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
+          In Premium package 4 Vadhyar will be there, complete Rudram chanting and abhishekam will be performed for 2:30 to 3 hours.
         </p>
 
         <p className="mb-2 font-medium">Procedure involved:</p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
-          <li>Punyaha Vachanam, Maha Sankalpam</li>
-          <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+          <li>Shiva Linga preparation</li>
+          <li>Rudram chanting</li>
+          <li>Abhishekam with sacred substances</li>
+          <li>Bilva leaf offerings</li>
         </ul>
         </div>
       </div>
-
-        </div>
+    </div>
       </section>
     </section>
   );

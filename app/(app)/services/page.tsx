@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { HoverCard } from "@/components/ui/magic/hover-card";
 import Image from "next/image";
+import { ViewCartButton } from "@/components/ui/view-cart";
 
 
 const services = [
@@ -44,6 +45,7 @@ const services = [
 export default function ServicesPage() {
   return (
     <>
+      <ViewCartButton redirectTo="/cart" />
       {/* Services Section */}
       <section className="w-full px-6 pt-6 pb-16">
         {/* Header */}

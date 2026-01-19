@@ -6,6 +6,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { HoverCard } from "@/components/ui/magic/hover-card";
+import { ViewCartButton } from "@/components/ui/view-cart";
 
 const allHomamServices = [
   // Page 1
@@ -79,7 +80,9 @@ export default function HomamPage() {
   const pageItems = getPageItems();
 
   return (
-    <section className="w-full px-6 pt-4 pb-12">
+    <>
+      <ViewCartButton redirectTo="/cart" />
+      <section className="w-full px-6 pt-4 pb-12">
       
       <div className="mx-auto mb-10 max-w-5xl text-center">
         <div className="mx-auto mb-3 h-px w-24 bg-[#cfd8a3]" />
@@ -180,5 +183,6 @@ export default function HomamPage() {
 </div>
 
     </section>
+    </>
   );
 }

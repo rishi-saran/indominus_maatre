@@ -7,6 +7,7 @@ import { VideoCard } from "../../(components)/video-dialog";
 import { Search, ArrowRight, Star, Users, BadgeCheck } from "lucide-react";
 import { TextAnimate } from "../../../components/ui/text-animate";
 import { ShineBorder } from "../../../components/ui/shine-border";
+import { ViewCartButton } from "@/components/ui/view-cart";
 import {
   PopularServicesSection,
   AboutUsSection,
@@ -19,6 +20,7 @@ export default function LandingPage() {
     <div className="min-h-screen relative">
       {/* Navbar - always visible */}
       <Navbar />
+      <ViewCartButton redirectTo="/cart" />
 
       {/* Main Landing Content */}
       <section className="min-h-screen relative z-10 pt-28">

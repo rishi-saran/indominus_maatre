@@ -1,24 +1,9 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-export async function POST(request: NextRequest) {
-  try {
-    // Extract query parameters from the frontend request
-    const searchParams = request.nextUrl.searchParams;
-    const queryString = searchParams.toString();
-    const url = queryString ? `${BACKEND_URL}/orders/?${queryString}` : `${BACKEND_URL}/orders/`;
-    console.log('Creating order at backend:', url);
-    
-    const response = await fetch(url, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }
-    });
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
-  } catch (error) {
-    console.error('Orders POST API error:', error);
-    return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
-  }
+// POST intentionally disabled to avoid creating sample data from frontend.
+export async function POST() {
+  return NextResponse.json({ error: 'Orders POST disabled' }, { status: 405 });
 }
 
 export async function GET(request: NextRequest) {

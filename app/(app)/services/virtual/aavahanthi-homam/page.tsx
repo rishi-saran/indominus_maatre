@@ -15,7 +15,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-export default function AyushaHomamPage() {
+export default function AavahanthiHomamPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
@@ -36,9 +36,9 @@ export default function AyushaHomamPage() {
     const serviceId = Date.now();
     const serviceData = {
       id: serviceId,
-      title: 'AYUSHA HOMAM',
-      description: 'Ayusha Homam is performed to revere divine energies for vitality, wellness, and longevity.',
-      image: '/services/chanting/ayusha-homam.png',
+      title: 'AAVAHANTHI HOMAM',
+      description: 'Aavahanthi Homam is performed to invoke divine blessings for success, prosperity, and removal of obstacles.',
+      image: '/services/virtual/Aavahanthi Homom.png',
       formData: formData,
       addedAt: new Date().toISOString()
     };
@@ -79,7 +79,7 @@ export default function AyushaHomamPage() {
     <section className="w-full px-6 pt-4 pb-16">
       {/* Back Button */}
       <div className="fixed top-6 left-6 z-50">
-        <Link href="/services/chanting" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
+        <Link href="/services/virtual" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
           <ArrowLeft className="h-5 w-5" />
         </Link>
       </div>
@@ -87,11 +87,11 @@ export default function AyushaHomamPage() {
       {/* Title */}
       <div className="mx-auto mt-4 mb-8 max-w-6xl text-center">
        <h1 className="text-3xl font-serif tracking-wide leading-tight text-[#2f3a1f]">
-        AYUSHA HOMAM
+        AAVAHANTHI HOMAM
         </h1>
         <p className="mt-2 text-sm text-[#4f5d2f]">
-          Ayusha Homam is performed to revere divine energies for vitality,
-          wellness, and longevity.
+          Aavahanthi Homam is performed to invoke divine blessings for success,
+          prosperity, and removal of obstacles in your spiritual journey.
         </p>
       </div>
 
@@ -104,8 +104,8 @@ export default function AyushaHomamPage() {
             <div className="w-[300px] rounded-2xl border border-[#cfd8a3] bg-white p-4 shadow-sm">
               <div className="aspect-square overflow-hidden rounded-xl bg-[#eef4cf]">
                 <Image
-                  src="/services/chanting/ayusha-homam.png"
-                  alt="Ayusha Homam"
+                  src="/services/virtual/Aavahanthi Homom.png"
+                  alt="Aavahanthi Homam"
                   width={400}
                   height={400}
                   className="h-full w-full object-cover"
@@ -118,15 +118,15 @@ export default function AyushaHomamPage() {
           {/* Info */}
           <div className="space-y-4 text-center">
             <p className="text-lg font-semibold text-[#2f3a1f]">
-              ₹9,500.00 – ₹20,000.00
+              ₹8,500.00 – ₹18,000.00
             </p>
 
             <p className="text-sm text-[#4f5d2f]">
-              <strong>Duration:</strong> 2 hrs
+              <strong>Duration:</strong> 2-3 hrs
             </p>
 
             <p className="text-sm text-[#4f5d2f]">
-              <strong>Objective:</strong> To promote health and extend the longevity of life.
+              <strong>Objective:</strong> To invoke divine blessings for success, prosperity, and obstacle removal.
             </p>
           </div>
 
@@ -263,28 +263,23 @@ export default function AyushaHomamPage() {
   <div className="space-y-5 text-sm text-[#4f5d2f] leading-relaxed">
     
     <p>
-      <strong>Ayusha Homam</strong> is performed to Revered for bestowing vitality
-      and wellness.
+      <strong>Aavahanthi Homam</strong> is a sacred Vedic ritual performed to invoke divine energies and receive blessings for success, prosperity, and the removal of obstacles in one's spiritual and material journey.
     </p>
 
     <p>
-      <strong>Suitable for:</strong> Individuals of all ages.
+      <strong>Suitable for:</strong> Individuals seeking divine intervention for success in endeavors, businesses, or spiritual growth.
     </p>
 
     <p>
-      <strong>Scheduling:</strong> The ceremony date is determined based on the
-      individual’s birth star for optimal efficacy.
+      <strong>Scheduling:</strong> The ceremony is typically conducted on auspicious days based on the individual's birth star and planetary positions for maximum spiritual efficacy.
     </p>
 
     <p>
-      <strong>Deity Worshipped:</strong> Ayur Devata (God of Fire)
+      <strong>Deity Worshipped:</strong> Lord Agni (God of Fire) and other divine deities as per Vedic traditions
     </p>
 
     <p>
-      <strong>Primary Offerings:</strong> Steamed rice and ghee are the main
-      sacrificial elements used during the ritual. “This sacred ceremony aims
-      to invoke divine blessings for a robust and enduring life through
-      traditional Vedic practices.”
+      <strong>Primary Offerings:</strong> Sacred offerings including ghee, rice, herbs, and other traditional items are offered into the sacred fire during the ritual. This ceremony aims to invoke divine blessings for prosperity, success, and spiritual advancement through ancient Vedic practices.
     </p>
 
         </div>
@@ -373,37 +368,37 @@ export default function AyushaHomamPage() {
   <div className="space-y-6 text-sm leading-relaxed text-[#2f3a1f]">
     <div>
       <p className="font-semibold">
-        1. Can I pay a Partial amount in advance to confirm the Homam and pay the
-        balance as cash or pay online after the Homam?
+        1. Can I attend the Homam virtually?
       </p>
       <p className="mt-2 text-[#4f5d2f]">
-        Yes, you can pay the partial amount as a token advance to confirm your
-        booking. You can pay the balance amount after the Homam with cash
-        directly to our Priests or through an Online transfer (Click on the
-        “Pay-Balance” button in your My- Account section corresponding to your
-        order number).
+        Yes, this is a virtual homam service. You can attend the ceremony through a live video stream and receive the blessings remotely. The Prasad will be sent to your address after the ritual.
       </p>
     </div>
 
     <div>
       <p className="font-semibold">
-        2. How Long does the Homam take to complete?
+        2. How Long does the Aavahanthi Homam take to complete?
       </p>
       <p className="mt-2 text-[#4f5d2f]">
-        Homams are typically performed for 2+ hours at the same time it also
-        depends on the package selected for the homam.
+        The Aavahanthi Homam typically takes 2-3 hours to complete, depending on the package selected and the number of priests performing the ritual.
       </p>
     </div>
 
     <div>
       <p className="font-semibold">
-        3. When will I get the Prasad for my Homam if I select Vedic Pooja Center
-        since I'm abroad?
+        3. When will I receive the Prasad after the virtual Homam?
       </p>
       <p className="mt-2 text-[#4f5d2f]">
-        You will receive the Prasad for your Homam within 14 working days after
-        the homam has been performed (Subject to the country and the customs
-        department of that particular country).
+        You will receive the Prasad within 10-14 working days after the homam has been performed (delivery time may vary based on your location and local postal services).
+      </p>
+    </div>
+
+    <div>
+      <p className="font-semibold">
+        4. What are the benefits of performing Aavahanthi Homam?
+      </p>
+      <p className="mt-2 text-[#4f5d2f]">
+        Aavahanthi Homam helps in removing obstacles, bringing success in endeavors, enhancing prosperity, and providing spiritual protection. It is especially beneficial for those starting new ventures or seeking divine guidance.
       </p>
     </div>
   </div>
@@ -418,82 +413,88 @@ export default function AyushaHomamPage() {
         </h2>
 
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm min-h-[460px]">
       <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
         Economy
       </div>
 
       <div className="p-6">
         <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 9,999
+          Rs. 8,500
         </p>
 
-        <p className="mb-3 font-medium">1 Vadhyar</p>
+        <p className="mb-3 font-medium">1 Vadhyar (Virtual)</p>
         <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Economy package 1 Vadhyar will be there, 2000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
+          In Economy package 1 Vadhyar will perform the ritual virtually, 1500 japam avartis will be
+          performed and homam goes on for 2 to 2:30 hours.
         </p>
 
         <p className="mb-2 font-medium">Procedure involved:</p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
+          <li>Virtual Homam with Live Streaming</li>
           <li>Punyaha Vachanam, Maha Sankalpam</li>
           <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+          <li>Ganapathi Homam (1500 japams and offerings)</li>
+          <li>Prasad delivery to your address</li>
         </ul>
       </div>
     </div>
 
     {/* Standard (Highlighted) */}
-    <div className="overflow-hidden rounded-2xl border-2 border-[#2f9e44] bg-white shadow-lg">
+    <div className="overflow-hidden rounded-2xl border-2 border-[#2f9e44] bg-white shadow-lg min-h-[460px]">
       <div className="bg-[#2f9e44] py-4 text-center text-lg font-medium text-white">
         Standard
       </div>
 
       <div className="p-6">
         <p className="mb-4 text-center text-2xl font-semibold text-[#2f9e44]">
-          Rs. 12,999
+          Rs. 12,500
         </p>
 
-        <p className="mb-3 font-medium">2 Vadhyar</p>
+        <p className="mb-3 font-medium">2 Vadhyar (Virtual)</p>
         <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Standard package 2 Vadhyar will be there, 2000 japam avartis will be
+          In Standard package 2 Vadhyar will perform the ritual virtually, 2000 japam avartis will be
           performed and homam goes on for 2:30 to 3 hours.
         </p>
 
         <p className="mb-2 font-medium">Procedure involved:</p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
+          <li>Virtual Homam with HD Live Streaming</li>
           <li>Punyaha Vachanam, Maha Sankalpam</li>
           <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+          <li>Ganapathi Homam (2000 japams and offerings)</li>
+          <li>Prasad delivery to your address</li>
+          <li>Recorded video of the ceremony</li>
         </ul>
       </div>
     </div>
 
     {/* Premium */}
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm min-h-[460px]">
       <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
         Premium
       </div>
 
       <div className="p-6">
         <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 20,000
+          Rs. 18,000
         </p>
 
-        <p className="mb-3 font-medium">4 Vadhyar</p>
+        <p className="mb-3 font-medium">4 Vadhyar (Virtual)</p>
         <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Premium package 4 Vadhyar will be there, 2000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
+          In Premium package 4 Vadhyar will perform the ritual virtually, 3000 japam avartis will be
+          performed and homam goes on for 3 to 3:30 hours.
         </p>
 
         <p className="mb-2 font-medium">Procedure involved:</p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
+          <li>Virtual Homam with HD Live Streaming</li>
           <li>Punyaha Vachanam, Maha Sankalpam</li>
           <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+          <li>Ganapathi Homam (3000 japams and offerings)</li>
+          <li>Express Prasad delivery</li>
+          <li>HD Recorded video of the ceremony</li>
+          <li>Personal consultation with priest</li>
         </ul>
         </div>
       </div>

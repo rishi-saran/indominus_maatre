@@ -15,7 +15,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-export default function AyushaHomamPage() {
+export default function BadrakaliHomamPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
@@ -36,9 +36,9 @@ export default function AyushaHomamPage() {
     const serviceId = Date.now();
     const serviceData = {
       id: serviceId,
-      title: 'AYUSHA HOMAM',
-      description: 'Ayusha Homam is performed to revere divine energies for vitality, wellness, and longevity.',
-      image: '/services/chanting/ayusha-homam.png',
+      title: 'Badrakali Homam',
+      description: 'Powerful ritual to invoke Goddess Badrakali for protection, removing obstacles, and destroying negative energies.',
+      image: '/services/virtual/Badrakali Homam.jpeg',
       formData: formData,
       addedAt: new Date().toISOString()
     };
@@ -53,9 +53,9 @@ export default function AyushaHomamPage() {
 
     toast.success("Service booked successfully", {
       description: "Your booking has been added to cart",
-      duration: 3000, // 3 seconds
+      duration: 3000,
     });
-    toast.dismiss(); // clears existing toasts
+    toast.dismiss();
 
     
     // Clear form after adding
@@ -79,7 +79,7 @@ export default function AyushaHomamPage() {
     <section className="w-full px-6 pt-4 pb-16">
       {/* Back Button */}
       <div className="fixed top-6 left-6 z-50">
-        <Link href="/services/chanting" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
+        <Link href="/services/virtual" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
           <ArrowLeft className="h-5 w-5" />
         </Link>
       </div>
@@ -87,11 +87,10 @@ export default function AyushaHomamPage() {
       {/* Title */}
       <div className="mx-auto mt-4 mb-8 max-w-6xl text-center">
        <h1 className="text-3xl font-serif tracking-wide leading-tight text-[#2f3a1f]">
-        AYUSHA HOMAM
+        Badrakali Homam
         </h1>
         <p className="mt-2 text-sm text-[#4f5d2f]">
-          Ayusha Homam is performed to revere divine energies for vitality,
-          wellness, and longevity.
+          Powerful ritual to invoke Goddess Badrakali for protection, removing obstacles, and destroying negative energies.
         </p>
       </div>
 
@@ -104,8 +103,8 @@ export default function AyushaHomamPage() {
             <div className="w-[300px] rounded-2xl border border-[#cfd8a3] bg-white p-4 shadow-sm">
               <div className="aspect-square overflow-hidden rounded-xl bg-[#eef4cf]">
                 <Image
-                  src="/services/chanting/ayusha-homam.png"
-                  alt="Ayusha Homam"
+                  src="/services/virtual/Badrakali Homam.jpeg"
+                  alt="Badrakali Homam"
                   width={400}
                   height={400}
                   className="h-full w-full object-cover"
@@ -118,15 +117,15 @@ export default function AyushaHomamPage() {
           {/* Info */}
           <div className="space-y-4 text-center">
             <p className="text-lg font-semibold text-[#2f3a1f]">
-              ₹9,500.00 – ₹20,000.00
+              ₹15,000.00 – ₹35,000.00
             </p>
 
             <p className="text-sm text-[#4f5d2f]">
-              <strong>Duration:</strong> 2 hrs
+              <strong>Duration:</strong> 2.5-3 hrs
             </p>
 
             <p className="text-sm text-[#4f5d2f]">
-              <strong>Objective:</strong> To promote health and extend the longevity of life.
+              <strong>Objective:</strong> To invoke Goddess Badrakali for protection from enemies, removal of obstacles, and destruction of negative energies.
             </p>
           </div>
 
@@ -263,28 +262,27 @@ export default function AyushaHomamPage() {
   <div className="space-y-5 text-sm text-[#4f5d2f] leading-relaxed">
     
     <p>
-      <strong>Ayusha Homam</strong> is performed to Revered for bestowing vitality
-      and wellness.
+      <strong>Badrakali Homam</strong> is a powerful Vedic ritual dedicated to Goddess Badrakali, a fierce form of Goddess Kali known for her protective and destructive powers against evil forces.
     </p>
 
     <p>
-      <strong>Suitable for:</strong> Individuals of all ages.
+      <strong>Deity Worshipped:</strong> Goddess Badrakali (Fierce form of Goddess Kali)
     </p>
 
     <p>
-      <strong>Scheduling:</strong> The ceremony date is determined based on the
-      individual’s birth star for optimal efficacy.
+      <strong>Purpose:</strong> This homam is performed to seek protection from enemies, ward off evil spirits, remove obstacles, destroy negative energies, and gain courage and strength.
     </p>
 
     <p>
-      <strong>Deity Worshipped:</strong> Ayur Devata (God of Fire)
+      <strong>Benefits:</strong> Protection from enemies and evil forces, removal of black magic and negative energies, overcoming fears and gaining inner strength, success in legal matters, and overall protection for family.
     </p>
 
     <p>
-      <strong>Primary Offerings:</strong> Steamed rice and ghee are the main
-      sacrificial elements used during the ritual. “This sacred ceremony aims
-      to invoke divine blessings for a robust and enduring life through
-      traditional Vedic practices.”
+      <strong>Suitable for:</strong> Those facing enemies or opposition, individuals affected by negative energies or black magic, people seeking courage and fearlessness, and those going through challenging situations.
+    </p>
+
+    <p>
+      <strong>Best time to perform:</strong> Tuesdays, Ashtami (8th day), Navami (9th day), during Navratri, or on auspicious occasions as recommended by priest.
     </p>
 
         </div>
@@ -318,8 +316,8 @@ export default function AyushaHomamPage() {
         onClick={() => setRating(star)}
         className={`cursor-pointer transition ${
           star <= rating
-            ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
-            : "text-[#9ca67a]"                  // visible grey
+            ? "fill-[#f4c430] text-[#f4c430]"
+            : "text-[#9ca67a]"
         }`}
       />
     ))}
@@ -380,7 +378,7 @@ export default function AyushaHomamPage() {
         Yes, you can pay the partial amount as a token advance to confirm your
         booking. You can pay the balance amount after the Homam with cash
         directly to our Priests or through an Online transfer (Click on the
-        “Pay-Balance” button in your My- Account section corresponding to your
+        "Pay-Balance" button in your My- Account section corresponding to your
         order number).
       </p>
     </div>
@@ -390,7 +388,7 @@ export default function AyushaHomamPage() {
         2. How Long does the Homam take to complete?
       </p>
       <p className="mt-2 text-[#4f5d2f]">
-        Homams are typically performed for 2+ hours at the same time it also
+        Homams are typically performed for 2.5-3 hours at the same time it also
         depends on the package selected for the homam.
       </p>
     </div>
@@ -398,7 +396,7 @@ export default function AyushaHomamPage() {
     <div>
       <p className="font-semibold">
         3. When will I get the Prasad for my Homam if I select Vedic Pooja Center
-        since I'm abroad?
+        since I\'m abroad?
       </p>
       <p className="mt-2 text-[#4f5d2f]">
         You will receive the Prasad for your Homam within 14 working days after
@@ -418,19 +416,19 @@ export default function AyushaHomamPage() {
         </h2>
 
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm min-h-[460px]">
       <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
         Economy
       </div>
 
       <div className="p-6">
         <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 9,999
+          Rs. 15,000
         </p>
 
         <p className="mb-3 font-medium">1 Vadhyar</p>
         <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Economy package 1 Vadhyar will be there, 2000 japam avartis will be
+          In Economy package 1 Vadhyar will be there, 3000 japam avartis will be
           performed and homam goes on for 2:30 to 3 hours.
         </p>
 
@@ -439,25 +437,25 @@ export default function AyushaHomamPage() {
           <li>Homam</li>
           <li>Punyaha Vachanam, Maha Sankalpam</li>
           <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+          <li>Badrakali Homam (3000 japams and tat dasams homam)</li>
         </ul>
       </div>
     </div>
 
     {/* Standard (Highlighted) */}
-    <div className="overflow-hidden rounded-2xl border-2 border-[#2f9e44] bg-white shadow-lg">
+    <div className="overflow-hidden rounded-2xl border-2 border-[#2f9e44] bg-white shadow-lg min-h-[460px]">
       <div className="bg-[#2f9e44] py-4 text-center text-lg font-medium text-white">
         Standard
       </div>
 
       <div className="p-6">
         <p className="mb-4 text-center text-2xl font-semibold text-[#2f9e44]">
-          Rs. 12,999
+          Rs. 25,000
         </p>
 
         <p className="mb-3 font-medium">2 Vadhyar</p>
         <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Standard package 2 Vadhyar will be there, 2000 japam avartis will be
+          In Standard package 2 Vadhyar will be there, 3000 japam avartis will be
           performed and homam goes on for 2:30 to 3 hours.
         </p>
 
@@ -466,25 +464,25 @@ export default function AyushaHomamPage() {
           <li>Homam</li>
           <li>Punyaha Vachanam, Maha Sankalpam</li>
           <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+          <li>Badrakali Homam (3000 japams and tat dasams homam)</li>
         </ul>
       </div>
     </div>
 
     {/* Premium */}
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm min-h-[460px]">
       <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
         Premium
       </div>
 
       <div className="p-6">
         <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 20,000
+          Rs. 35,000
         </p>
 
         <p className="mb-3 font-medium">4 Vadhyar</p>
         <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Premium package 4 Vadhyar will be there, 2000 japam avartis will be
+          In Premium package 4 Vadhyar will be there, 3000 japam avartis will be
           performed and homam goes on for 2:30 to 3 hours.
         </p>
 
@@ -493,12 +491,11 @@ export default function AyushaHomamPage() {
           <li>Homam</li>
           <li>Punyaha Vachanam, Maha Sankalpam</li>
           <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+          <li>Badrakali Homam (3000 japams and tat dasams homam)</li>
         </ul>
         </div>
       </div>
-
-        </div>
+    </div>
       </section>
     </section>
   );

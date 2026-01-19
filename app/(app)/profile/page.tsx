@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ServiceCard from '@/app/components/ui/ServiceCard';
 import { AuthService } from '@/lib/services/auth.service';
 import { OrdersService } from '@/lib/services/orders.service';
+import { ViewCartButton } from '@/components/ui/view-cart';
 
 interface Notification {
   id: string;
@@ -261,6 +262,14 @@ export default function MyAccount() {
       // Clean up the URL
       router.replace('/profile');
     }
+    
+    const viewCart = searchParams.get('viewCart');
+    if (viewCart === 'true') {
+      setIsAddServicesModalOpen(true);
+      setCheckoutStep(0);
+      // Clean up the URL
+      router.replace('/profile');
+    }
   }, [searchParams, router]);
 
   const openEditModal = () => {
@@ -274,7 +283,7 @@ export default function MyAccount() {
   const closeRitualDetailsModal = () => setIsRitualDetailsModalOpen(false);
   const openBookingsModal = () => setIsBookingsModalOpen(true);
   const closeBookingsModal = () => setIsBookingsModalOpen(false);
-  const openAddServicesModal = () => { 
+  const openAddServicesModal = () => {
     setIsAddServicesModalOpen(true); 
     setCheckoutStep(0); 
   };
@@ -311,6 +320,8 @@ export default function MyAccount() {
 
   return (
     <div className="text-sm text-[#2f3a1f] antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-accent/30 bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+      <ViewCartButton redirectTo="/cart" />
+      
       {/* Notification Popups */}
       <div className="fixed top-8 right-8 z-80 space-y-3 pointer-events-none">
         {popupNotifications.map((notification: Notification) => {
@@ -793,7 +804,9 @@ export default function MyAccount() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/60">
-                    {orders.map((order) => {
+                    {(orders || [])
+                      .filter((order) => Boolean(order.order_id))
+                      .map((order, idx) => {
                       const orderDate = new Date(order.created_at || new Date().toISOString()).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
@@ -806,17 +819,29 @@ export default function MyAccount() {
                         order.status === 'SHIPPED' || order.status === 'Shipped' ? 'yellow' : 'blue';
                       
                       return (
-                        <OrderRow
-                          key={order.order_id}
-                          image={order.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w"}
-                          productName={order.product_name || `Order ${order.order_id}`}
-                          category={order.category || 'Service'}
-                          orderId={order.order_id}
-                          date={orderDate}
-                          status={order.status}
-                          statusColor={statusColor}
-                          amount={`₹${order.total_amount}`}
-                        />
+                        <tr key={order.order_id || `order-${idx}`} className="align-middle">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <img
+                                alt={order.product_name || `Order ${order.order_id}`}
+                                className="w-8 h-8 rounded-lg object-cover border border-[#cfd8a3]"
+                                src={order.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w"}
+                              />
+                              <div>
+                                <p className="text-sm font-semibold text-[#2f3a1f]">{order.product_name || order.order_id || `Order ${idx + 1}`}</p>
+                                <p className="text-xs text-text-light">{order.category || 'Service'}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-[#4f5d2f]">{order.order_id}</td>
+                          <td className="px-4 py-3 text-sm text-[#4f5d2f]">{orderDate}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${statusColor === 'green' ? 'bg-amber-100 text-[#4f5d2f]' : statusColor === 'blue' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-[#4f5d2f]'}`}>
+                              {order.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-[#2f3a1f] text-right font-semibold">₹{order.total_amount}</td>
+                        </tr>
                       );
                     })}
                   </tbody>
@@ -1004,19 +1029,8 @@ export default function MyAccount() {
                 isActive={activeSection === 'orders'} 
                 onActive={() => setActiveSection('orders')} 
                 onViewFullOrders={openOrdersModal}
+                orders={orders}
                 availableServices={availableServices}
-              />
-            </div>
-            <div id="section-add-services">
-              <AddToServices 
-                onOpen={openAddServicesModal}
-                selectedServiceIds={selectedServiceIds}
-                availableServices={availableServices}
-                setSelectedServiceIds={setSelectedServiceIds}
-                setServiceConfigs={setServiceConfigs}
-                setShowCouponInput={setShowCouponInput}
-                setCouponCode={setCouponCode}
-                setAppliedCoupon={setAppliedCoupon}
               />
             </div>
           </div>
@@ -1522,6 +1536,7 @@ interface RecentOrdersProps {
   isActive?: boolean;
   onActive?: () => void;
   onViewFullOrders?: () => void;
+  orders?: Order[];
   availableServices?: Array<{
     id: number;
     title: string;
@@ -1531,39 +1546,31 @@ interface RecentOrdersProps {
   }>;
 }
 
-const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewFullOrders, availableServices = [] }) => {
-  const allItems = [
-    {
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w",
-      productName: "Premium Rudraksha Mala",
-      category: "Spiritual Accessories",
-      orderId: "#ORD-2891",
-      date: "Oct 12, 2024",
-      status: "Completed",
-      statusColor: "green" as const,
-      amount: "₹1,299",
-    },
-    {
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDs9pbArOnpyzqf-ilR_9wLZtu8V-lAkNDUEaEnZWO3zz7yU4c3jZmvartaUD0tnLHpa39vpdhpsiVC56Zj4IV_V7ivdInaFs9XBCkRvB1BK9R35Pyvgb6RHzriAwFyOnk2LQFy2H5Y4h-BlZfHy-thh_iV8BATUYHWHDWty-3aDae9TPLxLpsqgf1jwRLdfSeJQR7v8ZR9-hNxwj4d8XwXXyaSuvKRkYTTypTjpPvK2vi6qn8WL3-_HJopfprOCw7-cv2rOkauoPIu",
-      productName: "Vivah Sanskar Package",
-      category: "Ritual Service",
-      orderId: "#ORD-2845",
-      date: "Sep 28, 2024",
-      status: "Completed",
-      statusColor: "green" as const,
-      amount: "₹15,000",
-    },
-    {
-      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCqo0FhTUrz6-nWNfy8ywHrahiAxYCMI5AvPPfyqpTbRnrLGCsddTnwFM7_yjcWsNfOGGrj9NyDl6Ujj6iF_qiXzeTsdTiznHx4Bvx9ZTRFURZwrairL2hkhD45x63r4TJdZENhaQDHyITjN3bcQg-MwjBs-1urarRYEwTRqn3cwaPjfCaQjEaUlKKTbOFaNLtwZoVSFtc8cWW_ztYuza0bYII2larCYNCQaB1PZ6KpnlKVhyS6hpNijA3BnxJ-ZUoVTXQ7g0tns-cs",
-      productName: "Brass Pooja Thali Set",
-      category: "Home Decor",
-      orderId: "#ORD-2711",
-      date: "Sep 15, 2024",
-      status: "Completed",
-      statusColor: "yellow" as const,
-      amount: "₹2,499",
-    }
-  ];
+const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewFullOrders, orders = [], availableServices = [] }) => {
+  const orderItems = (orders || [])
+    // Skip placeholder orders that do not have a real order_id
+    .filter((order) => Boolean(order.order_id))
+    .map((order, idx) => {
+    const orderDate = new Date(order.created_at || new Date().toISOString()).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+
+    return {
+      key: order.order_id || `order-${idx}`,
+      image: order.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w",
+      productName: order.product_name || order.order_id || `Order ${idx + 1}`,
+      category: order.category || 'Service',
+      orderId: order.order_id || `#ORD-${idx + 1}`,
+      date: orderDate,
+      status: order.status || 'Pending',
+      statusColor: (order.status === 'CONFIRMED' || order.status === 'Delivered') ? 'green' as const :
+                   (order.status === 'COMPLETED' || order.status === 'Completed') ? 'blue' as const :
+                   (order.status === 'SHIPPED' || order.status === 'Shipped') ? 'yellow' as const : 'yellow' as const,
+      amount: order.total_amount ? `₹${order.total_amount}` : '₹0',
+    };
+  });
 
   // Add booked services to the list, showing only the 3 most recent
   const bookedServicesItems = availableServices.map((service) => {
@@ -1574,6 +1581,7 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewF
     }) : 'Today';
     
     return {
+      key: `service-${service.id}`,
       image: service.image,
       productName: service.title,
       category: "Ritual Service",
@@ -1585,8 +1593,12 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewF
     };
   });
 
-  // Combine and sort: booked services first (newest), then demo orders
-  const displayItems = [...bookedServicesItems, ...allItems].slice(0, 3);
+  // Use backend orders when available; otherwise show booked services only
+  const baseItems = orderItems;
+  // Combine base with booked services, cap to 3
+  const displayItems = [...baseItems, ...bookedServicesItems].slice(0, 3);
+
+  const hasItems = displayItems.length > 0;
 
   return (
     <section className="rounded-2xl p-4 border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all">
@@ -1612,10 +1624,13 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewF
             <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Amount</span>
           </div>
         </div>
-        
-        {displayItems.map((item, index) => (
+        {!hasItems && (
+          <div className="text-center text-xs text-text-light py-4">No recent orders yet.</div>
+        )}
+
+        {displayItems.map((item) => (
           <OrderRow
-            key={index}
+            key={item.key}
             image={item.image}
             productName={item.productName}
             category={item.category}
@@ -1726,7 +1741,7 @@ const AddToServices: React.FC<{
   <section className="rounded-2xl p-4 mt-4 border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all cursor-pointer hover:shadow-lg hover:-translate-y-1" onClick={() => onOpen?.()}>
     <div className="flex items-center justify-between mb-3">
       <h3 className="text-xl font-serif font-semibold text-[#2f3a1f]">
-        Add to Services
+        View Cart
       </h3>
     </div>
     
@@ -1765,7 +1780,6 @@ const AddToServices: React.FC<{
                   )}
                 </div>
               )}
-              <p className="text-[10px] text-text-light mt-2 pt-2 border-t border-[#cfd8a3]">₹9,999</p>
             </div>
           ))}
         </div>

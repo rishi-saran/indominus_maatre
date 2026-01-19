@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { HoverCard } from "@/components/ui/magic/hover-card";
+import { ViewCartButton } from "@/components/ui/view-cart";
 
 const virtualServices = [
   { title: "AAVAHANTHI HOMAM", image: "/services/virtual/Aavahanthi Homom.png" },
@@ -50,7 +51,9 @@ const categories = [
 
 export default function VirtualPage() {
   return (
-    <section className="w-full px-6 pt-4 pb-12">
+    <>
+      <ViewCartButton redirectTo="/cart" />
+      <section className="w-full px-6 pt-4 pb-12">
       {/* Back Button */}
       <div className="mb-2">
         <Link
@@ -73,9 +76,46 @@ export default function VirtualPage() {
 
       {/* Cards grid matching Homam style */}
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {virtualServices.map((service) => (
+        {virtualServices.map((service) => {
+          // Map service titles to their routes
+          const getServiceRoute = (title: string) => {
+            const routes: Record<string, string> = {
+              "AAVAHANTHI HOMAM": "/services/virtual/aavahanthi-homam",
+              "Aavani Avittam": "/services/virtual/aavani-avittam",
+              "AYYAPPA POOJA": "/services/virtual/ayyappa-pooja",
+              "Badrakali Homam": "/services/virtual/badrakali-homam",
+              "Chandi Homam (Sapta Sati)": "/services/virtual/chandi-homam-sapta-sati",
+              "Dhanvantari Homam": "/services/virtual/dhanvantari-homam",
+              "DURGA HOMAM": "/services/virtual/durga-homam",
+              "Durga Shanti Homam": "/services/virtual/durga-shanti-homam",
+              "Ganesh / Vinayagar Chathurthi Pooja Package": "/services/virtual/ganesh-vinayagar-chathurthi-pooja-package",
+              "Haridra Ganapathy Homam": "/services/virtual/haridra-ganapathy-homam",
+              "Lakshmi Kubera Homam": "/services/virtual/lakshmi-kubera-homam",
+              "Maha Mrutyunjaya Homam": "/services/virtual/maha-mrutyunjaya-homam",
+              "Maha Sudarshana Homam": "/services/virtual/maha-sudarshana-homam",
+              "MAHALAKSHMI HOMAM": "/services/virtual/mahalakshmi-homam",
+              "MAHALAKSHMI PUJA": "/services/virtual/mahalakshmi-puja",
+              "Mrutyunjaya Homam": "/services/virtual/mrutyunjaya-homam",
+              "Navagraha Homam": "/services/virtual/navagraha-homam",
+              "Rudra Ekadashi Homam": "/services/virtual/rudra-ekadashi-homam",
+              "Rudrabishekam": "/services/virtual/rudrabishekam",
+              "Sadakshari Durga Gayatri Homam": "/services/virtual/sadakshari-durga-gayatri-homam",
+              "SARASWATHI POOJAI": "/services/virtual/saraswathi-poojai",
+              "SATHYANARAYANA PUJA": "/services/virtual/sathyanarayana-puja",
+              "Shatru Samhara Homam": "/services/virtual/shatru-samhara-homam",
+              "SIDHI VINAYAGA PUJA": "/services/virtual/sidhi-vinayaga-puja",
+              "Swayamvara Parvathi Homam": "/services/virtual/swayamvara-parvathi-homam",
+              "Vancha Kalpalatha Maha Ganapathi Homam": "/services/virtual/vancha-kalpalatha-maha-ganapathi-homam",
+            };
+            return routes[title] || "#";
+          };
+          
+          const href = getServiceRoute(service.title);
+          
+          return (
           <HoverCard key={service.title}>
-            <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44]">
+            <Link href={href}>
+            <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] cursor-pointer">
               <CardContent className="flex h-80 flex-col items-center justify-between p-6">
                 <div className="w-full h-52 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
                   <Image
@@ -92,8 +132,10 @@ export default function VirtualPage() {
                 </h2>
               </CardContent>
             </Card>
+            </Link>
           </HoverCard>
-        ))}
+        );
+        })}
       </div>
 
       {/* Results Counter */}
@@ -120,6 +162,5 @@ export default function VirtualPage() {
         ))}
       </div>
 
-    </section>
-  );
+    </section>    </>  );
 }

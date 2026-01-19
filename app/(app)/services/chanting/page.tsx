@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { HoverCard } from "@/components/ui/magic/hover-card";
+import { ViewCartButton } from "@/components/ui/view-cart";
 
 const chantingServices = [
   {
@@ -30,7 +31,9 @@ const categories = [
 
 export default function ChantingPage() {
   return (
-    <section className="w-full px-6 pt-4 pb-12">
+    <>
+      <ViewCartButton redirectTo="/cart" />
+      <section className="w-full px-6 pt-4 pb-12">
       {/* Page Title */}
       <div className="mx-auto mb-10 max-w-5xl text-center">
         <div className="mx-auto mb-3 h-px w-24 bg-[#cfd8a3]" />
@@ -88,6 +91,5 @@ export default function ChantingPage() {
           </Link>
         ))}
       </div>
-    </section>
-  );
+    </section>    </>  );
 }
