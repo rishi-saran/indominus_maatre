@@ -1,59 +1,36 @@
 import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from '@/lib/types/auth';
-
-const API_BASE_URL = '/api';
+import { ApiService } from './api.service';
+import { API_ENDPOINTS } from '@/lib/config/api.config';
 
 export class AuthService {
   /**
    * Login user with email
    */
   static async login(email: string, password: string): Promise<LoginResponse> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password } as LoginRequest),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Login failed');
-      }
-
-      return response.json();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Login failed: Unable to connect to server');
-    }
+    return ApiService.post<LoginResponse>(API_ENDPOINTS.auth.login, {
+      email,
+      password,
+    } as LoginRequest);
   }
 
   /**
    * Register new user
    */
-  static async register(data: RegisterRequest): Promise<RegisterResponse> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+  static async signup(data: RegisterRequest): Promise<RegisterResponse> {
+    return ApiService.post<RegisterResponse>(API_ENDPOINTS.auth.signup, data);
+  }
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Registration failed');
-      }
+  /**
+   * Refresh authentication token
+   */
+  static async refresh(): Promise<LoginResponse> {
+    return ApiService.post<LoginResponse>(API_ENDPOINTS.auth.refresh);
+  }
 
-      return response.json();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Registration failed: Unable to connect to server');
-    }
+  /**
+   * Logout user
+   */
+  static async logout(): Promise<{ success: boolean }> {
+    return ApiService.post<{ success: boolean }>(API_ENDPOINTS.auth.logout);
   }
 }

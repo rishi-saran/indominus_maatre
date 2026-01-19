@@ -52,10 +52,10 @@ export default function AyushaHomamPage() {
     window.dispatchEvent(new Event('servicesUpdated'));
 
     toast.success("Service booked successfully", {
-  description: "Your booking has been added successfully",
-  duration: 3000, // 3 seconds
-});
-toast.dismiss(); // clears existing toasts
+      description: "Your booking has been added successfully",
+      duration: 3000, // 3 seconds
+    });
+    toast.dismiss(); // clears existing toasts
 
     
     // Clear form after adding
@@ -67,6 +67,11 @@ toast.dismiss(); // clears existing toasts
       package: 'Economy',
       flowers: 'No'
     });
+
+    // Redirect to profile page with modal flag
+    setTimeout(() => {
+      router.push('/profile?openAddServices=true');
+    }, 1000);
   };
 
 

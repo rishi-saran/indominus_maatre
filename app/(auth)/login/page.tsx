@@ -27,12 +27,16 @@ export default function LoginPage() {
       
       // Redirect based on user status
       if (response.is_new_user) {
-        router.push('/profile'); // New users go to profile setup
+        router.push('/profile'); 
       } else {
-        router.push('/landing'); // Existing users go to landing
+        router.push('/landing'); 
       }
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Login failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
