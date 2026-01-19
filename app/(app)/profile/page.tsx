@@ -1,7 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ServiceCard from '@/app/components/ui/ServiceCard';
+import { AuthService } from '@/lib/services/auth.service';
+import { OrdersService } from '@/lib/services/orders.service';
 
 interface Notification {
   id: string;
@@ -14,7 +16,8 @@ interface Order {
   order_id: string;
   status: string;
   total_amount: number;
-  created_at: string;
+  created_at?: string;
+  updated_at?: string;
   product_name?: string;
   category?: string;
   image?: string;
@@ -29,9 +32,9 @@ interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'PROCESSING';
 }
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
-
 export default function MyAccount() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [popupNotifications, setPopupNotifications] = useState<Notification[]>([]);
@@ -153,37 +156,27 @@ export default function MyAccount() {
           });
         } else {
           // Try to login with demo account
-          const response = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: 'priya.sharma@example.com',
-            }),
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
+          try {
+            const data = await AuthService.login('maathre@gmail.com', 'maathre@2026');
             setProfile(data);
             // Store in localStorage for future use
             localStorage.setItem('user_id', data.user_id);
             localStorage.setItem('user_email', data.email);
-          } else {
-            // Use demo data if API not available
+          } catch (error) {
+            // Use demo data if API not available - use a valid UUID format
             setProfile({
-              user_id: 'demo-user',
-              email: 'priya.sharma@example.com',
+              user_id: '550e8400-e29b-41d4-a716-446655440000',
+              email: 'maathre@gmail.com',
               is_new_user: false,
             });
           }
         }
       } catch (error) {
         console.warn('Authentication error:', error);
-        // Use demo data as fallback
+        // Use demo data as fallback - use a valid UUID format
         setProfile({
-          user_id: 'demo-user',
-          email: 'priya.sharma@example.com',
+          user_id: '550e8400-e29b-41d4-a716-446655440000',
+          email: 'maathre@gmail.com',
           is_new_user: false,
         });
       } finally {
@@ -200,20 +193,18 @@ export default function MyAccount() {
       try {
         setOrdersLoading(true);
         setOrdersError(null);
-        const userId = localStorage.getItem('user_id') || 'demo-user';
-        const response = await fetch(`${API_BASE_URL}/orders/${userId}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch orders');
+        const userId = localStorage.getItem('user_id') || '550e8400-e29b-41d4-a716-446655440000';
+        console.log('Fetching orders for user:', userId);
+        try {
+          const ordersData = await OrdersService.list({ user_id: userId });
+          console.log('Orders data:', ordersData);
+          setOrders(ordersData || []);
+        } catch (apiError) {
+          // Backend error - use empty orders as fallback
+          console.warn('Orders API error, using empty list:', apiError);
+          setOrders([]);
+          setOrdersError(null);
         }
-        
-        const data = await response.json();
-        setOrders(data.orders || []);
-      } catch (error) {
-        // No orders - backend not available
-        setOrders([]);
-        setOrdersError(null);
-        console.warn('Orders not available');
       } finally {
         setOrdersLoading(false);
       }
@@ -260,6 +251,17 @@ export default function MyAccount() {
       document.head.removeChild(link);
     };
   }, []);
+
+  // Check query params and open modal if needed
+  useEffect(() => {
+    const openAddServices = searchParams.get('openAddServices');
+    if (openAddServices === 'true') {
+      setIsAddServicesModalOpen(true);
+      setCheckoutStep(0);
+      // Clean up the URL
+      router.replace('/profile');
+    }
+  }, [searchParams, router]);
 
   const openEditModal = () => {
     setEditEmail(profile.email);
@@ -792,7 +794,7 @@ export default function MyAccount() {
                   </thead>
                   <tbody className="divide-y divide-white/60">
                     {orders.map((order) => {
-                      const orderDate = new Date(order.created_at).toLocaleDateString('en-US', {
+                      const orderDate = new Date(order.created_at || new Date().toISOString()).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric'
@@ -998,7 +1000,14 @@ export default function MyAccount() {
               <UpcomingRitual handleButtonClick={handleButtonClick} isActive={activeSection === 'ritual'} onActive={() => setActiveSection('ritual')} onViewDetails={openRitualDetailsModal} onViewAllBookings={openBookingsModal} />
             </div>
             <div id="section-orders">
-              <RecentOrders isActive={activeSection === 'orders'} onActive={() => setActiveSection('orders')} onViewFullOrders={openOrdersModal} />
+              <RecentOrders 
+                isActive={activeSection === 'orders'} 
+                onActive={() => setActiveSection('orders')} 
+                onViewFullOrders={openOrdersModal}
+                availableServices={availableServices}
+              />
+            </div>
+            <div id="section-add-services">
               <AddToServices 
                 onOpen={openAddServicesModal}
                 selectedServiceIds={selectedServiceIds}
@@ -1513,72 +1522,121 @@ interface RecentOrdersProps {
   isActive?: boolean;
   onActive?: () => void;
   onViewFullOrders?: () => void;
+  availableServices?: Array<{
+    id: number;
+    title: string;
+    image: string;
+    formData?: any;
+    addedAt?: string;
+  }>;
 }
 
-const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewFullOrders }) => (
-  <section className="rounded-2xl p-4 border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all">
-    <div className="flex items-center justify-between mb-3">
-      <h3 className="text-xl font-serif font-semibold text-[#2f3a1f]">Recent Orders</h3>
-    </div>
-    <div className="space-y-3" onClick={() => onActive?.()}>
-      {/* Column Headers */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-primary/5 rounded-lg">
-        <div className="flex items-center gap-2 flex-[2]">
-          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Product/Service</span>
+const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewFullOrders, availableServices = [] }) => {
+  const allItems = [
+    {
+      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w",
+      productName: "Premium Rudraksha Mala",
+      category: "Spiritual Accessories",
+      orderId: "#ORD-2891",
+      date: "Oct 12, 2024",
+      status: "Completed",
+      statusColor: "green" as const,
+      amount: "₹1,299",
+    },
+    {
+      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDs9pbArOnpyzqf-ilR_9wLZtu8V-lAkNDUEaEnZWO3zz7yU4c3jZmvartaUD0tnLHpa39vpdhpsiVC56Zj4IV_V7ivdInaFs9XBCkRvB1BK9R35Pyvgb6RHzriAwFyOnk2LQFy2H5Y4h-BlZfHy-thh_iV8BATUYHWHDWty-3aDae9TPLxLpsqgf1jwRLdfSeJQR7v8ZR9-hNxwj4d8XwXXyaSuvKRkYTTypTjpPvK2vi6qn8WL3-_HJopfprOCw7-cv2rOkauoPIu",
+      productName: "Vivah Sanskar Package",
+      category: "Ritual Service",
+      orderId: "#ORD-2845",
+      date: "Sep 28, 2024",
+      status: "Completed",
+      statusColor: "green" as const,
+      amount: "₹15,000",
+    },
+    {
+      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCqo0FhTUrz6-nWNfy8ywHrahiAxYCMI5AvPPfyqpTbRnrLGCsddTnwFM7_yjcWsNfOGGrj9NyDl6Ujj6iF_qiXzeTsdTiznHx4Bvx9ZTRFURZwrairL2hkhD45x63r4TJdZENhaQDHyITjN3bcQg-MwjBs-1urarRYEwTRqn3cwaPjfCaQjEaUlKKTbOFaNLtwZoVSFtc8cWW_ztYuza0bYII2larCYNCQaB1PZ6KpnlKVhyS6hpNijA3BnxJ-ZUoVTXQ7g0tns-cs",
+      productName: "Brass Pooja Thali Set",
+      category: "Home Decor",
+      orderId: "#ORD-2711",
+      date: "Sep 15, 2024",
+      status: "Completed",
+      statusColor: "yellow" as const,
+      amount: "₹2,499",
+    }
+  ];
+
+  // Add booked services to the list, showing only the 3 most recent
+  const bookedServicesItems = availableServices.map((service) => {
+    const bookingDate = service.addedAt ? new Date(service.addedAt).toLocaleDateString('en-US', {
+      year: '2-digit',
+      month: 'short',
+      day: 'numeric'
+    }) : 'Today';
+    
+    return {
+      image: service.image,
+      productName: service.title,
+      category: "Ritual Service",
+      orderId: `#SRV-${service.id.toString().slice(-4)}`,
+      date: bookingDate,
+      status: "Pending",
+      statusColor: "yellow" as const,
+      amount: "₹9,999",
+    };
+  });
+
+  // Combine and sort: booked services first (newest), then demo orders
+  const displayItems = [...bookedServicesItems, ...allItems].slice(0, 3);
+
+  return (
+    <section className="rounded-2xl p-4 border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xl font-serif font-semibold text-[#2f3a1f]">Recent Orders</h3>
+      </div>
+      <div className="space-y-3" onClick={() => onActive?.()}>
+        {/* Column Headers */}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-primary/5 rounded-lg">
+          <div className="flex items-center gap-2 flex-[2]">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Product/Service</span>
+          </div>
+          <div className="flex-1 text-center">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Order ID</span>
+          </div>
+          <div className="flex-1 text-center">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Date</span>
+          </div>
+          <div className="flex-1 text-center">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Status</span>
+          </div>
+          <div className="flex-1 text-center">
+            <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Amount</span>
+          </div>
         </div>
-        <div className="flex-1 text-center">
-          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Order ID</span>
-        </div>
-        <div className="flex-1 text-center">
-          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Date</span>
-        </div>
-        <div className="flex-1 text-center">
-          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Status</span>
-        </div>
-        <div className="flex-1 text-center">
-          <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Amount</span>
+        
+        {displayItems.map((item, index) => (
+          <OrderRow
+            key={index}
+            image={item.image}
+            productName={item.productName}
+            category={item.category}
+            orderId={item.orderId}
+            date={item.date}
+            status={item.status}
+            statusColor={item.statusColor}
+            amount={item.amount}
+          />
+        ))}
+        
+        <div className="p-2 text-center rounded-lg transition-all cursor-pointer bg-white border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:border-[#2f9e44] hover:ring-[#2f9e44]">
+          <a onClick={(e) => { e.preventDefault(); onViewFullOrders?.(); }} className="text-sm font-medium text-[#2f9e44] hover:text-[#2f9e44] transition-colors inline-flex items-center gap-1 cursor-pointer group" href="#">
+            View Full Order History
+            <span className="material-symbols-outlined text-[14px] arrow-right group-hover:translate-x-1 text-[#2f9e44] group-hover:text-[#2f9e44]">arrow_forward</span>
+          </a>
         </div>
       </div>
-      
-      <OrderRow
-        image="https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w"
-        productName="Premium Rudraksha Mala"
-        category="Spiritual Accessories"
-        orderId="#ORD-2891"
-        date="Oct 12, 2024"
-        status="Completed"
-        statusColor="green"
-        amount="₹1,299"
-      />
-      <OrderRow
-        image="https://lh3.googleusercontent.com/aida-public/AB6AXuDs9pbArOnpyzqf-ilR_9wLZtu8V-lAkNDUEaEnZWO3zz7yU4c3jZmvartaUD0tnLHpa39vpdhpsiVC56Zj4IV_V7ivdInaFs9XBCkRvB1BK9R35Pyvgb6RHzriAwFyOnk2LQFy2H5Y4h-BlZfHy-thh_iV8BATUYHWHDWty-3aDae9TPLxLpsqgf1jwRLdfSeJQR7v8ZR9-hNxwj4d8XwXXyaSuvKRkYTTypTjpPvK2vi6qn8WL3-_HJopfprOCw7-cv2rOkauoPIu"
-        productName="Vivah Sanskar Package"
-        category="Ritual Service"
-        orderId="#ORD-2845"
-        date="Sep 28, 2024"
-        status="Completed"
-        statusColor="green"
-        amount="₹15,000"
-      />
-      <OrderRow
-        image="https://lh3.googleusercontent.com/aida-public/AB6AXuCqo0FhTUrz6-nWNfy8ywHrahiAxYCMI5AvPPfyqpTbRnrLGCsddTnwFM7_yjcWsNfOGGrj9NyDl6Ujj6iF_qiXzeTsdTiznHx4Bvx9ZTRFURZwrairL2hkhD45x63r4TJdZENhaQDHyITjN3bcQg-MwjBs-1urarRYEwTRqn3cwaPjfCaQjEaUlKKTbOFaNLtwZoVSFtc8cWW_ztYuza0bYII2larCYNCQaB1PZ6KpnlKVhyS6hpNijA3BnxJ-ZUoVTXQ7g0tns-cs"
-        productName="Brass Pooja Thali Set"
-        category="Home Decor"
-        orderId="#ORD-2711"
-        date="Sep 15, 2024"
-        status="Completed"
-        statusColor="green"
-        amount="₹2,499"
-      />
-      <div className="p-2 text-center rounded-lg transition-all cursor-pointer bg-white border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:border-[#2f9e44] hover:ring-[#2f9e44]">
-        <a onClick={(e) => { e.preventDefault(); onViewFullOrders?.(); }} className="text-sm font-medium text-[#2f9e44] hover:text-[#2f9e44] transition-colors inline-flex items-center gap-1 cursor-pointer group" href="#">
-          View Full Order History
-          <span className="material-symbols-outlined text-[14px] arrow-right group-hover:translate-x-1 text-[#2f9e44] group-hover:text-[#2f9e44]">arrow_forward</span>
-        </a>
-      </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 interface OrderCardProps {
   image: string;
@@ -1684,16 +1742,30 @@ const AddToServices: React.FC<{
           {availableServices.map((svc) => (
             <div 
               key={svc.id} 
-              className="flex flex-col items-center p-2 rounded-lg border border-[#cfd8a3] bg-[#fafcf0] hover:bg-[#eef4cf] transition-all"
+              className="flex flex-col p-3 rounded-lg border border-[#cfd8a3] bg-[#fafcf0] hover:bg-[#eef4cf] transition-all"
             >
               <img 
                 src={svc.image} 
                 alt={svc.title} 
-                className="w-16 h-16 rounded-lg object-cover border border-[#cfd8a3] mb-2"
+                className="w-full h-24 rounded-lg object-cover border border-[#cfd8a3] mb-2"
               />
-              <span className="text-xs font-semibold text-[#2f3a1f] text-center line-clamp-2">
+              <h4 className="text-xs font-bold text-[#2f3a1f] mb-1 line-clamp-2">
                 {svc.title}
-              </span>
+              </h4>
+              {svc.formData && (
+                <div className="space-y-1 text-[10px] text-[#4f5d2f]">
+                  {svc.formData.package && (
+                    <p><span className="font-semibold">Package:</span> {svc.formData.package}</p>
+                  )}
+                  {svc.formData.date && (
+                    <p><span className="font-semibold">Date:</span> {svc.formData.date}</p>
+                  )}
+                  {svc.formData.flowers && (
+                    <p><span className="font-semibold">Flowers:</span> {svc.formData.flowers}</p>
+                  )}
+                </div>
+              )}
+              <p className="text-[10px] text-text-light mt-2 pt-2 border-t border-[#cfd8a3]">₹9,999</p>
             </div>
           ))}
         </div>

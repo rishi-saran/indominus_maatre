@@ -1,49 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
-
-interface PaymentRequest {
-  order_id: string;
-  method: string;
-}
-
-interface PaymentResponse {
-  payment_id: string;
-  status: string;
-}
+﻿import { NextRequest, NextResponse } from 'next/server';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function POST(request: NextRequest) {
   try {
-    const body: PaymentRequest = await request.json();
-
-    if (!body.order_id) {
-      return NextResponse.json({ error: 'order_id is required' }, { status: 400 });
-    }
-
-    if (!body.method) {
-      return NextResponse.json({ error: 'payment method is required' }, { status: 400 });
-    }
-
-    const response = await fetch(`${API_BASE_URL}/payments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    const body = await request.json();
+    const response = await fetch(`${BACKEND_URL}/payments/`, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json(
-        { error: errorData.detail || 'Payment failed' },
-        { status: response.status }
-      );
-    }
-
-    const data: PaymentResponse = await response.json();
-    return NextResponse.json(data, { status: 200 });
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Payment error:', error);
-    return NextResponse.json({ error: 'Payment service unavailable' }, { status: 500 });
+    console.error('Payments POST API error:', error);
+    return NextResponse.json({ error: 'Failed to create payment' }, { status: 500 });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const queryString = searchParams.toString();
+    
+    // Call backend directly
+    const url = queryString ? `${BACKEND_URL}/payments/?${queryString}` : `${BACKEND_URL}/payments/`;
+    const response = await fetch(url, { 
+      method: 'GET', 
+      headers: { 'Content-Type': 'application/json' } 
+    });
+    
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error('Payments GET API error:', error);
+    return NextResponse.json({ error: 'Failed to fetch payments' }, { status: 500 });
   }
 }

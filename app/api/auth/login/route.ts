@@ -1,77 +1,42 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
-
-// Temporary synthetic credentials to allow frontend login while backend is unavailable
+// Mock credentials
 const MOCK_EMAIL = 'maathre@gmail.com';
 const MOCK_PASSWORD = 'maathre@2026';
-const MOCK_USER: LoginResponse = {
-  user_id: 'mock-user-id',
-  email: MOCK_EMAIL,
-  is_new_user: false,
-};
-
-interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-interface LoginResponse {
-  user_id: string;
-  email: string;
-  is_new_user: boolean;
-}
+const MOCK_USER_ID = '550e8400-e29b-41d4-a716-446655440000';
 
 export async function POST(request: NextRequest) {
   try {
-    const body: LoginRequest = await request.json();
+    const body = await request.json();
+    const { email, password } = body;
 
-    // Validate email and password
-    if (!body.email || !body.email.includes('@')) {
-      return NextResponse.json(
-        { error: 'Valid email is required' },
-        { status: 400 }
-      );
+    // Mock login for testing
+    if (email === MOCK_EMAIL && password === MOCK_PASSWORD) {
+      return NextResponse.json({
+        id: MOCK_USER_ID,
+        user_id: MOCK_USER_ID,
+        email: MOCK_EMAIL,
+        is_new_user: false,
+        full_name: 'Test User',
+        phone: '+919876543210',
+        profile_picture_url: null,
+        created_at: new Date().toISOString(),
+        access_token: 'mock-jwt-token',
+        token_type: 'bearer',
+      }, { status: 200 });
     }
 
-    if (!body.password) {
-      return NextResponse.json(
-        { error: 'Password is required' },
-        { status: 400 }
-      );
-    }
-
-    // Short-circuit with mock response for synthetic creds
-    if (body.email === MOCK_EMAIL && body.password === MOCK_PASSWORD) {
-      return NextResponse.json(MOCK_USER, { status: 200 });
-    }
-
-    // Call backend API
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    // Try backend if not mock credentials
+    const response = await fetch(`${BACKEND_URL}/api/auth/login`, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json(
-        { error: errorData.detail || 'Login failed' },
-        { status: response.status }
-      );
-    }
-
-    const data: LoginResponse = await response.json();
-
-    return NextResponse.json(data, { status: 200 });
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Login error:', error);
-    const message = error instanceof Error ? error.message : 'Login service unavailable';
-    return NextResponse.json(
-      { error: `Login failed: ${message}` },
-      { status: 500 }
-    );
+    console.error('Auth login API error:', error);
+    return NextResponse.json({ error: 'Failed to login' }, { status: 500 });
   }
 }
