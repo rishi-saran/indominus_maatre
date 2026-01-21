@@ -4,8 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
+import { homams } from "@/data/homams";
 import { Star } from "lucide-react";
 import {
   Select,
@@ -14,9 +15,34 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+type Homam = {
+  title: string;
+  image: string;
+  priceRange: string;
+  shortDescription?: string;
+  duration?: string;
+  objective?: string;
+  description?: any[];
+  faq?: { question: string; answer: string }[];
+  packages?: {
+    name: string;
+    price: string;
+    priests: string;
+    description: string;
+    procedures: string[];
+  }[];
+};
 
-export default function BadrakaliHomamPage() {
+
+export default function HomamDetailPage() {
   const router = useRouter();
+    const params = useParams();
+  const slug = params?.slug as string;
+
+  const homam = homams[slug as keyof typeof homams] as Homam | undefined;
+
+
+
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
   
@@ -36,9 +62,10 @@ export default function BadrakaliHomamPage() {
     const serviceId = Date.now();
     const serviceData = {
       id: serviceId,
-      title: 'Badrakali Homam',
-      description: 'Powerful ritual to invoke Goddess Badrakali for protection, removing obstacles, and destroying negative energies.',
-      image: '/services/virtual/Badrakali Homam.jpeg',
+      title: homam?.title,
+description: homam?.shortDescription,
+image: homam?.image,
+
       formData: formData,
       addedAt: new Date().toISOString()
     };
@@ -52,10 +79,10 @@ export default function BadrakaliHomamPage() {
     window.dispatchEvent(new Event('servicesUpdated'));
 
     toast.success("Service booked successfully", {
-      description: "Your booking has been added to cart",
-      duration: 3000,
-    });
-    toast.dismiss();
+  description: "Your booking has been added successfully",
+  duration: 3000, // 3 seconds
+});
+toast.dismiss(); // clears existing toasts
 
     
     // Clear form after adding
@@ -67,11 +94,6 @@ export default function BadrakaliHomamPage() {
       package: 'Economy',
       flowers: 'No'
     });
-
-    // Redirect to cart page
-    setTimeout(() => {
-      router.push('/cart');
-    }, 1000);
   };
 
 
@@ -79,7 +101,7 @@ export default function BadrakaliHomamPage() {
     <section className="w-full px-6 pt-4 pb-16">
       {/* Back Button */}
       <div className="fixed top-6 left-6 z-50">
-        <Link href="/services/virtual" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
+        <Link href="/services/homam" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
           <ArrowLeft className="h-5 w-5" />
         </Link>
       </div>
@@ -87,11 +109,14 @@ export default function BadrakaliHomamPage() {
       {/* Title */}
       <div className="mx-auto mt-4 mb-8 max-w-6xl text-center">
        <h1 className="text-3xl font-serif tracking-wide leading-tight text-[#2f3a1f]">
-        Badrakali Homam
+        {homam?.title}
         </h1>
-        <p className="mt-2 text-sm text-[#4f5d2f]">
-          Powerful ritual to invoke Goddess Badrakali for protection, removing obstacles, and destroying negative energies.
-        </p>
+        {homam?.shortDescription && (
+  <p className="mt-2 text-sm text-[#4f5d2f]">
+    {homam.shortDescription}
+  </p>
+)}
+
       </div>
 
       {/* Main Layout */}
@@ -103,13 +128,14 @@ export default function BadrakaliHomamPage() {
             <div className="w-[300px] rounded-2xl border border-[#cfd8a3] bg-white p-4 shadow-sm">
               <div className="aspect-square overflow-hidden rounded-xl bg-[#eef4cf]">
                 <Image
-                  src="/services/virtual/Badrakali Homam.jpeg"
-                  alt="Badrakali Homam"
-                  width={400}
-                  height={400}
-                  className="h-full w-full object-cover"
-                  unoptimized
-                />
+  src={homam?.image || ""}
+  alt={homam?.title ?? "Homam Image"}
+  width={400}
+  height={400}
+  className="h-full w-full object-cover"
+  unoptimized
+/>
+
               </div>
             </div>
           </div>
@@ -117,16 +143,23 @@ export default function BadrakaliHomamPage() {
           {/* Info */}
           <div className="space-y-4 text-center">
             <p className="text-lg font-semibold text-[#2f3a1f]">
-              ₹15,000.00 – ₹35,000.00
-            </p>
+  {homam?.priceRange}
+</p>
 
-            <p className="text-sm text-[#4f5d2f]">
-              <strong>Duration:</strong> 2.5-3 hrs
-            </p>
 
-            <p className="text-sm text-[#4f5d2f]">
-              <strong>Objective:</strong> To invoke Goddess Badrakali for protection from enemies, removal of obstacles, and destruction of negative energies.
-            </p>
+            {homam?.duration && (
+  <p className="text-sm text-[#4f5d2f]">
+    <strong>Duration:</strong> {homam.duration}
+  </p>
+)}
+
+
+            {homam?.objective && (
+  <p className="text-sm text-[#4f5d2f]">
+    <strong>Objective:</strong> {homam.objective}
+  </p>
+)}
+
           </div>
 
           {/* BOOKING CARD */}
@@ -239,7 +272,12 @@ export default function BadrakaliHomamPage() {
       {/* TABS */}
       <div className="mx-auto mt-14 max-w-6xl">
         <div className="flex gap-6 border-b text-sm">
-          {["description", "reviews", "faq"].map((t) => (
+          {[
+  "description",
+  "reviews",
+  ...(homam?.faq && homam.faq.length > 0 ? ["faq"] : []),
+].map((t) => (
+
             <button
               key={t}
               onClick={() => setTab(t as any)}
@@ -257,36 +295,81 @@ export default function BadrakaliHomamPage() {
         </div>
 
         {/* TAB CONTENT */}
-        <div className="mt-6 text-sm text-[#4f5d2f]">
-         {tab === "description" && (
-  <div className="space-y-5 text-sm text-[#4f5d2f] leading-relaxed">
-    
-    <p>
-      <strong>Badrakali Homam</strong> is a powerful Vedic ritual dedicated to Goddess Badrakali, a fierce form of Goddess Kali known for her protective and destructive powers against evil forces.
-    </p>
+       <div className="mt-6 text-sm text-[#4f5d2f]">
+  {tab === "description" && (
+    <div className="space-y-5 text-sm text-[#4f5d2f] leading-relaxed">
+      {homam?.description?.map((block: any, index: number) => {
+        // Heading
+        if (block.type === "h") {
+          return (
+            <p
+              key={index}
+              className="pt-4 text-base font-semibold text-[#2f3a1f]"
+            >
+              {block.text}
+            </p>
+          );
+        }
 
-    <p>
-      <strong>Deity Worshipped:</strong> Goddess Badrakali (Fierce form of Goddess Kali)
-    </p>
+        // Paragraph
+        if (block.type === "p") {
+          return <p key={index}>{block.text}</p>;
+        }
 
-    <p>
-      <strong>Purpose:</strong> This homam is performed to seek protection from enemies, ward off evil spirits, remove obstacles, destroy negative energies, and gain courage and strength.
-    </p>
+        // Bullet list
+        if (block.type === "ul") {
+          return (
+            <ul key={index} className="list-disc pl-5 space-y-1">
+              {block.items.map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          );
+        }
 
-    <p>
-      <strong>Benefits:</strong> Protection from enemies and evil forces, removal of black magic and negative energies, overcoming fears and gaining inner strength, success in legal matters, and overall protection for family.
-    </p>
+        // ✅ TABLE (for Ganesh / Vinayagar Chaturthi kit etc.)
+        if (block.type === "table") {
+          return (
+            <div key={index} className="overflow-x-auto pt-2">
+              <table className="w-full border border-[#cfd8a3] text-sm">
+                <thead className="bg-[#eef4cf]">
+                  <tr>
+                    {block.headers.map((head: string, i: number) => (
+                      <th
+                        key={i}
+                        className="border border-[#cfd8a3] px-3 py-2 text-left font-semibold text-[#2f3a1f]"
+                      >
+                        {head}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.rows.map((row: string[], rIdx: number) => (
+                    <tr key={rIdx} className="bg-white">
+                      {row.map((cell: string, cIdx: number) => (
+                        <td
+                          key={cIdx}
+                          className="border border-[#cfd8a3] px-3 py-2 text-[#4f5d2f]"
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
 
-    <p>
-      <strong>Suitable for:</strong> Those facing enemies or opposition, individuals affected by negative energies or black magic, people seeking courage and fearlessness, and those going through challenging situations.
-    </p>
+        return null;
+      })}
+    </div>
+  )}
+</div>
 
-    <p>
-      <strong>Best time to perform:</strong> Tuesdays, Ashtami (8th day), Navami (9th day), during Navratri, or on auspicious occasions as recommended by priest.
-    </p>
 
-        </div>
-      )}
 
       {tab === "reviews" && (
   <div className="mt-6 space-y-6 text-sm text-[#4f5d2f]">
@@ -316,8 +399,8 @@ export default function BadrakaliHomamPage() {
         onClick={() => setRating(star)}
         className={`cursor-pointer transition ${
           star <= rating
-            ? "fill-[#f4c430] text-[#f4c430]"
-            : "text-[#9ca67a]"
+            ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
+            : "text-[#9ca67a]"                  // visible grey
         }`}
       />
     ))}
@@ -367,136 +450,80 @@ export default function BadrakaliHomamPage() {
 )}
 
 
-         {tab === "faq" && (
-  <div className="space-y-6 text-sm leading-relaxed text-[#2f3a1f]">
-    <div>
-      <p className="font-semibold">
-        1. Can I pay a Partial amount in advance to confirm the Homam and pay the
-        balance as cash or pay online after the Homam?
-      </p>
-      <p className="mt-2 text-[#4f5d2f]">
-        Yes, you can pay the partial amount as a token advance to confirm your
-        booking. You can pay the balance amount after the Homam with cash
-        directly to our Priests or through an Online transfer (Click on the
-        "Pay-Balance" button in your My- Account section corresponding to your
-        order number).
-      </p>
-    </div>
+                {tab === "faq" && (
+          <div className="space-y-6 text-sm leading-relaxed text-[#2f3a1f]">
+            {homam?.faq?.map((item, index) => (
+              <div key={index}>
+                <p className="font-semibold">
+                  {index + 1}. {item.question}
+                </p>
+                <p className="mt-2 text-[#4f5d2f]">{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        )}
+              {/* PRICING / PACKAGES */}
+      {homam?.packages && homam.packages.length > 0 && (
+        <section className="mt-20">
+          <h2 className="mb-10 text-center text-2xl font-serif text-[#2f3a1f]">
+            PRICING / PACKAGES
+          </h2>
 
-    <div>
-      <p className="font-semibold">
-        2. How Long does the Homam take to complete?
-      </p>
-      <p className="mt-2 text-[#4f5d2f]">
-        Homams are typically performed for 2.5-3 hours at the same time it also
-        depends on the package selected for the homam.
-      </p>
-    </div>
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
+            {homam.packages.map(
+              (
+                pkg: {
+                  name: string;
+                  price: string;
+                  priests: string;
+                  description: string;
+                  procedures: string[];
+                },
+                index: number
+              ) => (
+                <div
+                  key={index}
+                  className={`overflow-hidden rounded-2xl border ${
+                    pkg.name === "Standard"
+                      ? "border-2 border-[#2f9e44] shadow-lg"
+                      : "border-[#d8e2a8] shadow-sm"
+                  } bg-white`}
+                >
+                  <div
+                    className={`py-4 text-center text-lg font-medium ${
+                      pkg.name === "Standard"
+                        ? "bg-[#2f9e44] text-white"
+                        : "bg-[#f3f4f6]"
+                    }`}
+                  >
+                    {pkg.name}
+                  </div>
 
-    <div>
-      <p className="font-semibold">
-        3. When will I get the Prasad for my Homam if I select Vedic Pooja Center
-        since I\'m abroad?
-      </p>
-      <p className="mt-2 text-[#4f5d2f]">
-        You will receive the Prasad for your Homam within 14 working days after
-        the homam has been performed (Subject to the country and the customs
-        department of that particular country).
-      </p>
-    </div>
-  </div>
-)}
-</div>
+                  <div className="p-6">
+                    <p className="mb-4 text-center text-2xl font-semibold">
+                      {pkg.price}
+                    </p>
+
+                    <p className="mb-3 font-medium">{pkg.priests}</p>
+
+                    <p className="mb-5 text-sm text-[#4f5d2f]">
+                      {pkg.description}
+                    </p>
+
+                    <p className="mb-2 font-medium">Procedure involved:</p>
+                    <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
+                      {pkg.procedures.map((item: string, i: number) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </section>
+      )}
       </div>
-
-      {/* PRICING / PACKAGES */}
-      <section className="mt-20">
-        <h2 className="mb-10 text-center text-2xl font-serif text-[#2f3a1f]">
-          PRICING / PACKAGES
-        </h2>
-
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm min-h-[460px]">
-      <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
-        Economy
-      </div>
-
-      <div className="p-6">
-        <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 15,000
-        </p>
-
-        <p className="mb-3 font-medium">1 Vadhyar</p>
-        <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Economy package 1 Vadhyar will be there, 3000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
-        </p>
-
-        <p className="mb-2 font-medium">Procedure involved:</p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
-          <li>Punyaha Vachanam, Maha Sankalpam</li>
-          <li>Kalasa Pooja</li>
-          <li>Badrakali Homam (3000 japams and tat dasams homam)</li>
-        </ul>
-      </div>
-    </div>
-
-    {/* Standard (Highlighted) */}
-    <div className="overflow-hidden rounded-2xl border-2 border-[#2f9e44] bg-white shadow-lg min-h-[460px]">
-      <div className="bg-[#2f9e44] py-4 text-center text-lg font-medium text-white">
-        Standard
-      </div>
-
-      <div className="p-6">
-        <p className="mb-4 text-center text-2xl font-semibold text-[#2f9e44]">
-          Rs. 25,000
-        </p>
-
-        <p className="mb-3 font-medium">2 Vadhyar</p>
-        <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Standard package 2 Vadhyar will be there, 3000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
-        </p>
-
-        <p className="mb-2 font-medium">Procedure involved:</p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
-          <li>Punyaha Vachanam, Maha Sankalpam</li>
-          <li>Kalasa Pooja</li>
-          <li>Badrakali Homam (3000 japams and tat dasams homam)</li>
-        </ul>
-      </div>
-    </div>
-
-    {/* Premium */}
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm min-h-[460px]">
-      <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
-        Premium
-      </div>
-
-      <div className="p-6">
-        <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 35,000
-        </p>
-
-        <p className="mb-3 font-medium">4 Vadhyar</p>
-        <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Premium package 4 Vadhyar will be there, 3000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
-        </p>
-
-        <p className="mb-2 font-medium">Procedure involved:</p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
-          <li>Punyaha Vachanam, Maha Sankalpam</li>
-          <li>Kalasa Pooja</li>
-          <li>Badrakali Homam (3000 japams and tat dasams homam)</li>
-        </ul>
-        </div>
-      </div>
-    </div>
-      </section>
     </section>
   );
 }
