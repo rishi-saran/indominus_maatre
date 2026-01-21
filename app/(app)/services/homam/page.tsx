@@ -6,58 +6,8 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { HoverCard } from "@/components/ui/magic/hover-card";
+import { homamServices } from "@/data/homams";
 
-const allHomamServices = [
-  // Page 1
-  { title: "AAVAHANTHI HOMAM", image: "/services/homam/aavanthii-homam.png", href: "/services/homam/aavahanthi-homam" },
-  { title: "Aavani Avittam", image: "/services/homam/aavani-avittam.png", href: "/services/homam/aavani-avittam" },
-  { title: "ABDHA POORTHI AYUSH HOMAM", image: "/services/homam/abdha poorthi-ayush-homam.png", href: "/services/homam/abdha-poorthi-ayush-homam" },
-  { title: "Ayusha Homam (also called Ayushya Homam)", image: "/services/homam/ayushya-homam.png", href: "/services/homam/ayusha-homam" },
-  { title: "AYYAPPA POOJA", image: "/services/homam/ayyapra-pooja.png", href: "/services/homam/ayyappa-pooja" },
-  { title: "Bheemaratha Shanti", image: "/services/homam/bheemerattha-shanti.png", href: "/services/homam/bheemaratha-shanti" },
-  { title: "Bhoomi Puja", image: "/services/homam/bhoomi-puja.png", href: "/services/homam/bhoomi-puja" },
-  { title: "Chandi Homam ( Sapta Sati )", image: "/services/homam/chandi-homam-satpa.png", href: "/services/homam/chandi-homam" },
-  { title: "Dhanvantari Homam", image: "/services/homam/dhanvantari-homam.png", href: "/services/homam/dhanvantari-homam-1" },
-  { title: "Dhanvantari Homam", image: "/services/homam/dhanvantari-homam-alt.png", href: "/services/homam/dhanvantari-homam-2" },
-  { title: "DURGA HOMAM", image: "/services/homam/durga-homam.png", href: "/services/homam/durga-homam" },
-  { title: "Durga Shanti Homam", image: "/services/homam/durga-shanti-homam.png", href: "/services/homam/durga-shanti-homam" },
-  { title: "Engagement", image: "/services/homam/engagement.png", href: "/services/homam/engagement" },
-  { title: "Ganapathi Homam", image: "/services/homam/ganapathi-homam.png", href: "/services/homam/ganapathi-homam" },
-  { title: "Haridra Ganapathy Homam", image: "/services/homam/harini-ganapathy-homam.png", href: "/services/homam/haridra-ganapathy-homam" },
-  { title: "HIRANYA SRARDHAM", image: "/services/homam/hiranya-shraadh.png", href: "/services/homam/hiranya-srardham" },
-  { title: "Housewarming or Grihapravesham", image: "/services/homam/housewarming.png", href: "/services/homam/housewarming" },
-  { title: "Jathakarma", image: "/services/homam/jathakarma.png", href: "/services/homam/jathakarma" },
-  { title: "Kanakabishekam", image: "/services/homam/kanakabishekam.png", href: "/services/homam/kanakabishekam" },
-  { title: "Lakshmi Kubera Homam", image: "/services/homam/lakshmi-kubera-homam.png", href: "/services/homam/lakshmi-kubera-homam" },
-
-  // Page 2
-  { title: "MAHALAKSHMI PUJA", image: "/services/homam/mahalakshmi-puja.png", href: "/services/homam/mahalakshmi-puja" },
-  { title: "Marriage: (Vivaham)", image: "/services/homam/marriage.png", href: "/services/homam/marriage-vivaham" },
-  { title: "Mrutyunjaya Homam", image: "/services/homam/mrutyunjaya-homam.png", href: "/services/homam/mrutyunjaya-homam" },
-  { title: "Navagraha Homam", image: "/services/homam/navagraha-homam.png", href: "/services/homam/navagraha-homam" },
-  { title: "Nichayathartham (Engagement)", image: "/services/homam/nichayathartham.png", href: "/services/homam/nichayathartham" },
-  { title: "Pratyangira Badrakali Homam", image: "/services/homam/pratyangira.png", href: "/services/homam/pratyangira-badrakali" },
-  { title: "Punyaha Vachanam", image: "/services/homam/punyaha-vachanam.png", href: "/services/homam/punyaha-vachanam" },
-  { title: "Rudra Ekadashi Homam", image: "/services/homam/rudra.png", href: "/services/homam/rudra-ekadashi" },
-  { title: "Sadakshari Durga Gayatri Homam", image: "/services/homam/sadakshari.png", href: "/services/homam/sadakshari-durga-gayatri" },
-  { title: "SARASWATHI POOJAI", image: "/services/homam/saraswathi.png", href: "/services/homam/saraswathi-poojai" },
-  { title: "Sathabhishekam", image: "/services/homam/sathabhishekam.png", href: "/services/homam/sathabhishekam" },
-  { title: "SATHYANARAYANA PUJA", image: "/services/homam/satyanarayana.png", href: "/services/homam/sathyanarayana-puja" },
-  { title: "Seemantham", image: "/services/homam/seemantham.png", href: "/services/homam/seemantham" },
-  { title: "Shashtyabdapoorthiy", image: "/services/homam/shashtyabdapoorthi.png", href: "/services/homam/shashtyabdapoorthiy" },
-  { title: "Shatru Samhara Homam", image: "/services/homam/shatru-samhara.png", href: "/services/homam/shatru-samhara-homam" },
-  { title: "SIDHI VINAYAGA PUJA", image: "/services/homam/sidhi-vinayaga.png", href: "/services/homam/sidhi-vinayaga-puja" },
-  { title: "SRARDHAM", image: "/services/homam/srardham.png", href: "/services/homam/srardham" },
-  { title: "Sudarshana Homam", image: "/services/homam/sudarshana.png", href: "/services/homam/sudarshana-homam" },
-  { title: "Swayamvara Parvathi Homam", image: "/services/homam/swayamvara.png", href: "/services/homam/swayamvara-parvathi" },
-  { title: "UgraRatha Shanti", image: "/services/homam/ugraratha.png", href: "/services/homam/ugraratha-shanti" },
-
-  // Page 3
-  { title: "Upanayanam", image: "/services/homam/upanayanam.png", href: "/services/homam/upanayanam" },
-  { title: "Vancha Kalpalatha Maha Ganapathi Homam", image: "/services/homam/vancha.png", href: "/services/homam/vancha-kalpalatha-ganapathi" },
-  { title: "VASTU SHANTHI", image: "/services/homam/vastu-shanthi.png", href: "/services/homam/vastu-shanthi" },
-  { title: "VijayaRatha Shanti", image: "/services/homam/vijayaratha.png", href: "/services/homam/vijayaratha-shanti" }
-];
 
 const categories = [
   { name: "Chanting", href: "/services/chanting" },
@@ -73,7 +23,7 @@ export default function HomamPage() {
   
   const getPageItems = () => {
     const startIdx = (currentPage - 1) * itemsPerPage;
-    return allHomamServices.slice(startIdx, startIdx + itemsPerPage);
+    return homamServices.slice(startIdx, startIdx + itemsPerPage);
   };
   
   const pageItems = getPageItems();
@@ -122,7 +72,7 @@ export default function HomamPage() {
 
       <div className="mx-auto mt-8 max-w-5xl text-center">
         <p className="text-sm text-[#4f5d2f]">
-          Showing {(currentPage - 1) * 20 + 1}-{Math.min(currentPage * 20, allHomamServices.length)} of {allHomamServices.length} results
+          Showing {(currentPage - 1) * 20 + 1}-{Math.min(currentPage * 20, homamServices.length)} of {homamServices.length} results
         </p>
       </div>
 
