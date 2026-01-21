@@ -33,19 +33,19 @@ export default function VirtualPage() {
         {virtualServices.map((service) => (
           <HoverCard key={service.slug}>
             <Link href={`/services/virtual/${service.slug}`}>
-            <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] cursor-pointer">
-              <CardContent className="flex h-80 flex-col items-center justify-between p-6">
-                <div className="w-full h-52 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
+            <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf] cursor-pointer">
+              <CardContent className="flex h-full flex-col p-4">
+                <div className="mb-4 h-44 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
                   <Image
                     src={service.image}
                     alt={service.title}
-                    width={280}
-                    height={320}
+                    width={240}
+                    height={240}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     unoptimized
                   />
                 </div>
-                <h2 className="mt-4 text-center text-sm font-semibold text-[#2f3a1f] line-clamp-2">
+                <h2 className="mt-auto min-h-[3rem] flex items-center justify-center text-center text-sm font-semibold leading-snug text-[#2f3a1f] line-clamp-2">
                   {service.title}
                 </h2>
               </CardContent>
@@ -70,7 +70,7 @@ export default function VirtualPage() {
             href={cat.href}
             className={`rounded-full px-6 py-2 text-sm font-medium transition ${
               cat.active
-                ? "bg-[#6b7a2c] text-white"
+                ? "bg-[#2f9e44] text-white shadow-sm"
                 : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
             }`}
           >

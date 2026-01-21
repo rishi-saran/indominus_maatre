@@ -19,6 +19,7 @@ interface CartService {
     flowers?: string;
   };
   addedAt?: string;
+  selected?: boolean;
 }
 
 export default function CartPage() {
@@ -83,6 +84,15 @@ export default function CartPage() {
     };
   }, []);
 
+  const toggleSelection = (id: number) => {
+    const updated = services.map((svc) =>
+      svc.id === id ? { ...svc, selected: !svc.selected } : svc
+    );
+    setServices(updated);
+    localStorage.setItem('addedServices', JSON.stringify(updated));
+    window.dispatchEvent(new Event('servicesUpdated'));
+  };
+
   const removeService = (id: number) => {
     const updated = services.filter((svc) => svc.id !== id);
     setServices(updated);
@@ -97,7 +107,9 @@ export default function CartPage() {
   };
 
   const calculateSubtotal = () => {
-    return services.reduce((sum, svc) => sum + getServicePrice(svc), 0);
+    return services
+      .filter((svc) => svc.selected !== false)
+      .reduce((sum, svc) => sum + getServicePrice(svc), 0);
   };
 
   const subtotal = calculateSubtotal();
@@ -177,6 +189,15 @@ export default function CartPage() {
                           key={svc.id}
                           className="flex gap-3 p-3 rounded-lg border border-[#e5e5e5] hover:border-[#2f9e44] transition-all"
                         >
+                          <div className="flex items-start pt-1">
+                            <input
+                              type="checkbox"
+                              checked={svc.selected !== false}
+                              onChange={() => toggleSelection(svc.id)}
+                              className="h-5 w-5 rounded cursor-pointer"
+                              style={{ accentColor: '#2f9e44' }}
+                            />
+                          </div>
                           <img
                             src={svc.image}
                             alt={svc.title}
