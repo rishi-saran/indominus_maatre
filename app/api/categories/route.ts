@@ -1,23 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
+/**
+ * GET /categories
+ * Public endpoint – no auth required
+ */
+export async function GET() {
   try {
-    // Call backend directly
-    const url = `${BACKEND_URL}/service-categories/`;
-    console.log('Fetching categories from backend:', url);
-    
-    const response = await fetch(url, { 
-      method: 'GET', 
-      headers: { 'Content-Type': 'application/json' } 
-    });
-    
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/service-categories/`,
+      {
+        method: "GET",
+      }
+    );
+
     const data = await response.json();
-    console.log('Backend categories response:', data);
-    
+
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Categories API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
+    console.error("Categories API error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch categories" },
+      { status: 500 }
+    );
   }
 }

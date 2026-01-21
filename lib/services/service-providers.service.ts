@@ -1,27 +1,40 @@
+// lib/services/service-providers.service.ts
+
 import { ApiService } from './api.service';
 import { API_ENDPOINTS } from '@/lib/config/api.config';
 
-interface ServiceProvider {
-  provider_id: string;
+/* =======================
+   Types aligned to backend
+======================= */
+
+export interface ServiceProvider {
+  id: string;
   name: string;
-  description?: string;
-  rating?: number;
-  experience_years?: number;
-  specialization?: string[];
+  phone: string | null;
+  verified: boolean;
+  created_at: string;
 }
+
+/* =======================
+   Service Providers API
+======================= */
 
 export class ServiceProvidersService {
   /**
    * List all service providers
    */
-  static async list(params?: { service_id?: string }): Promise<ServiceProvider[]> {
-    return ApiService.get<ServiceProvider[]>(API_ENDPOINTS.serviceProviders.list, { params: params });
+  static async list(): Promise<ServiceProvider[]> {
+    return ApiService.get<ServiceProvider[]>(
+      API_ENDPOINTS.serviceProviders.list
+    );
   }
 
   /**
    * Get service provider by ID
    */
   static async getById(providerId: string): Promise<ServiceProvider> {
-    return ApiService.get<ServiceProvider>(API_ENDPOINTS.serviceProviders.getById(providerId));
+    return ApiService.get<ServiceProvider>(
+      API_ENDPOINTS.serviceProviders.getById(providerId)
+    );
   }
 }
