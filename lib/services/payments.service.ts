@@ -1,38 +1,45 @@
+// lib/services/payments.service.ts
+
 import { ApiService } from './api.service';
 import { API_ENDPOINTS } from '@/lib/config/api.config';
 
-interface CreatePaymentRequest {
+/* =======================
+   Types aligned to backend
+======================= */
+
+export interface Payment {
+  id: string;
   order_id: string;
   method: string;
-}
-
-interface Payment {
-  payment_id: string;
   status: string;
-  amount?: number;
-  method?: string;
+  amount: number;
+  currency?: string;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
   created_at?: string;
 }
 
-export class PaymentsService {
-  /**
-   * Create a new payment
-   */
-  static async create(data: CreatePaymentRequest): Promise<Payment> {
-    return ApiService.post<Payment>(API_ENDPOINTS.payments.create, data);
-  }
+/* =======================
+   Payment Service
+======================= */
 
+export class PaymentsService {
   /**
    * Get payment by ID
    */
   static async getById(paymentId: string): Promise<Payment> {
-    return ApiService.get<Payment>(API_ENDPOINTS.payments.getById(paymentId));
+    return ApiService.get<Payment>(
+      API_ENDPOINTS.payments.getById(paymentId)
+    );
   }
 
   /**
-   * List all payments
+   * List payments for an order
    */
-  static async list(params?: { order_id?: string }): Promise<Payment[]> {
-    return ApiService.get<Payment[]>(API_ENDPOINTS.payments.list, { params: params });
+  static async listByOrder(orderId: string): Promise<Payment[]> {
+    return ApiService.get<Payment[]>(
+      API_ENDPOINTS.payments.list,
+      { params: { order_id: orderId } }
+    );
   }
 }

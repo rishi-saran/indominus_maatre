@@ -1,84 +1,86 @@
+import { supabase } from '@/lib/supabase/client';
+
 interface FetchOptions extends RequestInit {
   params?: Record<string, any>;
 }
 
 export class ApiService {
-  private static buildUrl(endpoint: string, params?: Record<string, any>): string {
-    // Build the base URL with query parameters
-    let url = endpoint;
-    
-    if (params) {
-      const searchParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          searchParams.append(key, String(value));
-        }
-      });
-      const queryString = searchParams.toString();
-      url = queryString ? `${endpoint}?${queryString}` : endpoint;
-    }
-    
-    return url;
+  private static async buildHeaders(extraHeaders?: HeadersInit) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    return {
+      'Content-Type': 'application/json',
+      ...(session?.access_token && {
+        Authorization: `Bearer ${session.access_token}`,
+      }),
+      ...extraHeaders,
+    };
+  }
+
+  private static buildUrl(endpoint: string, params?: Record<string, any>) {
+    if (!params) return endpoint;
+
+    const search = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) {
+        search.append(k, String(v));
+      }
+    });
+
+    return search.toString() ? `${endpoint}?${search}` : endpoint;
   }
 
   static async get<T>(endpoint: string, options?: FetchOptions): Promise<T> {
     const url = this.buildUrl(endpoint, options?.params);
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'include',
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options?.headers,
-        },
-      });
-      
-      if (!response.ok) {
-        const errorBody = await response.text().catch(() => '');
-        console.error(`API Error: ${response.statusText}`, {
-          status: response.status,
-          statusText: response.statusText,
-          endpoint: url,
-          body: errorBody
-        });
-        throw new Error(`API Error: ${response.statusText}`);
-      }
-      
-      return response.json();
-    } catch (error) {
-      console.error('Fetch error:', error);
-      throw error;
-    }
+    const headers = await this.buildHeaders(options?.headers);
+
+    const res = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      ...options,
+      headers,
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   }
 
-  static async post<T>(endpoint: string, data?: any, options?: FetchOptions): Promise<T> {
+  static async post<T>(
+    endpoint: string,
+    body?: any,
+    options?: FetchOptions
+  ): Promise<T> {
     const url = this.buildUrl(endpoint, options?.params);
-    const response = await fetch(url, {
+    const headers = await this.buildHeaders(options?.headers);
+
+    const res = await fetch(url, {
       method: 'POST',
       credentials: 'include',
       ...options,
-      body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
     });
-    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-    return response.json();
+
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   }
 
-  static async delete<T>(endpoint: string, options?: FetchOptions): Promise<T> {
-    const response = await fetch(endpoint, {
+  static async delete<T>(
+    endpoint: string,
+    options?: FetchOptions
+  ): Promise<T> {
+    const headers = await this.buildHeaders(options?.headers);
+
+    const res = await fetch(endpoint, {
       method: 'DELETE',
       credentials: 'include',
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
     });
-    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-    return response.json();
+
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   }
 }

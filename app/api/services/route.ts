@@ -1,26 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { NextRequest, NextResponse } from "next/server";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
+/**
+ * GET /services
+ * Optional query params:
+ *  - category_id
+ * Public endpoint
+ */
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const queryString = searchParams.toString();
-    
-    // Call backend directly
-    const url = queryString ? `${BACKEND_URL}/services/?${queryString}` : `${BACKEND_URL}/services/`;
-    console.log('Fetching services from backend:', url);
-    
-    const response = await fetch(url, { 
-      method: 'GET', 
-      headers: { 'Content-Type': 'application/json' } 
-    });
-    
-    const data = await response.json();
-    console.log('Backend services response:', data);
-    
-    return NextResponse.json(data, { status: response.status });
+    const query = request.nextUrl.searchParams.toString();
+    const url = query
+      ? `${API_BASE_URL}/api/v1/services/?${query}`
+      : `${API_BASE_URL}/api/v1/services/`;
+
+    const response = await fetch(url, { method: "GET" });
+
+    const contentType = response.headers.get("content-type") || "";
+    const isJson = contentType.includes("application/json");
+    const payload = isJson ? await response.json() : await response.text();
+
+    return NextResponse.json(payload, { status: response.status });
   } catch (error) {
-    console.error('Services API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch services' }, { status: 500 });
+    console.error("Services API error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch services" },
+      { status: 500 }
+    );
   }
 }
