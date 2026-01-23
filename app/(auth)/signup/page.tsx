@@ -13,6 +13,7 @@ export default function SignupPage() {
     first_name: '',
     last_name: '',
     phone: '',
+    role: 'customer',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -117,6 +118,34 @@ export default function SignupPage() {
             <div>
               <label htmlFor="phone" className="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
               <input id="phone" type="tel" placeholder="9876543210" name="phone" value={formData.phone} onChange={handleChange} pattern="[0-9]{10}" required className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-900"/>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+              <div className="flex items-center gap-4 text-sm text-gray-800">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="role"
+                    value="customer"
+                    checked={formData.role === 'customer'}
+                    onChange={handleChange}
+                    className="text-[var(--spiritual-green)]"
+                  />
+                  Customer
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="role"
+                    value="priest"
+                    checked={formData.role === 'priest'}
+                    onChange={handleChange}
+                    className="text-[var(--spiritual-green)]"
+                  />
+                  Priest
+                </label>
+              </div>
             </div>
 
             <button type="submit" disabled={isLoading} className="w-full px-4 py-2 font-bold text-xs text-white bg-[#2f9e44] hover:bg-[#268a3b] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer rounded-lg hover:-translate-y-1">

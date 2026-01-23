@@ -12,6 +12,7 @@ export interface SignupCredentials {
   first_name: string;
   last_name: string;
   phone: string;
+  role?: 'customer' | 'priest';
 }
 
 export interface AuthResponse {
@@ -48,6 +49,8 @@ class AuthServiceClass {
    */
   async signup(credentials: SignupCredentials): Promise<AuthResponse> {
     try {
+      const role = credentials.role || 'customer';
+
       const { data, error } = await supabase.auth.signUp({
         email: credentials.email,
         password: credentials.password,
@@ -56,6 +59,7 @@ class AuthServiceClass {
             first_name: credentials.first_name,
             last_name: credentials.last_name,
             phone: credentials.phone,
+            role,
           },
         },
       });
@@ -66,7 +70,8 @@ class AuthServiceClass {
 
       // Optionally create a user profile in a users table
       if (data.user) {
-        await this.createUserProfile(data.user.id, credentials);
+        await this.createUserProfile(data.user.id, credentials, role);
+        await this.createProfileRow(data.user.id, role);
       }
 
       return {
@@ -83,7 +88,8 @@ class AuthServiceClass {
    */
   private async createUserProfile(
     userId: string,
-    credentials: SignupCredentials
+    credentials: SignupCredentials,
+    role: 'customer' | 'priest'
   ): Promise<void> {
     try {
       const { error } = await supabase.from('users').insert([
@@ -94,6 +100,7 @@ class AuthServiceClass {
           last_name: credentials.last_name,
           phone: credentials.phone,
           created_at: new Date().toISOString(),
+          role,
         },
       ]);
 
@@ -104,6 +111,27 @@ class AuthServiceClass {
     } catch (err) {
       console.error('Error creating user profile:', err);
       // Don't throw - signup was successful even if profile creation fails
+    }
+  }
+
+  /**
+   * Create profile row for role-based access (used by streaming guards)
+   */
+  private async createProfileRow(
+    userId: string,
+    role: 'customer' | 'priest'
+  ): Promise<void> {
+    try {
+      const { error } = await supabase.from('profiles').upsert(
+        { id: userId, role },
+        { onConflict: 'id' }
+      );
+
+      if (error) {
+        console.warn('Error creating profile row:', error);
+      }
+    } catch (err) {
+      console.error('Error creating profile row:', err);
     }
   }
 
