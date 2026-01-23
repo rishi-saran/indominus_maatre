@@ -3,6 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart, Trash2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import Script from 'next/script';
+import { initializeRazorpayPayment, verifyRazorpayPayment, type RazorpayResponse } from '@/lib/utils/razorpay';
+import { AddressesService, type CreateAddressPayload } from '@/lib/services/addresses.service';
+import { ServiceProvidersService, type ServiceProvider } from '@/lib/services/service-providers.service';
 
 interface CartService {
   id: number;
@@ -30,6 +34,21 @@ export default function CartPage() {
   const [showCouponInput, setShowCouponInput] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [loadingProviders, setLoadingProviders] = useState(false);
+  const [addressId, setAddressId] = useState<string | null>(null);
+  const [providerId, setProviderId] = useState<string | null>(null);
+  const [providers, setProviders] = useState<ServiceProvider[]>([]);
+  const [addressForm, setAddressForm] = useState<CreateAddressPayload>({
+    line1: '',
+    line2: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: 'India',
+  });
   
   const [contactInfo, setContactInfo] = useState({
     name: 'Priya Sharma',
@@ -78,11 +97,40 @@ export default function CartPage() {
     window.addEventListener('storage', handler);
     window.addEventListener('servicesUpdated', handler as EventListener);
     
+    // Fallback: Enable payment gateway after 5 seconds if script hasn't loaded
+    const timeout = setTimeout(() => {
+      if (!razorpayLoaded) {
+        console.log('Razorpay script slow to load, enabling fallback');
+        setRazorpayLoaded(true);
+      }
+    }, 5000);
+    
     return () => {
+      clearTimeout(timeout);
       window.removeEventListener('storage', handler);
       window.removeEventListener('servicesUpdated', handler as EventListener);
     };
-  }, []);
+  }, [razorpayLoaded]);
+
+  // Load available service providers
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        setLoadingProviders(true);
+        const list = await ServiceProvidersService.list();
+        setProviders(list);
+        if (!providerId && list.length > 0) {
+          setProviderId(list[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to load providers', error);
+      } finally {
+        setLoadingProviders(false);
+      }
+    };
+
+    loadProviders();
+  }, [providerId]);
 
   const toggleSelection = (id: number) => {
     const updated = services.map((svc) =>
@@ -117,6 +165,103 @@ export default function CartPage() {
   const tax = Math.round((subtotal - discount) * 0.18); // 18% GST
   const total = subtotal - discount + tax;
 
+  const handleContinueToReview = async () => {
+    try {
+      const resolvedAddressId = await ensureAddress();
+      if (!providerId && providers.length > 0) {
+        setProviderId(providers[0].id);
+      }
+      if (!resolvedAddressId) {
+        throw new Error('Please add an address');
+      }
+      setCheckoutStep(3);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Please complete address details');
+    }
+  };
+
+  const requireAddressFields = () => {
+    const requiredFields: Array<keyof CreateAddressPayload> = [
+      'line1',
+      'city',
+      'state',
+      'postal_code',
+    ];
+    return requiredFields.every((key) => addressForm[key]?.trim());
+  };
+
+  const ensureAddress = async (): Promise<string> => {
+    if (addressId) return addressId;
+    if (!requireAddressFields()) {
+      throw new Error('Please fill all required address fields');
+    }
+
+    setSavingAddress(true);
+    try {
+      const created = await AddressesService.create(addressForm);
+      setAddressId(created.id);
+      return created.id;
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
+  const ensureProvider = () => {
+    if (providerId) return providerId;
+    if (providers.length > 0) {
+      setProviderId(providers[0].id);
+      return providers[0].id;
+    }
+    throw new Error('Please select a service provider');
+  };
+
+  // Handle Razorpay payment
+  const handlePayment = async () => {
+    if (!razorpayLoaded) {
+      alert('Payment gateway is loading. Please try again.');
+      return;
+    }
+
+    setProcessingPayment(true);
+
+    try {
+      const resolvedAddressId = await ensureAddress();
+      const resolvedProviderId = ensureProvider();
+
+      await initializeRazorpayPayment(
+        total,
+        {
+          name: contactInfo.name,
+          email: contactInfo.email,
+          phone: contactInfo.phone,
+        },
+        {
+          providerId: resolvedProviderId,
+          addressId: resolvedAddressId,
+        },
+        async (response: RazorpayResponse) => {
+          // Verify payment
+          const verified = await verifyRazorpayPayment(response);
+          if (verified) {
+            setCheckoutStep(4);
+            setTimeout(() => clearAll(), 3000);
+          } else {
+            alert('Payment verification failed. Please contact support.');
+          }
+          setProcessingPayment(false);
+        },
+        () => {
+          setProcessingPayment(false);
+          alert('Payment cancelled');
+        }
+      );
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to initiate payment. Please try again.');
+      setProcessingPayment(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
@@ -126,14 +271,26 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3] py-6 px-4 md:px-8">
-      <div className="max-w-7xl mx-auto">
+    <>
+      {/* Load Razorpay Script */}
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="lazyOnload"
+        onLoad={() => setRazorpayLoaded(true)}
+        onError={() => {
+          console.error('Failed to load Razorpay SDK, allowing fallback');
+          setRazorpayLoaded(true); // Allow payment anyway with fallback
+        }}
+      />
+      
+      <div className="min-h-screen bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3] py-6 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-4">
           {checkoutStep > 0 && (
             <button
               onClick={() => setCheckoutStep(prev => Math.max(0, prev - 1) as 0 | 1 | 2 | 3 | 4)}
-              className="inline-flex items-center gap-1 text-sm font-medium text-[#2f3a1f] hover:text-[#2f9e44] transition-colors mb-3"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-[#2f3a1f] hover:bg-[#e5f0d8] hover:text-[#2f9e44] transition-colors mb-3"
             >
               <ArrowLeft className="h-4 w-4" />
               Back
@@ -351,14 +508,57 @@ export default function CartPage() {
                       className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" 
                     />
                   </div>
-                  <div>
-                    <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Address</label>
-                    <textarea 
-                      value={contactInfo.address}
-                      onChange={(e) => setContactInfo({...contactInfo, address: e.target.value})}
-                      className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" 
-                      rows={3} 
-                    />
+                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Address Line 1 *</label>
+                      <input
+                        value={addressForm.line1}
+                        onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })}
+                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                        placeholder="House / Flat / Street"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Address Line 2</label>
+                      <input
+                        value={addressForm.line2}
+                        onChange={(e) => setAddressForm({ ...addressForm, line2: e.target.value })}
+                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                        placeholder="Landmark / Area"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">City *</label>
+                      <input
+                        value={addressForm.city}
+                        onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">State *</label>
+                      <input
+                        value={addressForm.state}
+                        onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Postal Code *</label>
+                      <input
+                        value={addressForm.postal_code}
+                        onChange={(e) => setAddressForm({ ...addressForm, postal_code: e.target.value })}
+                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Country</label>
+                      <input
+                        value={addressForm.country}
+                        onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-end mt-4">
@@ -375,24 +575,56 @@ export default function CartPage() {
             {/* Step 2: Payment Method */}
             {checkoutStep === 2 && (
               <div className="max-w-3xl mx-auto bg-white rounded-lg border border-[#cfd8a3] p-5">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                  {['UPI', 'Credit/Debit Card', 'Cash on Delivery'].map((method) => (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-[#2f3a1f] mb-2">Select Service Provider</h3>
+                    <div className="space-y-2">
+                      {loadingProviders && (
+                        <p className="text-xs text-[#4f5d2f]">Loading providers...</p>
+                      )}
+                      {!loadingProviders && providers.length === 0 && (
+                        <p className="text-xs text-red-600">No providers available.</p>
+                      )}
+                      {!loadingProviders && providers.length > 0 && (
+                        <select
+                          value={providerId || ''}
+                          onChange={(e) => setProviderId(e.target.value)}
+                          className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                        >
+                          {providers.map((prov) => (
+                            <option key={prov.id} value={prov.id}>
+                              {prov.name} {prov.verified ? '✅' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-[#2f3a1f] mb-2">Payment Method</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {['UPI', 'Credit/Debit Card', 'Cash on Delivery'].map((method) => (
+                        <div 
+                          key={method}
+                          className="p-4 rounded-lg border-2 border-[#e5e5e5] bg-white hover:border-[#2f9e44] transition-all text-left"
+                        >
+                          <span className="text-sm font-semibold text-[#2f3a1f] block">{method}</span>
+                          <p className="text-xs text-[#4f5d2f] mt-0.5">Secure checkout</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
                     <button 
-                      key={method}
-                      className="p-4 rounded-lg border-2 border-[#e5e5e5] bg-white hover:border-[#2f9e44] transition-all text-left"
+                      onClick={handleContinueToReview} 
+                      disabled={savingAddress || loadingProviders}
+                      className="px-5 py-2 rounded-lg bg-[#2f9e44] text-white text-sm font-semibold hover:bg-[#268a3b] disabled:opacity-50"
                     >
-                      <span className="text-sm font-semibold text-[#2f3a1f] block">{method}</span>
-                      <p className="text-xs text-[#4f5d2f] mt-0.5">Secure checkout</p>
+                      {savingAddress ? 'Saving address...' : 'Review Order'}
                     </button>
-                  ))}
-                </div>
-                <div className="flex justify-end">
-                  <button 
-                    onClick={() => setCheckoutStep(3)} 
-                    className="px-5 py-2 rounded-lg bg-[#2f9e44] text-white text-sm font-semibold hover:bg-[#268a3b]"
-                  >
-                    Review Order
-                  </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -400,7 +632,29 @@ export default function CartPage() {
             {/* Step 3: Review Order */}
             {checkoutStep === 3 && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <div className="lg:col-span-8 bg-white rounded-lg border border-[#cfd8a3] p-4">
+                <div className="lg:col-span-8 bg-white rounded-lg border border-[#cfd8a3] p-4 space-y-4">
+                  <div className="bg-[#f7fbe9] border border-[#e5eec4] rounded-lg p-3 text-sm text-[#2f3a1f]">
+                    <div className="flex justify-between gap-2 flex-wrap">
+                      <div>
+                        <p className="font-semibold">Contact</p>
+                        <p>{contactInfo.name}</p>
+                        <p>{contactInfo.email}</p>
+                        <p>{contactInfo.phone}</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold">Address</p>
+                        <p>{addressForm.line1}</p>
+                        {addressForm.line2 && <p>{addressForm.line2}</p>}
+                        <p>{addressForm.city}, {addressForm.state} {addressForm.postal_code}</p>
+                        {addressForm.country && <p>{addressForm.country}</p>}
+                      </div>
+                      <div>
+                        <p className="font-semibold">Provider</p>
+                        <p>{providers.find(p => p.id === providerId)?.name || 'Not selected'}</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <h2 className="text-base font-semibold text-[#2f3a1f] mb-3">Services</h2>
                   <div className="space-y-3">
                     {services.map((svc) => (
@@ -463,16 +717,11 @@ export default function CartPage() {
                     </div>
 
                     <button
-                      onClick={() => {
-                        setCheckoutStep(4);
-                        // Clear cart after order
-                        setTimeout(() => {
-                          clearAll();
-                        }, 3000);
-                      }}
-                      className="w-full py-2.5 px-4 bg-[#2f9e44] text-white text-sm rounded-lg font-semibold hover:bg-[#268a3b] transition-all"
+                      onClick={handlePayment}
+                      disabled={!razorpayLoaded || processingPayment}
+                      className="w-full py-2.5 px-4 bg-[#2f9e44] text-white text-sm rounded-lg font-semibold hover:bg-[#268a3b] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Confirm Order
+                      {!razorpayLoaded ? 'Loading Payment Gateway...' : processingPayment ? 'Processing...' : 'Pay Now'}
                     </button>
                   </div>
                 </div>
@@ -507,5 +756,6 @@ export default function CartPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

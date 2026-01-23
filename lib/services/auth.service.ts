@@ -1,36 +1,208 @@
-import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from '@/lib/types/auth';
-import { ApiService } from './api.service';
-import { API_ENDPOINTS } from '@/lib/config/api.config';
+import { supabase } from '@/lib/supabase/client';
+import { AuthError, User } from '@supabase/supabase-js';
 
-export class AuthService {
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface SignupCredentials {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+}
+
+export interface AuthResponse {
+  user: User | null;
+  session: any;
+}
+
+class AuthServiceClass {
   /**
-   * Login user with email
+   * Login with email and password
    */
-  static async login(email: string, password: string): Promise<LoginResponse> {
-    return ApiService.post<LoginResponse>(API_ENDPOINTS.auth.login, {
-      email,
-      password,
-    } as LoginRequest);
+  async login(email: string, password: string): Promise<AuthResponse> {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Login failed');
+      }
+
+      return {
+        user: data.user,
+        session: data.session,
+      };
+    } catch (err) {
+      throw err;
+    }
   }
 
   /**
-   * Register new user
+   * Sign up with email and password
    */
-  static async signup(data: RegisterRequest): Promise<RegisterResponse> {
-    return ApiService.post<RegisterResponse>(API_ENDPOINTS.auth.signup, data);
+  async signup(credentials: SignupCredentials): Promise<AuthResponse> {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: {
+            first_name: credentials.first_name,
+            last_name: credentials.last_name,
+            phone: credentials.phone,
+          },
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Signup failed');
+      }
+
+      // Optionally create a user profile in a users table
+      if (data.user) {
+        await this.createUserProfile(data.user.id, credentials);
+      }
+
+      return {
+        user: data.user,
+        session: data.session,
+      };
+    } catch (err) {
+      throw err;
+    }
   }
 
   /**
-   * Refresh authentication token
+   * Create user profile in the users table
    */
-  static async refresh(): Promise<LoginResponse> {
-    return ApiService.post<LoginResponse>(API_ENDPOINTS.auth.refresh);
+  private async createUserProfile(
+    userId: string,
+    credentials: SignupCredentials
+  ): Promise<void> {
+    try {
+      const { error } = await supabase.from('users').insert([
+        {
+          id: userId,
+          email: credentials.email,
+          first_name: credentials.first_name,
+          last_name: credentials.last_name,
+          phone: credentials.phone,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 = unique violation, ignore if user already exists
+        console.warn('Error creating user profile:', error);
+      }
+    } catch (err) {
+      console.error('Error creating user profile:', err);
+      // Don't throw - signup was successful even if profile creation fails
+    }
   }
 
   /**
-   * Logout user
+   * Sign out the current user
    */
-  static async logout(): Promise<{ success: boolean }> {
-    return ApiService.post<{ success: boolean }>(API_ENDPOINTS.auth.logout);
+  async logout(): Promise<void> {
+    try {
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        throw new Error(error.message || 'Logout failed');
+      }
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Get the current user session
+   */
+  async getSession(): Promise<AuthResponse> {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error) {
+        throw new Error(error.message || 'Failed to get session');
+      }
+
+      return {
+        user: data.session?.user || null,
+        session: data.session,
+      };
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Get the current user
+   */
+  async getUser(): Promise<User | null> {
+    try {
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error) {
+        console.warn('Failed to get user:', error);
+        return null;
+      }
+
+      return data.user;
+    } catch (err) {
+      console.error('Error getting user:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Reset password for email
+   */
+  async resetPassword(email: string): Promise<void> {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Password reset failed');
+      }
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Update user password
+   */
+  async updatePassword(newPassword: string): Promise<void> {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Password update failed');
+      }
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Subscribe to auth state changes
+   */
+  onAuthStateChange(callback: (user: User | null) => void): void {
+    supabase.auth.onAuthStateChange((event, session) => {
+      callback(session?.user || null);
+    });
   }
 }
+
+export const AuthService = new AuthServiceClass();

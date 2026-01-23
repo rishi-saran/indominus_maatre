@@ -1,46 +1,77 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+﻿import { NextRequest, NextResponse } from "next/server";
 
-// POST intentionally disabled to avoid creating sample data from frontend.
-export async function POST() {
-  return NextResponse.json({ error: 'Orders POST disabled' }, { status: 405 });
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
+function getAuthHeader(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader) {
+    throw new Error("Unauthorized");
+  }
+  return authHeader;
 }
 
+/**
+ * GET /orders
+ * List orders for logged-in user
+ */
 export async function GET(request: NextRequest) {
   try {
-    // Extract query parameters from the frontend request
-    const searchParams = request.nextUrl.searchParams;
-    const queryString = searchParams.toString();
-    const url = queryString ? `${BACKEND_URL}/orders/?${queryString}` : `${BACKEND_URL}/orders/`;
-    console.log('Fetching from backend:', url);
-    
-    const response = await fetch(url, { 
-      method: 'GET', 
-      headers: { 'Content-Type': 'application/json' }
+    const authHeader = getAuthHeader(request);
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/orders/`, {
+      method: "GET",
+      headers: {
+        Authorization: authHeader,
+      },
     });
 
-    console.log('Backend response status:', response.status, response.statusText);
+    const data = await response.json();
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Backend error details:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText,
-        headers: Object.fromEntries(response.headers)
-      });
-      
-      return NextResponse.json(
-        { error: `Backend error: ${response.status} ${response.statusText}`, details: errorText },
-        { status: response.status }
-      );
-    }
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error("Orders GET error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch orders" },
+      { status: 401 }
+    );
+  }
+}
+
+/**
+ * POST /orders
+ * Create order from cart
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const authHeader = getAuthHeader(request);
+    const body = await request.json(); // provider_id, address_id
+
+    const search = new URLSearchParams();
+    if (body?.provider_id) search.append("provider_id", body.provider_id);
+    if (body?.address_id) search.append("address_id", body.address_id);
+
+    const url = `${API_BASE_URL}/api/v1/orders/${
+      search.toString() ? `?${search.toString()}` : ''
+    }`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authHeader,
+      },
+      body: JSON.stringify(body),
+    });
 
     const data = await response.json();
-    console.log('Backend response data:', data);
-    return NextResponse.json(data);
+
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Orders GET API error:', error);
-    return NextResponse.json({ error: 'Failed to fetch orders', details: String(error) }, { status: 500 });
+    console.error("Orders POST error:", error);
+    return NextResponse.json(
+      { error: "Failed to create order" },
+      { status: 401 }
+    );
   }
 }

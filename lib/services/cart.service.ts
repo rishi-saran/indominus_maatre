@@ -1,47 +1,57 @@
+// lib/services/cart.service.ts
+
 import { ApiService } from './api.service';
 import { API_ENDPOINTS } from '@/lib/config/api.config';
 
-interface CartItem {
-  service_name: string;
-  package: string;
-  addon?: string;
-  price: number;
-  quantity: number;
-}
+/* =======================
+   Types aligned to backend
+======================= */
 
-interface Cart {
-  cart_id: string;
-  items: CartItem[];
-  total_amount: number;
-}
-
-interface AddItemRequest {
+export interface CartItem {
+  id: string;
   service_id: string;
-  package_id: string;
-  addon_id?: string;
+  package_id?: string | null;
+  addon_id?: string | null;
   quantity: number;
+}
+
+export interface Cart {
+  id: string;
+  user_id: string;
+  cart_items: CartItem[];
+}
+
+export interface AddItemParams {
+  service_id: string;
+  package_id?: string;
+  addon_id?: string;
+  quantity?: number;
 }
 
 export class CartService {
   /**
-   * Get or create cart for user
+   * Get or create cart (auth required)
    */
   static async getCart(): Promise<Cart> {
     return ApiService.get<Cart>(API_ENDPOINTS.cart.get);
   }
 
   /**
-   * Add item to cart
+   * Add item to cart (query params, NOT body)
    */
-  static async addItem(data: AddItemRequest): Promise<Cart> {
-    return ApiService.post<Cart>(API_ENDPOINTS.cart.addItem, data);
+  static async addItem(params: AddItemParams): Promise<CartItem> {
+    return ApiService.post<CartItem>(
+      API_ENDPOINTS.cart.addItem,
+      undefined,
+      { params }
+    );
   }
 
   /**
    * Remove item from cart
    */
-  static async removeItem(itemId: string): Promise<{ success: boolean }> {
-    return ApiService.delete<{ success: boolean }>(
+  static async removeItem(itemId: string): Promise<{ status: string }> {
+    return ApiService.delete<{ status: string }>(
       API_ENDPOINTS.cart.removeItem(itemId)
     );
   }

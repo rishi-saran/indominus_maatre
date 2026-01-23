@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
@@ -12,14 +12,14 @@ function getAuthHeader(request: NextRequest) {
 }
 
 /**
- * GET /cart
- * Fetch current user's cart
+ * GET /addresses
+ * List addresses for logged-in user
  */
 export async function GET(request: NextRequest) {
   try {
     const authHeader = getAuthHeader(request);
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/cart/`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/addresses/`, {
       method: "GET",
       headers: {
         Authorization: authHeader,
@@ -27,39 +27,40 @@ export async function GET(request: NextRequest) {
     });
 
     const data = await response.json();
-
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Cart GET error:", error);
+    console.error("Addresses GET error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch cart" },
+      { error: "Failed to fetch addresses" },
       { status: 401 }
     );
   }
 }
 
 /**
- * POST /cart
- * Get or create cart (no body)
+ * POST /addresses
+ * Create address for logged-in user
  */
 export async function POST(request: NextRequest) {
   try {
     const authHeader = getAuthHeader(request);
+    const body = await request.json();
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/cart/`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/addresses/`, {
       method: "POST",
       headers: {
+        "Content-Type": "application/json",
         Authorization: authHeader,
       },
+      body: JSON.stringify(body),
     });
 
     const data = await response.json();
-
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error("Cart POST error:", error);
+    console.error("Addresses POST error:", error);
     return NextResponse.json(
-      { error: "Failed to create cart" },
+      { error: "Failed to create address" },
       { status: 401 }
     );
   }

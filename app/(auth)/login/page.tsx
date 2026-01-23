@@ -19,17 +19,18 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
     
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const response = await AuthService.login(email, password);
       
-      // Store user data in localStorage or context
-      localStorage.setItem('user', JSON.stringify(response));
-      
-      // Redirect based on user status
-      if (response.is_new_user) {
-        router.push('/profile'); 
-      } else {
-        router.push('/landing'); 
+      if (response.user) {
+        // Login successful, redirect to landing
+        router.push('/landing');
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -44,11 +45,14 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    // Add Google login logic here
-    console.log('Google Login');
-    // Redirect to landing page after successful Google login
-    router.push('/landing');
-    setIsLoading(false);
+    setError('');
+    try {
+      setError('Google login coming soon');
+    } catch (err) {
+      setError('Google login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

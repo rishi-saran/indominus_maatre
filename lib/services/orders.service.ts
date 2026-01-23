@@ -1,47 +1,67 @@
+// lib/services/orders.service.ts
+
 import { ApiService } from './api.service';
 import { API_ENDPOINTS } from '@/lib/config/api.config';
 
-interface Address {
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
+/* =======================
+   Types aligned to backend
+======================= */
+
+export interface OrderItem {
+  id: string;
+  service_id: string;
+  package_id?: string | null;
+  addon_id?: string | null;
+  price: number;
 }
 
-interface CreateOrderRequest {
+export interface Order {
+  id: string;
   user_id: string;
-  address: Address;
+  provider_id: string;
+  address_id: string;
+  total_amount: number;
+  status: string;
+  order_items?: OrderItem[];
+  created_at?: string;
 }
 
-interface Order {
-  order_id: string;
-  status: string;
-  total_amount: number;
-  items?: any[];
-  created_at?: string;
-  updated_at?: string;
+/* =======================
+   Create Order Params
+======================= */
+
+export interface CreateOrderParams {
+  provider_id: string;
+  address_id: string;
 }
 
 export class OrdersService {
   /**
-   * Create a new order
+   * Create order from cart (auth required)
    */
-  static async create(data: CreateOrderRequest): Promise<Order> {
-    return ApiService.post<Order>(API_ENDPOINTS.orders.create, data);
+  static async create(params: CreateOrderParams): Promise<Order> {
+    return ApiService.post<Order>(
+      API_ENDPOINTS.orders.create,
+      undefined,
+      { params }
+    );
   }
 
   /**
-   * Get order by ID
+   * Get order by ID (owner only)
    */
   static async getById(orderId: string): Promise<Order> {
-    return ApiService.get<Order>(API_ENDPOINTS.orders.getById(orderId));
+    return ApiService.get<Order>(
+      API_ENDPOINTS.orders.getById(orderId)
+    );
   }
 
   /**
-   * List all orders for current user
+   * List current user's orders
    */
-  static async list(params?: { user_id?: string }): Promise<Order[]> {
-    // Pass user_id as query parameter to the API route
-    return ApiService.get<Order[]>(API_ENDPOINTS.orders.list, { params: params || {} });
+  static async list(): Promise<Order[]> {
+    return ApiService.get<Order[]>(
+      API_ENDPOINTS.orders.list
+    );
   }
 }
