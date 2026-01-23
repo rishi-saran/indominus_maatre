@@ -15,7 +15,7 @@ export default function CustomerLiveList() {
       const user = await getUserWithRole();
 
       if (!user || user.role !== "customer") {
-        router.push("/auth/login");
+        router.push("/login");
         return;
       }
 

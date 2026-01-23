@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/stream/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
@@ -14,15 +14,30 @@ export async function POST(req: Request) {
       );
     }
 
-    const { error } = await supabase.from("donations").insert({
-      call_id: callId,          // ✅ REQUIRED
+    // Use service role to bypass RLS for server-side operations
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    const { error } = await supabaseAdmin.from("donations").insert({
+      call_id: callId,
       priest_id: priestId,
       customer_id: customerId,
       amount,
       message: message || null,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Donation insert error:", error);
+      throw error;
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

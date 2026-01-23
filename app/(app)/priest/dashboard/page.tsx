@@ -8,7 +8,7 @@ import {
   StreamCall,
   SpeakerLayout,
 } from "@stream-io/video-react-sdk";
-import { supabase } from "@/lib/stream/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 // app/(app)/priest/dashboard/page.tsx
 type Donation = {
   id: string;
@@ -25,6 +25,9 @@ export default function PriestDashboard() {
 
   const [donations, setDonations] = useState<Donation[]>([]);
   const [priestId, setPriestId] = useState<string | null>(null);
+  
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCameraOff, setIsCameraOff] = useState(false);
 
   async function startLive() {
     setLoading(true);
@@ -46,7 +49,21 @@ export default function PriestDashboard() {
       }),
     });
 
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+      console.error("Token fetch failed:", errorData);
+      alert(`Failed to get Stream token: ${errorData.error || res.statusText}`);
+      setLoading(false);
+      return;
+    }
+
     const { token } = await res.json();
+
+    if (!token) {
+      alert("Failed to get Stream token");
+      setLoading(false);
+      return;
+    }
 
     const videoClient = createVideoClient(user.id, token);
     setClient(videoClient);
@@ -70,6 +87,50 @@ export default function PriestDashboard() {
 
     setCall(livestreamCall);
     setLoading(false);
+  }
+
+  async function endLive() {
+    if (!call) return;
+    
+    try {
+      await call.endCall();
+      setCall(null);
+      setClient(null);
+      setPriestId(null);
+    } catch (err) {
+      console.error("Error ending stream:", err);
+      alert("Failed to end stream");
+    }
+  }
+
+  async function toggleMute() {
+    if (!call) return;
+    
+    try {
+      if (isMuted) {
+        await call.microphone.enable();
+      } else {
+        await call.microphone.disable();
+      }
+      setIsMuted(!isMuted);
+    } catch (err) {
+      console.error("Error toggling mute:", err);
+    }
+  }
+
+  async function toggleCamera() {
+    if (!call) return;
+    
+    try {
+      if (isCameraOff) {
+        await call.camera.enable();
+      } else {
+        await call.camera.disable();
+      }
+      setIsCameraOff(!isCameraOff);
+    } catch (err) {
+      console.error("Error toggling camera:", err);
+    }
   }
 
   // ✅ REALTIME DONATIONS
@@ -121,18 +182,42 @@ export default function PriestDashboard() {
       )}
 
       {client && call && (
-        <StreamVideo client={client}>
-          <StreamCall call={call}>
-            <SpeakerLayout />
-          </StreamCall>
-        </StreamVideo>
+        <>
+          <div style={{ marginBottom: 20, display: "flex", gap: 10 }}>
+            <button onClick={toggleMute} style={{ padding: "10px 20px", cursor: "pointer" }}>
+              {isMuted ? "🔇 Unmute" : "🎤 Mute"}
+            </button>
+            <button onClick={toggleCamera} style={{ padding: "10px 20px", cursor: "pointer" }}>
+              {isCameraOff ? "📹 Turn Camera On" : "📷 Turn Camera Off"}
+            </button>
+            <button 
+              onClick={endLive} 
+              style={{ 
+                padding: "10px 20px", 
+                cursor: "pointer", 
+                backgroundColor: "#dc2626", 
+                color: "white", 
+                border: "none", 
+                borderRadius: 5 
+              }}
+            >
+              ⏹️ End Stream
+            </button>
+          </div>
+          
+          <StreamVideo client={client}>
+            <StreamCall call={call}>
+              <SpeakerLayout />
+            </StreamCall>
+          </StreamVideo>
+        </>
       )}
 
       {call && (
-        <div style={{ marginTop: 30 }}>
-          <h2>Live Donations</h2>
+        <div style={{ marginTop: 30, backgroundColor: "white", padding: 20, borderRadius: 8 }}>
+          <h2 style={{ color: "#000" }}>Live Donations</h2>
 
-          {donations.length === 0 && <p>No donations yet.</p>}
+          {donations.length === 0 && <p style={{ color: "#666" }}>No donations yet.</p>}
 
           {donations.map((d) => (
             <div
@@ -141,13 +226,13 @@ export default function PriestDashboard() {
                 padding: 12,
                 marginBottom: 10,
                 borderRadius: 8,
-                background: "#111",
-                border: "1px solid #333",
+                background: "#f3f4f6",
+                border: "1px solid #d1d5db",
               }}
             >
-              <strong>₹{d.amount}</strong>
-              {d.message && <p>{d.message}</p>}
-              <small>From: {d.customer_id}</small>
+              <strong style={{ color: "#059669" }}>₹{d.amount}</strong>
+              {d.message && <p style={{ margin: "8px 0 0 0", color: "#374151" }}>{d.message}</p>}
+              <small style={{ color: "#6b7280", fontSize: "12px" }}>From: {d.customer_id}</small>
             </div>
           ))}
         </div>

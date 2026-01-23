@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/stream/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 
 export async function getUserWithRole() {
   const {

@@ -3,8 +3,14 @@ import { StreamClient } from "@stream-io/node-sdk";
 
 export async function GET() {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY!;
-    const apiSecret = process.env.STREAM_API_SECRET!;
+    const apiKey =
+      process.env.PUBLIC_STREAM_API_KEY || process.env.NEXT_PUBLIC_STREAM_API_KEY;
+    const apiSecret = process.env.STREAM_API_SECRET;
+
+    if (!apiKey || !apiSecret) {
+      console.error("Missing Stream API credentials");
+      return NextResponse.json({ streams: [] }, { status: 500 });
+    }
 
     // ✅ Correct server-side Stream client
     const client = new StreamClient(apiKey, apiSecret);

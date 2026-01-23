@@ -32,7 +32,7 @@ export default function LiveViewerPage() {
       const currentUser = await getUserWithRole();
 
       if (!currentUser || currentUser.role !== "customer") {
-        router.push("/auth/login");
+        router.push("/login");
         return;
       }
 
@@ -65,9 +65,37 @@ export default function LiveViewerPage() {
   if (!callId) return <p>Invalid stream</p>;
   if (loading) return <p>Joining live stream…</p>;
 
+  const handleLeaveStream = async () => {
+    try {
+      if (call) {
+        await call.leave();
+      }
+    } catch (err: any) {
+      console.warn("Error leaving call (may already be ended):", err);
+    } finally {
+      router.push("/live-streams");
+    }
+  };
+
   return (
     <div style={{ padding: 40 }}>
-      <h1>Live Ritual</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h1>Live Ritual</h1>
+        <button
+          onClick={handleLeaveStream}
+          style={{
+            padding: "10px 20px",
+            backgroundColor: "#dc2626",
+            color: "white",
+            border: "none",
+            borderRadius: 5,
+            cursor: "pointer",
+            fontWeight: "bold"
+          }}
+        >
+          ❌ Leave Stream
+        </button>
+      </div>
 
       {/* 🎥 LIVE VIDEO */}
       {client && call && (
