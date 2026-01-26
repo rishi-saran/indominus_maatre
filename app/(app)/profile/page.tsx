@@ -6,6 +6,7 @@ import { AuthService } from '@/lib/services/auth.service';
 import { OrdersService } from '@/lib/services/orders.service';
 import { ViewCartButton } from '@/components/ui/view-cart';
 
+
 interface Notification {
   id: string;
   message: string;
@@ -140,7 +141,7 @@ export default function MyAccount() {
     }));
   const confirmedBooking: Booking | undefined = allBookings.find(b => b.status === 'CONFIRMED');
 
-  // Authenticate user on component mount
+// Authenticate user on component mount
   useEffect(() => {
     const authenticateUser = async () => {
       try {
@@ -193,6 +194,7 @@ export default function MyAccount() {
 
     authenticateUser();
   }, []);
+
 
   // Fetch orders from API
   useEffect(() => {

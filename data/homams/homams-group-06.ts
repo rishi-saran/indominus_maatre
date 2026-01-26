@@ -1,7 +1,7 @@
 export const homamsGroup06 = {
     "sidhi-vinayaga-puja": {
   title: "Sidhi Vinayaga Puja",
-  image: "/images/homams/sidhi-vinayaga-puja.jpg",
+  image: "/services/virtual/SIDHI VINAYAGA PUJA.jpeg",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -150,7 +150,7 @@ export const homamsGroup06 = {
 },
 "srardham": {
   title: "Pitru Srardham",
-  image: "/images/homams/pitru-srardham.jpg",
+  image: "/services/homam/srardham.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -288,7 +288,7 @@ export const homamsGroup06 = {
 },
 "sudarshana-homam": {
   title: "Maha Sudarshana Homam",
-  image: "/images/homams/maha-sudarshana-homam.jpg",
+  image: "/services/virtual/Maha Sudarshana Homam.jpeg",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -363,105 +363,9 @@ export const homamsGroup06 = {
     }
   ]
 },
-"swayamvara-parvathi-homam": {
-  title: "Swayamvara Parvathi Homam",
-  image: "/images/homams/swayamvara-parvathi-homam.jpg",
-
-  priceRange: "₹15,000 – ₹35,000",
-
-  shortDescription:
-    "A sacred Vedic ritual dedicated to Goddess Parvathi, performed to remove marriage obstacles and attract a suitable life partner.",
-
-  objective:
-    "To remove delays in marriage, attract a compatible life partner, and restore harmony in relationships.",
-
-  description: [
-    {
-      type: "p",
-      text:
-        "Swayamvara Parvathi Homam is a powerful Vedic ritual dedicated to Goddess Parvathi. It is especially effective for individuals facing delays in marriage, repeated break-ups, or relationship struggles."
-    },
-
-    { type: "h", text: "Purpose of the Homam" },
-    {
-      type: "ul",
-      items: [
-        "Removes obstacles delaying marriage",
-        "Attracts a suitable and compatible partner",
-        "Strengthens marital harmony",
-        "Calms malefic planetary influences affecting relationships"
-      ]
-    },
-
-    { type: "h", text: "About the Ritual" },
-    {
-      type: "ul",
-      items: [
-        "Invocation of Goddess Parvathi through sacred chants",
-        "Chanting of Swayamvara Parvati Mantra given by Lord Shiva",
-        "Performed strictly as per Vedic procedures",
-        "Fridays are especially auspicious"
-      ]
-    },
-
-    { type: "h", text: "Benefits" },
-    {
-      type: "ul",
-      items: [
-        "Promotes early and favorable marriage",
-        "Ensures peace and emotional harmony",
-        "Strengthens weak or afflicted planets",
-        "Helps resolve misunderstandings in relationships",
-        "Encourages emotional stability and devotion"
-      ]
-    }
-  ],
-
-  packages: [
-    {
-      name: "Economy",
-      price: "₹15,000",
-      priests: "1 Vadhyar",
-      description:
-        "In Economy package, 1 Vadhyar will perform 2000 japam avartis and the homam will last approximately 2.5 to 3 hours.",
-      procedures: [
-        "Punyaha Vachanam",
-        "Maha Sankalpam",
-        "Kalasa Pooja",
-        "Ganapathi Homam (2000 japams and tat dasams homam)"
-      ]
-    },
-    {
-      name: "Standard",
-      price: "₹25,000",
-      priests: "2 Vadhyar",
-      description:
-        "In Standard package, 2 Vadhyars will perform 2000 japam avartis and the homam will last approximately 2.5 to 3 hours.",
-      procedures: [
-        "Punyaha Vachanam",
-        "Maha Sankalpam",
-        "Kalasa Pooja",
-        "Ganapathi Homam (2000 japams and tat dasams homam)"
-      ]
-    },
-    {
-      name: "Premium",
-      price: "₹35,000",
-      priests: "4 Vadhyar",
-      description:
-        "In Premium package, 4 Vadhyars will perform 2000 japam avartis and the homam will last approximately 2.5 to 3 hours.",
-      procedures: [
-        "Punyaha Vachanam",
-        "Maha Sankalpam",
-        "Kalasa Pooja",
-        "Ganapathi Homam (2000 japams and tat dasams homam)"
-      ]
-    }
-  ]
-},
 "swayamvara-parvathi": {
   title: "Swayamvara Parvathi Homam",
-  image: "/images/homams/swayamvara-parvathi-homam.jpg",
+  image: "/services/virtual/Swayamvara Parvathi Homam.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -557,7 +461,7 @@ export const homamsGroup06 = {
 },
 "ugraratha-shanti": {
   title: "UgraRatha Shanti",
-  image: "/images/homams/ugraratha-shanti.jpg",
+  image: "/services/homam/Ugraratha Shanti.png",
 
   priceRange: "₹15,000 – ₹35,000",
 

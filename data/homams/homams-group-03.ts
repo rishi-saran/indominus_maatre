@@ -1,7 +1,7 @@
 export const homamsGroup03 = {
   "ganesh-vinyagar-chathurthi-pooja": {
     title: "GANESH / VINAYAGAR CHATHURTHI POOJA PACKAGE",
-    image: "/services/homam/ganesh-vinyagar.png",
+    image: "/services/virtual/Ganesh  Vinayagar Chathurthi Pooja Package.png",
     priceRange: "₹700.00",
 
     shortDescription:
@@ -48,7 +48,7 @@ export const homamsGroup03 = {
 
   "haridra-ganapathy-homam": {
     title: "Haridra Ganapathy Homam",
-    image: "/images/homams/haridra-ganapathy-homam.jpg",
+    image: "/services/virtual/Haridra Ganapathy Homam.png",
 
     priceRange: "₹15,000 – ₹35,000",
 
@@ -154,7 +154,7 @@ export const homamsGroup03 = {
 
 "hiranya-srardham": {
   title: "Hiranya Srardham",
-  image: "/images/homams/hiranya-srardham.jpg",
+  image: "/services/homam/Hiranya Srardham.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -394,7 +394,7 @@ export const homamsGroup03 = {
 },
 "jathakarma": {
   title: "Jathakarma / Namakaranam",
-  image: "/images/homams/jathakarma-namakaranam.jpg",
+  image: "/services/homam/jathakarma.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -442,7 +442,7 @@ export const homamsGroup03 = {
 },
 "kanakabishekam": {
   title: "Kanakabishekam",
-  image: "/images/homams/kanakabishekam.jpg",
+  image: "/services/homam/Kanakabhishekam.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -495,8 +495,7 @@ export const homamsGroup03 = {
 
 "lakshmi-kubera-homam": {
   title: "Lakshmi Kubera Homam",
-  image: "/images/homams/lakshmi-kubera-homam.jpg",
-
+  image: "/services/virtual/Lakshmi Kubera Homam.jpeg",
   priceRange: "₹15,000 – ₹35,000",
 
   shortDescription:
@@ -611,7 +610,7 @@ export const homamsGroup03 = {
 },
 "maha-mrutynjaya-homam": {
   title: "Maha Mrutyunjaya Homam",
-  image: "/images/homams/maha-mrutyunjaya-homam.jpg",
+  image: "/services/virtual/Maha Mrutyunjaya Homam.jpeg",
 
   priceRange: "₹15,000 – ₹25,000",
 

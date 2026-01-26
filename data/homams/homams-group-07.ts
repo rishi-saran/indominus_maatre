@@ -1,7 +1,7 @@
 export const homamsGroup07 = {
     "upanayanam": {
   title: "Upanayanam",
-  image: "/images/homams/upanayanam.jpg",
+  image: "/services/homam/upanayanam.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -56,7 +56,7 @@ export const homamsGroup07 = {
 },
 "vancha-kalpalatha-ganapathi": {
   title: "Vancha Kalpalatha Maha Ganapathi Homam",
-  image: "/images/homams/vancha-kalpalatha-maha-ganapathi-homam.jpg",
+  image: "/services/virtual/Vancha Kalpalatha Maha Ganapathi Homam.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -173,7 +173,7 @@ export const homamsGroup07 = {
 },
 "vastu-shanthi": {
   title: "Vastu Shanthi",
-  image: "/images/homams/vastu-shanthi.jpg",
+  image: "/services/homam/Vastu Shanthi.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -314,7 +314,7 @@ export const homamsGroup07 = {
 },
 "vijayaratha-shanti": {
   title: "VijayaRatha Shanti",
-  image: "/images/homams/vijayaratha-shanti.jpg",
+  image: "/services/homam/Vijayaratha Shanti.png",
 
   priceRange: "₹15,000 – ₹35,000",
 

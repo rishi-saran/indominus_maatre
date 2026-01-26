@@ -1,7 +1,7 @@
 export const homamsGroup04 = {
 "mahalakshmi-homam": {
   title: "Mahalakshmi Homam",
-  image: "/images/homams/mahalakshmi-homam.jpg",
+  image: "/services/virtual/MAHALAKSHMI HOMAM.jpeg",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -142,7 +142,7 @@ export const homamsGroup04 = {
 },
 "mahalakshmi-puja": {
   title: "Mahalakshmi Puja",
-  image: "/images/homams/mahalakshmi-puja.jpg",
+  image: "/services/virtual/MAHALAKSHMI PUJA.jpeg",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -289,7 +289,7 @@ export const homamsGroup04 = {
 },
 "marriage-vivaham": {
   title: "Marriage (Vivaham)",
-  image: "/images/homams/marriage-vivaham.jpg",
+  image: "/services/homam/marriage.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -357,7 +357,7 @@ export const homamsGroup04 = {
 },
 "mrutyunjaya-homam": {
   title: "Mrutyunjaya Homam",
-  image: "/images/homams/mrutyunjaya-homam.jpg",
+  image: "/services/virtual/Mrutyunjaya Homam.jpeg",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -432,7 +432,7 @@ export const homamsGroup04 = {
 },
 "navagraha-homam": {
   title: "Navagraha Homam",
-  image: "/images/homams/navagraha-homam.jpg",
+  image: "/services/virtual/Navagraha Homam.jpeg",
 
   priceRange: "₹9,999 – ₹20,000",
 
@@ -549,7 +549,7 @@ export const homamsGroup04 = {
 },
 "nichayathartham": {
   title: "Nichayathartham (Engagement)",
-  image: "/images/homams/nichayathartham-engagement.jpg",
+  image: "/services/homam/nichayathartham.png",
 
   priceRange: "₹5,800",
 
@@ -613,7 +613,7 @@ export const homamsGroup04 = {
 },
 "pratyangira-badrakali": {
   title: "Pratyangira Badrakali Homam",
-  image: "/images/homams/pratyangira-badrakali-homam.jpg",
+  image: "/services/virtual/Badrakali Homam.jpeg",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -744,7 +744,7 @@ export const homamsGroup04 = {
 },
 "punyaha-vachanam": {
   title: "Punyaha Vachanam",
-  image: "/images/homams/punyaha-vachanam.jpg",
+  image: "/services/homam/Punyaha Vachanam.png", 
 
   priceRange: "₹15,000 – ₹35,000",
 
