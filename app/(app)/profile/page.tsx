@@ -64,15 +64,15 @@ export default function MyAccount() {
   const [isAddServicesModalOpen, setIsAddServicesModalOpen] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
   const [checkoutStep, setCheckoutStep] = useState<0 | 1 | 2 | 3 | 4>(0);
-  
+
   // Service configurations
   const [serviceConfigs, setServiceConfigs] = useState<Record<number, { flowers: string; package: string }>>({});
-  
+
   // Coupon state
   const [showCouponInput, setShowCouponInput] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  
+
   // Available services from backend
   const [availableServices, setAvailableServices] = useState<Array<{
     id: number;
@@ -141,7 +141,7 @@ export default function MyAccount() {
     }));
   const confirmedBooking: Booking | undefined = allBookings.find(b => b.status === 'CONFIRMED');
 
-// Authenticate user on component mount
+  // Authenticate user on component mount
   useEffect(() => {
     const authenticateUser = async () => {
       try {
@@ -149,7 +149,7 @@ export default function MyAccount() {
         // Check if user is already logged in
         const storedUserId = localStorage.getItem('user_id');
         const storedEmail = localStorage.getItem('user_email');
-        
+
         if (storedUserId && storedEmail) {
           setProfile({
             user_id: storedUserId,
@@ -242,15 +242,15 @@ export default function MyAccount() {
     };
 
     loadServices();
-    
+
     // Listen for service updates
     const handleStorageChange = () => {
       loadServices();
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('servicesUpdated', handleStorageChange);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('servicesUpdated', handleStorageChange);
@@ -263,7 +263,7 @@ export default function MyAccount() {
     link.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200';
     link.rel = 'stylesheet';
     document.head.appendChild(link);
-    
+
     return () => {
       document.head.removeChild(link);
     };
@@ -278,7 +278,7 @@ export default function MyAccount() {
       // Clean up the URL
       router.replace('/profile');
     }
-    
+
     const viewCart = searchParams.get('viewCart');
     if (viewCart === 'true') {
       setIsAddServicesModalOpen(true);
@@ -300,8 +300,8 @@ export default function MyAccount() {
   const openBookingsModal = () => setIsBookingsModalOpen(true);
   const closeBookingsModal = () => setIsBookingsModalOpen(false);
   const openAddServicesModal = () => {
-    setIsAddServicesModalOpen(true); 
-    setCheckoutStep(0); 
+    setIsAddServicesModalOpen(true);
+    setCheckoutStep(0);
   };
   const closeAddServicesModal = () => { setIsAddServicesModalOpen(false); setSelectedServiceIds([]); setCheckoutStep(0); };
   const saveProfile = () => {
@@ -337,7 +337,7 @@ export default function MyAccount() {
   return (
     <div className="text-sm text-[#2f3a1f] antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-accent/30 bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
       <ViewCartButton redirectTo="/cart" />
-      
+
       {/* Notification Popups */}
       <div className="fixed top-8 right-8 z-80 space-y-3 pointer-events-none">
         {popupNotifications.map((notification: Notification) => {
@@ -400,10 +400,10 @@ export default function MyAccount() {
               </div>
               <div>
                 <label className="text-sm text-[#4f5d2f] font-medium">Email</label>
-                <input 
+                <input
                   value={editEmail}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditEmail(e.target.value)}
-                  className="w-full p-2 border rounded mt-1 text-sm" 
+                  className="w-full p-2 border rounded mt-1 text-sm"
                 />
               </div>
               <div className="flex justify-end gap-2 mt-2">
@@ -425,7 +425,7 @@ export default function MyAccount() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-serif font-semibold text-[#2f3a1f]">Add Services</h2>
                   {selectedServiceIds.length > 0 && (
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -453,7 +453,7 @@ export default function MyAccount() {
                     ) : availableServices.map((svc) => {
                       const checked = selectedServiceIds.includes(svc.id);
                       const config = serviceConfigs[svc.id] || { flowers: 'No', package: 'Economy' };
-                      
+
                       if (!checked) {
                         // Compact view when not selected
                         return (
@@ -465,9 +465,9 @@ export default function MyAccount() {
                                 const serviceFormData = svc.formData || { flowers: 'No', package: 'Economy' };
                                 setServiceConfigs(configs => ({
                                   ...configs,
-                                  [svc.id]: { 
-                                    flowers: serviceFormData.flowers || 'No', 
-                                    package: serviceFormData.package || 'Economy' 
+                                  [svc.id]: {
+                                    flowers: serviceFormData.flowers || 'No',
+                                    package: serviceFormData.package || 'Economy'
                                   }
                                 }));
                                 return [...prev, svc.id];
@@ -476,11 +476,11 @@ export default function MyAccount() {
                             className="rounded-xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf] transition-all p-3 cursor-pointer"
                           >
                             <div className="relative mb-2">
-                              <input 
-                                type="checkbox" 
-                                checked={checked} 
+                              <input
+                                type="checkbox"
+                                checked={checked}
                                 readOnly
-                                className="absolute top-2 right-2 z-10 w-5 h-5 rounded border-[#cfd8a3] cursor-pointer" 
+                                className="absolute top-2 right-2 z-10 w-5 h-5 rounded border-[#cfd8a3] cursor-pointer"
                               />
                               <img src={svc.image} alt={svc.title} className="w-full h-20 rounded-lg object-cover border border-[#cfd8a3]" />
                             </div>
@@ -489,7 +489,7 @@ export default function MyAccount() {
                           </div>
                         );
                       }
-                      
+
                       // Expanded view when selected
                       return (
                         <div
@@ -499,13 +499,13 @@ export default function MyAccount() {
                           <div className="flex gap-4">
                             {/* Checkbox + Image */}
                             <div className="flex-shrink-0">
-                              <input 
-                                type="checkbox" 
-                                checked={checked} 
+                              <input
+                                type="checkbox"
+                                checked={checked}
                                 onChange={() => {
                                   setSelectedServiceIds((prev) => prev.filter(id => id !== svc.id));
                                 }}
-                                className="w-5 h-5 rounded border-[#cfd8a3] cursor-pointer mb-3" 
+                                className="w-5 h-5 rounded border-[#cfd8a3] cursor-pointer mb-3"
                               />
                               <img src={svc.image} alt={svc.title} className="w-20 h-20 rounded-lg object-cover border border-[#cfd8a3]" />
                             </div>
@@ -514,16 +514,16 @@ export default function MyAccount() {
                             <div className="flex-1">
                               <h3 className="text-base font-semibold text-[#2f3a1f] mb-1">{svc.title}</h3>
                               <p className="text-xs text-[#4f5d2f] mb-2">{svc.description}</p>
-                              
+
                               <div className="space-y-2">
                                 {/* Add-on: Flowers */}
                                 <div>
                                   <label className="text-xs font-semibold text-[#2f3a1f] mb-1 block">Add-on: Flowers</label>
                                   <div className="flex gap-3">
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                      <input 
-                                        type="radio" 
-                                        name={`flowers-${svc.id}`} 
+                                      <input
+                                        type="radio"
+                                        name={`flowers-${svc.id}`}
                                         checked={config.flowers === 'Yes'}
                                         onChange={() => setServiceConfigs(configs => ({
                                           ...configs,
@@ -534,9 +534,9 @@ export default function MyAccount() {
                                       <span className="text-xs text-[#4f5d2f]">Yes (+₹250)</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer">
-                                      <input 
-                                        type="radio" 
-                                        name={`flowers-${svc.id}`} 
+                                      <input
+                                        type="radio"
+                                        name={`flowers-${svc.id}`}
                                         checked={config.flowers === 'No'}
                                         onChange={() => setServiceConfigs(configs => ({
                                           ...configs,
@@ -552,7 +552,7 @@ export default function MyAccount() {
                                 {/* Select Package */}
                                 <div>
                                   <label className="text-xs font-semibold text-[#2f3a1f] mb-1 block">Select Package</label>
-                                  <select 
+                                  <select
                                     value={config.package}
                                     onChange={(e) => setServiceConfigs(configs => ({
                                       ...configs,
@@ -609,9 +609,9 @@ export default function MyAccount() {
                   </div>
                   <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
                     <label className="text-xs font-bold text-text-light uppercase">Email</label>
-                    <input 
+                    <input
                       type="email"
-                      className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" 
+                      className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
                       value={profile.email}
                       readOnly
                     />
@@ -665,27 +665,27 @@ export default function MyAccount() {
                             <div className="flex-shrink-0">
                               <img src={svc.image} alt={svc.title} className="w-24 h-24 rounded-lg object-cover border border-[#cfd8a3]" />
                             </div>
-                            
+
                             {/* Product Details */}
                             <div className="flex-1">
                               <h4 className="font-semibold text-[#2f3a1f] mb-2">{svc.title}</h4>
                               <p className="text-sm text-[#4f5d2f] mb-3">{svc.description}</p>
-                              
+
                               {/* Details like in the screenshot */}
                               <div className="space-y-1 text-xs text-[#4f5d2f]">
                                 <p><strong>Add-on:</strong> Flowers: {config.flowers}</p>
                                 <p><strong>Select Package:</strong> {config.package}</p>
                               </div>
-                              
+
                               {/* Remove Button */}
-                              <button 
+                              <button
                                 onClick={() => setSelectedServiceIds(prev => prev.filter(sid => sid !== id))}
                                 className="text-xs text-[#2f9e44] hover:text-[#268a3b] mt-3 underline"
                               >
                                 Remove item
                               </button>
                             </div>
-                            
+
                             {/* Price */}
                             <div className="text-right flex-shrink-0">
                               <p className="font-semibold text-[#2f3a1f]">₹15,000.00</p>
@@ -695,32 +695,32 @@ export default function MyAccount() {
                       })}
                     </div>
                   </div>
-                  
+
                   {/* Cart Totals */}
                   <div className="lg:col-span-1">
                     <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] sticky top-4">
                       <h3 className="text-sm font-semibold mb-4 text-[#2f3a1f]">CART TOTALS</h3>
-                      
+
                       <div className="space-y-3 mb-4 pb-4 border-b border-[#cfd8a3]">
                         {!showCouponInput && !appliedCoupon && (
-                          <button 
+                          <button
                             onClick={() => setShowCouponInput(true)}
                             className="text-xs text-[#2f9e44] hover:text-[#268a3b] font-semibold"
                           >
                             Add coupons ▼
                           </button>
                         )}
-                        
+
                         {showCouponInput && (
                           <div className="flex gap-2">
-                            <input 
+                            <input
                               type="text"
                               placeholder="Enter coupon code"
                               value={couponCode}
                               onChange={(e) => setCouponCode(e.target.value)}
                               className="flex-1 px-2 py-1 rounded text-xs border border-[#cfd8a3] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
                             />
-                            <button 
+                            <button
                               onClick={() => {
                                 if (couponCode.trim()) {
                                   setAppliedCoupon(couponCode);
@@ -734,11 +734,11 @@ export default function MyAccount() {
                             </button>
                           </div>
                         )}
-                        
+
                         {appliedCoupon && (
                           <div className="flex items-center justify-between bg-[#eef4cf] px-3 py-2 rounded">
                             <span className="text-xs text-[#2f3a1f]">Coupon: <strong>{appliedCoupon}</strong></span>
-                            <button 
+                            <button
                               onClick={() => setAppliedCoupon(null)}
                               className="text-xs text-[#2f9e44] hover:text-[#268a3b] underline"
                             >
@@ -747,7 +747,7 @@ export default function MyAccount() {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="mb-6">
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-xs text-[#4f5d2f]">Subtotal</span>
@@ -766,14 +766,14 @@ export default function MyAccount() {
                           </span>
                         </div>
                       </div>
-                      
+
                       <button onClick={() => setCheckoutStep(4)} className="w-full px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b] transition-all">
                         Confirm Order
                       </button>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between gap-2 mt-6">
                   <button onClick={() => setCheckoutStep(2)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
                 </div>
@@ -799,14 +799,14 @@ export default function MyAccount() {
           <div className="absolute inset-0 modal-backdrop" onClick={closeOrdersModal}></div>
           <div className="relative z-70 w-full max-w-2xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto">
             <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Order History</h2>
-            
+
             {ordersLoading && <p className="text-center text-text-light">Loading orders...</p>}
             {ordersError && <p className="text-center text-red-500">Error: {ordersError}</p>}
-            
+
             {!ordersLoading && orders.length === 0 && (
               <p className="text-center text-text-light">No orders found</p>
             )}
-            
+
             {!ordersLoading && orders.length > 0 && (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -823,48 +823,48 @@ export default function MyAccount() {
                     {(orders || [])
                       .filter((order) => Boolean(order.order_id))
                       .map((order, idx) => {
-                      const orderDate = new Date(order.created_at || new Date().toISOString()).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      });
-                      
-                      const statusColor = 
-                        order.status === 'CONFIRMED' || order.status === 'Delivered' ? 'green' :
-                        order.status === 'COMPLETED' || order.status === 'Completed' ? 'blue' :
-                        order.status === 'SHIPPED' || order.status === 'Shipped' ? 'yellow' : 'blue';
-                      
-                      return (
-                        <tr key={order.order_id || `order-${idx}`} className="align-middle">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <img
-                                alt={order.product_name || `Order ${order.order_id}`}
-                                className="w-8 h-8 rounded-lg object-cover border border-[#cfd8a3]"
-                                src={order.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w"}
-                              />
-                              <div>
-                                <p className="text-sm font-semibold text-[#2f3a1f]">{order.product_name || order.order_id || `Order ${idx + 1}`}</p>
-                                <p className="text-xs text-text-light">{order.category || 'Service'}</p>
+                        const orderDate = new Date(order.created_at || new Date().toISOString()).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        });
+
+                        const statusColor =
+                          order.status === 'CONFIRMED' || order.status === 'Delivered' ? 'green' :
+                            order.status === 'COMPLETED' || order.status === 'Completed' ? 'blue' :
+                              order.status === 'SHIPPED' || order.status === 'Shipped' ? 'yellow' : 'blue';
+
+                        return (
+                          <tr key={order.order_id || `order-${idx}`} className="align-middle">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  alt={order.product_name || `Order ${order.order_id}`}
+                                  className="w-8 h-8 rounded-lg object-cover border border-[#cfd8a3]"
+                                  src={order.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w"}
+                                />
+                                <div>
+                                  <p className="text-sm font-semibold text-[#2f3a1f]">{order.product_name || order.order_id || `Order ${idx + 1}`}</p>
+                                  <p className="text-xs text-text-light">{order.category || 'Service'}</p>
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-[#4f5d2f]">{order.order_id}</td>
-                          <td className="px-4 py-3 text-sm text-[#4f5d2f]">{orderDate}</td>
-                          <td className="px-4 py-3 text-sm">
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${statusColor === 'green' ? 'bg-amber-100 text-[#4f5d2f]' : statusColor === 'blue' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-[#4f5d2f]'}`}>
-                              {order.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-[#2f3a1f] text-right font-semibold">₹{order.total_amount}</td>
-                        </tr>
-                      );
-                    })}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-[#4f5d2f]">{order.order_id}</td>
+                            <td className="px-4 py-3 text-sm text-[#4f5d2f]">{orderDate}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${statusColor === 'green' ? 'bg-amber-100 text-[#4f5d2f]' : statusColor === 'blue' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-[#4f5d2f]'}`}>
+                                {order.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-[#2f3a1f] text-right font-semibold">₹{order.total_amount}</td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
             )}
-            
+
             <div className="flex justify-end gap-2 mt-4">
               <button type="button" onClick={closeOrdersModal} className="px-4 py-2 rounded bg-gray-100">Close</button>
             </div>
@@ -1041,9 +1041,9 @@ export default function MyAccount() {
               <UpcomingRitual handleButtonClick={handleButtonClick} isActive={activeSection === 'ritual'} onActive={() => setActiveSection('ritual')} onViewDetails={openRitualDetailsModal} onViewAllBookings={openBookingsModal} />
             </div>
             <div id="section-orders">
-              <RecentOrders 
-                isActive={activeSection === 'orders'} 
-                onActive={() => setActiveSection('orders')} 
+              <RecentOrders
+                isActive={activeSection === 'orders'}
+                onActive={() => setActiveSection('orders')}
                 onViewFullOrders={openOrdersModal}
                 orders={orders}
                 availableServices={availableServices}
@@ -1088,11 +1088,10 @@ interface NavLinkProps {
 
 const NavLink: React.FC<NavLinkProps> = ({ icon, label, active = false, onClick }) => (
   <a
-    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 font-medium text-sm cursor-pointer group hover:bg-amber-200 ${
-      active
+    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 font-medium text-sm cursor-pointer group hover:bg-amber-200 ${active
         ? 'bg-primary-dark text-white shadow-md shadow-primary-dark/20'
         : 'text-[#4f5d2f] hover:text-[#4f5d2f]'
-    }`}
+      }`}
     href="#"
     onClick={(e) => { e.preventDefault(); onClick?.(); }}
   >
@@ -1112,9 +1111,8 @@ interface UserProfileCardProps {
 
 const UserProfileCard: React.FC<UserProfileCardProps> = ({ handleButtonClick, profile, onEdit, isActive, onActive }) => (
   <div
-    className={`p-4 rounded-2xl text-center cursor-pointer transition-all border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] ${
-      isActive ? 'bg-amber-100' : ''
-    }`}
+    className={`p-4 rounded-2xl text-center cursor-pointer transition-all border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] ${isActive ? 'bg-amber-100' : ''
+      }`}
     role="button"
     tabIndex={0}
     onClick={() => { onActive?.(); onEdit?.(); }}
@@ -1157,9 +1155,8 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ onItemClick, isActive, onActi
   };
 
   return (
-    <div className={`rounded-2xl overflow-hidden p-1.5 flex flex-col gap-0.5 transition-all border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] ${
-      isActive ? 'bg-amber-100' : ''
-    }`} onClick={() => onActive?.()}>
+    <div className={`rounded-2xl overflow-hidden p-1.5 flex flex-col gap-0.5 transition-all border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] ${isActive ? 'bg-amber-100' : ''
+      }`} onClick={() => onActive?.()}>
       <SidebarItem icon="dashboard" label="Dashboard" active={true} onItemClick={() => { handleScroll('section-stats', 'stats'); }} />
       <SidebarItem icon="person" label="Personal Info" onItemClick={() => { handleScroll('section-profilecard', 'profilecard'); }} />
       <SidebarItem icon="temple_hindu" label="My Bookings" onItemClick={() => { handleScroll('section-ritual', 'ritual'); }} />
@@ -1182,13 +1179,12 @@ interface SidebarItemProps {
 
 const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active = false, badge, isLogout = false, onItemClick }) => (
   <a
-    className={`flex items-center gap-3 px-3 py-1.5 rounded-lg transition-all font-medium text-xs cursor-pointer group hover:-translate-y-0.5 hover:drop-shadow-md ${
-      isLogout
+    className={`flex items-center gap-3 px-3 py-1.5 rounded-lg transition-all font-medium text-xs cursor-pointer group hover:-translate-y-0.5 hover:drop-shadow-md ${isLogout
         ? 'text-red-400 hover:bg-amber-200'
         : active
           ? 'sidebar-item-active'
           : 'sidebar-item-inactive hover:bg-amber-200'
-    }`}
+      }`}
     href="#"
     onClick={(e) => {
       e.preventDefault();
@@ -1210,9 +1206,8 @@ interface StatsCardsProps {
 }
 
 const StatsCards: React.FC<StatsCardsProps> = ({ isActive, onActive }) => (
-  <div className={`grid grid-cols-1 md:grid-cols-3 gap-2 transition-all ${
-    isActive ? 'bg-amber-50 p-4 rounded-2xl' : ''
-  }`} onClick={() => onActive?.()}>
+  <div className={`grid grid-cols-1 md:grid-cols-3 gap-2 transition-all ${isActive ? 'bg-amber-50 p-4 rounded-2xl' : ''
+    }`} onClick={() => onActive?.()}>
     <StatCard
       icon="temple_hindu"
       iconBg="bg-amber-100"
@@ -1367,28 +1362,27 @@ const ProfileAndPreferences: React.FC<ProfileAndPreferencesProps> = ({
   setTwoFactorEnabled,
   handleButtonClick,
   handleEditOpen,
-    profile,
-    isActive,
-    onActive,
-    activePreference,
-    setActivePreference,
-  }) => (
-    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all ${
-      isActive ? 'bg-amber-50 p-4 rounded-2xl' : ''
+  profile,
+  isActive,
+  onActive,
+  activePreference,
+  setActivePreference,
+}) => (
+  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all ${isActive ? 'bg-amber-50 p-4 rounded-2xl' : ''
     }`} onClick={() => onActive?.()}>
-      <ProfileDetails handleButtonClick={handleButtonClick} onEdit={handleEditOpen} profile={profile} isActive={isActive} />
-      <Preferences
-        notificationsEnabled={notificationsEnabled}
-        setNotificationsEnabled={setNotificationsEnabled}
-        twoFactorEnabled={twoFactorEnabled}
-        setTwoFactorEnabled={setTwoFactorEnabled}
-        handleButtonClick={handleButtonClick}
-        isActive={isActive}
-        activePreference={activePreference}
-        setActivePreference={setActivePreference}
-      />
-    </div>
-  );
+    <ProfileDetails handleButtonClick={handleButtonClick} onEdit={handleEditOpen} profile={profile} isActive={isActive} />
+    <Preferences
+      notificationsEnabled={notificationsEnabled}
+      setNotificationsEnabled={setNotificationsEnabled}
+      twoFactorEnabled={twoFactorEnabled}
+      setTwoFactorEnabled={setTwoFactorEnabled}
+      handleButtonClick={handleButtonClick}
+      isActive={isActive}
+      activePreference={activePreference}
+      setActivePreference={setActivePreference}
+    />
+  </div>
+);
 
 interface ProfileDetailsProps {
   profile: { user_id: string; email: string; is_new_user: boolean };
@@ -1427,7 +1421,7 @@ interface ProfileDetailItemProps {
 }
 
 const ProfileDetailItem: React.FC<ProfileDetailItemProps> = ({ icon, label, value }) => (
-      <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:bg-amber-200 transition-all cursor-pointer group hover:-translate-y-0.5 hover:shadow-md hover:border-[#2f9e44] hover:ring-[#2f9e44]">
+  <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:bg-amber-200 transition-all cursor-pointer group hover:-translate-y-0.5 hover:shadow-md hover:border-[#2f9e44] hover:ring-[#2f9e44]">
     <div className="w-7 h-7 rounded-full bg-cream-dark flex items-center justify-center text-[#5f6d2b] group-hover:bg-primary group-hover:text-white transition-colors">
       <span className="material-symbols-outlined text-[16px] group-hover:scale-125 transition-transform">{icon}</span>
     </div>
@@ -1511,9 +1505,8 @@ interface PreferenceToggleProps {
 }
 
 const PreferenceToggle: React.FC<PreferenceToggleProps> = ({ icon, label, enabled, onChange, isActive, onActive }) => (
-  <div className={`flex items-center justify-between p-3 bg-white rounded-2xl cursor-pointer group transition-all border ${
-    isActive ? 'border-[#2f9e44] ring-1 ring-[#2f9e44]' : 'border-[#cfd8a3] ring-1 ring-[#e3ebbd]'
-  } hover:-translate-y-0.5 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44]`} onClick={() => onActive?.()}>
+  <div className={`flex items-center justify-between p-3 bg-white rounded-2xl cursor-pointer group transition-all border ${isActive ? 'border-[#2f9e44] ring-1 ring-[#2f9e44]' : 'border-[#cfd8a3] ring-1 ring-[#e3ebbd]'
+    } hover:-translate-y-0.5 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44]`} onClick={() => onActive?.()}>
     <div className="flex items-center gap-2">
       <span className="material-symbols-outlined text-[#4f5d2f] text-[18px] group-hover:text-[#2f9e44] transition-colors">{icon}</span>
       <span className="text-sm font-medium text-[#2f3a1f] group-hover:text-[#2f9e44] transition-colors">{label}</span>
@@ -1523,9 +1516,8 @@ const PreferenceToggle: React.FC<PreferenceToggleProps> = ({ icon, label, enable
       className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors cursor-pointer ${enabled ? 'bg-[#2f9e44]' : 'bg-gray-200'}`}
     >
       <span
-        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-          enabled ? 'translate-x-4' : 'translate-x-1'
-        }`}
+        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-4' : 'translate-x-1'
+          }`}
       ></span>
     </button>
   </div>
@@ -1567,26 +1559,26 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewF
     // Skip placeholder orders that do not have a real order_id
     .filter((order) => Boolean(order.order_id))
     .map((order, idx) => {
-    const orderDate = new Date(order.created_at || new Date().toISOString()).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+      const orderDate = new Date(order.created_at || new Date().toISOString()).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
 
-    return {
-      key: order.order_id || `order-${idx}`,
-      image: order.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w",
-      productName: order.product_name || order.order_id || `Order ${idx + 1}`,
-      category: order.category || 'Service',
-      orderId: order.order_id || `#ORD-${idx + 1}`,
-      date: orderDate,
-      status: order.status || 'Pending',
-      statusColor: (order.status === 'CONFIRMED' || order.status === 'Delivered') ? 'green' as const :
-                   (order.status === 'COMPLETED' || order.status === 'Completed') ? 'blue' as const :
-                   (order.status === 'SHIPPED' || order.status === 'Shipped') ? 'yellow' as const : 'yellow' as const,
-      amount: order.total_amount ? `₹${order.total_amount}` : '₹0',
-    };
-  });
+      return {
+        key: order.order_id || `order-${idx}`,
+        image: order.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w",
+        productName: order.product_name || order.order_id || `Order ${idx + 1}`,
+        category: order.category || 'Service',
+        orderId: order.order_id || `#ORD-${idx + 1}`,
+        date: orderDate,
+        status: order.status || 'Pending',
+        statusColor: (order.status === 'CONFIRMED' || order.status === 'Delivered') ? 'green' as const :
+          (order.status === 'COMPLETED' || order.status === 'Completed') ? 'blue' as const :
+            (order.status === 'SHIPPED' || order.status === 'Shipped') ? 'yellow' as const : 'yellow' as const,
+        amount: order.total_amount ? `₹${order.total_amount}` : '₹0',
+      };
+    });
 
   // Add booked services to the list, showing only the 3 most recent
   const bookedServicesItems = availableServices.map((service) => {
@@ -1595,7 +1587,7 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewF
       month: 'short',
       day: 'numeric'
     }) : 'Today';
-    
+
     return {
       key: `service-${service.id}`,
       image: service.image,
@@ -1657,7 +1649,7 @@ const RecentOrders: React.FC<RecentOrdersProps> = ({ isActive, onActive, onViewF
             amount={item.amount}
           />
         ))}
-        
+
         <div className="p-2 text-center rounded-lg transition-all cursor-pointer bg-white border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:border-[#2f9e44] hover:ring-[#2f9e44]">
           <a onClick={(e) => { e.preventDefault(); onViewFullOrders?.(); }} className="text-sm font-medium text-[#2f9e44] hover:text-[#2f9e44] transition-colors inline-flex items-center gap-1 cursor-pointer group" href="#">
             View Full Order History
@@ -1735,7 +1727,7 @@ const OrderRow: React.FC<OrderRowProps> = ({
 };
 
 // Component: Add To Services
-const AddToServices: React.FC<{ 
+const AddToServices: React.FC<{
   onOpen?: () => void;
   selectedServiceIds: number[];
   availableServices: any[];
@@ -1744,65 +1736,65 @@ const AddToServices: React.FC<{
   setShowCouponInput: (show: boolean) => void;
   setCouponCode: (code: string) => void;
   setAppliedCoupon: (coupon: string | null) => void;
-}> = ({ 
-  onOpen, 
-  selectedServiceIds, 
-  availableServices, 
-  setSelectedServiceIds, 
+}> = ({
+  onOpen,
+  selectedServiceIds,
+  availableServices,
+  setSelectedServiceIds,
   setServiceConfigs,
   setShowCouponInput,
   setCouponCode,
   setAppliedCoupon
 }) => (
-  <section className="rounded-2xl p-4 mt-4 border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all cursor-pointer hover:shadow-lg hover:-translate-y-1" onClick={() => onOpen?.()}>
-    <div className="flex items-center justify-between mb-3">
-      <h3 className="text-xl font-serif font-semibold text-[#2f3a1f]">
-        View Cart
-      </h3>
-    </div>
-    
-    {availableServices.length === 0 ? (
-      <div className="py-8 text-center">
-        <p className="text-sm text-[#4f5d2f] mb-1">No services available yet</p>
-        <p className="text-xs text-text-light">Book services from the Services page</p>
+    <section className="rounded-2xl p-4 mt-4 border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all cursor-pointer hover:shadow-lg hover:-translate-y-1" onClick={() => onOpen?.()}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xl font-serif font-semibold text-[#2f3a1f]">
+          View Cart
+        </h3>
       </div>
-    ) : (
-      <div>
-        <p className="text-sm text-[#4f5d2f] mb-3">Available Services:</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {availableServices.map((svc) => (
-            <div 
-              key={svc.id} 
-              className="flex flex-col p-3 rounded-lg border border-[#cfd8a3] bg-[#fafcf0] hover:bg-[#eef4cf] transition-all"
-            >
-              <img 
-                src={svc.image} 
-                alt={svc.title} 
-                className="w-full h-24 rounded-lg object-cover border border-[#cfd8a3] mb-2"
-              />
-              <h4 className="text-xs font-bold text-[#2f3a1f] mb-1 line-clamp-2">
-                {svc.title}
-              </h4>
-              {svc.formData && (
-                <div className="space-y-1 text-[10px] text-[#4f5d2f]">
-                  {svc.formData.package && (
-                    <p><span className="font-semibold">Package:</span> {svc.formData.package}</p>
-                  )}
-                  {svc.formData.date && (
-                    <p><span className="font-semibold">Date:</span> {svc.formData.date}</p>
-                  )}
-                  {svc.formData.flowers && (
-                    <p><span className="font-semibold">Flowers:</span> {svc.formData.flowers}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+
+      {availableServices.length === 0 ? (
+        <div className="py-8 text-center">
+          <p className="text-sm text-[#4f5d2f] mb-1">No services available yet</p>
+          <p className="text-xs text-text-light">Book services from the Services page</p>
         </div>
-        <p className="text-xs text-text-light mt-3 text-center">
-          Click to select services and proceed to checkout
-        </p>
-      </div>
-    )}
-  </section>
-);
+      ) : (
+        <div>
+          <p className="text-sm text-[#4f5d2f] mb-3">Available Services:</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {availableServices.map((svc) => (
+              <div
+                key={svc.id}
+                className="flex flex-col p-3 rounded-lg border border-[#cfd8a3] bg-[#fafcf0] hover:bg-[#eef4cf] transition-all"
+              >
+                <img
+                  src={svc.image}
+                  alt={svc.title}
+                  className="w-full h-24 rounded-lg object-cover border border-[#cfd8a3] mb-2"
+                />
+                <h4 className="text-xs font-bold text-[#2f3a1f] mb-1 line-clamp-2">
+                  {svc.title}
+                </h4>
+                {svc.formData && (
+                  <div className="space-y-1 text-[10px] text-[#4f5d2f]">
+                    {svc.formData.package && (
+                      <p><span className="font-semibold">Package:</span> {svc.formData.package}</p>
+                    )}
+                    {svc.formData.date && (
+                      <p><span className="font-semibold">Date:</span> {svc.formData.date}</p>
+                    )}
+                    {svc.formData.flowers && (
+                      <p><span className="font-semibold">Flowers:</span> {svc.formData.flowers}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-text-light mt-3 text-center">
+            Click to select services and proceed to checkout
+          </p>
+        </div>
+      )}
+    </section>
+  );

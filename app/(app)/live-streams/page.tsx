@@ -3,14 +3,89 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUserWithRole } from "@/lib/stream/auth/getUserWithRole";
-import { motion } from "framer-motion";
-import { Video, AlertCircle, Loader2 } from "lucide-react";
+
+// Theme colors
+const PRIMARY_GREEN = "#5cb85c";
 
 interface LiveStream {
   callId: string;
   priestId: string;
   priestName?: string;
 }
+
+// Icon components
+const VideoIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+  </svg>
+);
+
+const PlayIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M8 5v14l11-7z" />
+  </svg>
+);
+
+// Stream Card Component
+const StreamCard = ({ stream, onJoin }: { stream: LiveStream; onJoin: () => void }) => (
+  <div
+    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group"
+    onClick={onJoin}
+  >
+    {/* Thumbnail Area */}
+    <div className="relative aspect-video bg-[#2f3a1f] flex items-center justify-center">
+      <div
+        className="w-16 h-16 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: `${PRIMARY_GREEN}30` }}
+      >
+        <div style={{ color: PRIMARY_GREEN }}>
+          <VideoIcon />
+        </div>
+      </div>
+
+      {/* Live Badge */}
+      <div className="absolute top-3 left-3">
+        <div className="flex items-center gap-1.5 bg-red-500 text-white px-2.5 py-1 rounded-full text-xs font-bold">
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+          LIVE
+        </div>
+      </div>
+
+      {/* Play overlay on hover */}
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <div
+          className="w-14 h-14 rounded-full flex items-center justify-center text-white"
+          style={{ backgroundColor: PRIMARY_GREEN }}
+        >
+          <PlayIcon />
+        </div>
+      </div>
+    </div>
+
+    {/* Content */}
+    <div className="p-5">
+      <div className="flex items-center gap-3 mb-3">
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm"
+          style={{ backgroundColor: PRIMARY_GREEN }}
+        >
+          🙏
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-900">Sacred Ritual</h3>
+          <p className="text-xs text-gray-500">Priest: {stream.priestId.slice(0, 8)}...</p>
+        </div>
+      </div>
+
+      <button
+        className="w-full py-2.5 rounded-lg text-white font-semibold text-sm transition-all hover:opacity-90"
+        style={{ backgroundColor: PRIMARY_GREEN }}
+      >
+        Join Stream
+      </button>
+    </div>
+  </div>
+);
 
 export default function LiveStreamsPage() {
   const [streams, setStreams] = useState<LiveStream[]>([]);
@@ -21,14 +96,12 @@ export default function LiveStreamsPage() {
   useEffect(() => {
     async function initPage() {
       try {
-        // Check if user is logged in
         const currentUser = await getUserWithRole();
         if (!currentUser) {
           router.push("/login");
           return;
         }
 
-        // Redirect priests to their dashboard
         if (currentUser.role === "priest") {
           router.push("/priest/dashboard");
           return;
@@ -36,12 +109,10 @@ export default function LiveStreamsPage() {
 
         setUser(currentUser);
 
-        // Fetch active live streams
         const res = await fetch("/api/stream/live");
         const data = await res.json();
 
         if (data.streams && Array.isArray(data.streams)) {
-          // Filter and format streams - extract priestId from callId (format: "priest_<priestId>")
           const formattedStreams: LiveStream[] = data.streams
             .filter((callId: string) => callId.startsWith("priest_"))
             .map((callId: string) => ({
@@ -67,90 +138,64 @@ export default function LiveStreamsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[var(--spiritual-dark)] to-black">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[var(--spiritual-green)] animate-spin mx-auto mb-4" />
-          <p className="text-white text-lg">Loading live streams...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="w-10 h-10 border-3 border-t-transparent rounded-full animate-spin"
+            style={{ borderColor: PRIMARY_GREEN, borderTopColor: 'transparent' }}
+          ></div>
+          <p className="text-gray-700 font-medium">Loading live streams...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--spiritual-dark)] to-black pt-32 pb-20">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-12"
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <Video className="w-8 h-8 text-[var(--spiritual-green)]" />
-            <h1 className="text-4xl md:text-5xl font-bold text-white">
-              Live Streams
-            </h1>
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white"
+              style={{ backgroundColor: PRIMARY_GREEN }}
+            >
+              <VideoIcon />
+            </div>
           </div>
-          <p className="text-gray-400 text-lg">
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-gray-900 mb-3">
+            Live Streams
+          </h1>
+          <p className="text-gray-600 max-w-xl mx-auto">
             Join priests performing sacred rituals and ceremonies in real-time
           </p>
-        </motion.div>
+        </div>
 
         {/* Streams Grid */}
         {streams.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="text-center py-20"
-          >
-            <div className="inline-flex items-center gap-3 bg-[var(--spiritual-green)]/10 border border-[var(--spiritual-green)]/30 rounded-lg px-6 py-4">
-              <AlertCircle className="w-5 h-5 text-[var(--spiritual-green)]" />
-              <p className="text-gray-300">
-                No live streams at the moment. Please check back soon.
+          <div className="text-center py-16">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 inline-block p-8 max-w-md mx-auto">
+              <div
+                className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: `${PRIMARY_GREEN}15` }}
+              >
+                <span className="text-3xl">📺</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Live Streams</h3>
+              <p className="text-gray-500 text-sm">
+                No priests are streaming at the moment. Please check back soon.
               </p>
             </div>
-          </motion.div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {streams.map((stream, index) => (
-              <motion.div
+            {streams.map((stream) => (
+              <StreamCard
                 key={stream.callId}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="group cursor-pointer"
-                onClick={() => handleJoinStream(stream.callId)}
-              >
-                <div className="relative bg-gradient-to-br from-[var(--spiritual-green)]/20 to-black border border-[var(--spiritual-green)]/30 rounded-xl p-6 h-full hover:border-[var(--spiritual-green)]/60 transition-all duration-300 hover:shadow-lg hover:shadow-[var(--spiritual-green)]/20">
-                  {/* Live Badge */}
-                  <div className="absolute top-4 right-4">
-                    <div className="flex items-center gap-2 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                      <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                      LIVE
-                    </div>
-                  </div>
-
-                  {/* Icon */}
-                  <div className="w-16 h-16 bg-[var(--spiritual-green)]/20 rounded-lg flex items-center justify-center mb-4 group-hover:bg-[var(--spiritual-green)]/30 transition-colors">
-                    <Video className="w-8 h-8 text-[var(--spiritual-green)]" />
-                  </div>
-
-                  {/* Content */}
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    Sacred Ritual
-                  </h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Priest ID: {stream.priestId.slice(0, 8)}...
-                  </p>
-
-                  {/* Join Button */}
-                  <button className="w-full mt-6 bg-[var(--spiritual-green)] text-black font-semibold py-2 rounded-lg hover:bg-[var(--spiritual-green)]/90 transition-colors">
-                    Join Stream
-                  </button>
-                </div>
-              </motion.div>
+                stream={stream}
+                onJoin={() => handleJoinStream(stream.callId)}
+              />
             ))}
           </div>
         )}
