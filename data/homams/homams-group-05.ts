@@ -1,8 +1,7 @@
 export const homamsGroup05 = {
 "rudra-ekadashi": {
   title: "Rudra Ekadashi Homam",
-  image: "/images/homams/rudra-ekadashi-homam.jpg",
-
+  image: "/services/virtual/rudra-ekadashi-homam.png",
   priceRange: "₹5,000 – ₹15,000",
 
   shortDescription:
@@ -118,7 +117,7 @@ export const homamsGroup05 = {
 },
 "sadakshari-durga-gayatri": {
   title: "Sadakshari Durga Gayatri Homam",
-  image: "/images/homams/sadakshari-durga-gayatri-homam.jpg",
+   image: "/services/virtual/Sadakshari Durga Gayatri Homam.jpeg",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -225,7 +224,7 @@ export const homamsGroup05 = {
 },
 "saraswathi-poojai": {
   title: "Saraswathi Poojai",
-  image: "/images/homams/saraswathi-poojai.jpg",
+  image: "/services/virtual/SARASWATHI POOJAI.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -368,7 +367,7 @@ export const homamsGroup05 = {
 },
 "sathabhishekam": {
   title: "Sathabhishekam",
-  image: "/images/homams/sathabhishekam.jpg",
+  image: "/services/homam/sathabhishekam.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -423,7 +422,7 @@ export const homamsGroup05 = {
 },
 "sathyanarayana-puja": {
   title: "Sathyanarayana Puja",
-  image: "/images/homams/sathyanarayana-puja.jpg",
+  image: "/services/virtual/SATHYANARAYANA PUJA.jpeg",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -567,8 +566,7 @@ export const homamsGroup05 = {
 },
 "seemantham": {
   title: "Seemantham",
-  image: "/images/homams/seemantham.jpg",
-
+  image: "/services/homam/seemantham.png",
   priceRange: "₹15,000 – ₹35,000",
 
   shortDescription:
@@ -614,7 +612,7 @@ export const homamsGroup05 = {
 },
 "shashtyabdapoorthiy": {
   title: "Shashtyabdapoorthy",
-  image: "/images/homams/shashtyabdapoorthy.jpg",
+  image: "/services/homam/shashtyabdapoorthi.png",
 
   priceRange: "₹15,000 – ₹35,000",
 
@@ -669,7 +667,7 @@ export const homamsGroup05 = {
 },
 "shatru-samhara-homam": {
   title: "Shatru Samhara Homam",
-  image: "/images/homams/shatru-samhara-homam.jpg",
+  image: "/services/virtual/Shatru Samhara Homam.jpeg",
 
   priceRange: "₹15,000 – ₹35,000",
 

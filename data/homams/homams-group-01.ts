@@ -168,7 +168,7 @@ packages: [
 
 "aavahanthi-homam": {
   title: "AAVAHANTHI HOMAM",
-  image: "/services/homam/aavahanthi-homam.png", // add image later
+  image: "/services/virtual/Aavahanthi Homom.png",// add image later
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -334,7 +334,7 @@ packages: [
 },
 "aavani-avittam": {
   title: "AAVANI AVITTAM",
-  image: "/services/homam/aavani-avittam.png", // add image later
+  image: "/services/virtual/Aavani Avittam.png", // add image later
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -485,7 +485,7 @@ packages: [
 },
 "abdha-poorthi-ayush-homam": {
   title: "ABDHAPOORTHI AYUSH HOMAM",
-  image: '/services/chanting/ayusha-homam.png"', // add image later
+  image: '/services/homam/Abdha Poorthi Ayush Homam.png', // add image later
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -627,7 +627,7 @@ packages: [
 },
 "ayusha-homam": {
   title: "AYUSHA HOMAM (AYUSHYA HOMAM)",
-  image: "/services/homam/ayusha-homam.png", // add image later
+  image: "/services/chanting/ayusha-homam.png", // add image later
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -739,7 +739,7 @@ packages: [
 },
 "ayyappa-pooja": {
   title: "AYYAPPA POOJA",
-  image: "/services/homam/ayyappa-pooja.png", // add image later
+  image: "/services/virtual/AYYAPPA POOJA.jpeg", // add image later
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -889,7 +889,7 @@ packages: [
 
 "bheemaratha-shanti": {
   title: "BHEEMARATHA SHANTI",
-  image: "/services/homam/bheemaratha-shanti.png", // add image later
+  image: "/services/homam/Bheemaratha Shanti.png", 
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   duration: "3 – 5 hours",

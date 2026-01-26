@@ -1,7 +1,7 @@
 export const homamsGroup02 = {
   "bhoomi-puja": {
     title: "BHOOMI PUJA",
-    image: "/services/homam/bhoomi-puja.png",
+    image: "/services/homam/Bhoomi Puja.png",
     priceRange: "₹15,000.00 – ₹35,000.00",
 
     shortDescription:
@@ -171,7 +171,7 @@ export const homamsGroup02 = {
 },
 "chandi-homam": {
   title: "CHANDI HOMAM (SAPTA SATI)",
-  image: "/services/homam/chandi-homam-satpa.png",
+  image: "/services/virtual/Chandi Homam (Sapta Sati).jpeg",
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -282,7 +282,7 @@ export const homamsGroup02 = {
 },
 "dhanvantari-homam": {
   title: "DHANVANTARI HOMAM",
-  image: "/services/homam/dhanvantari-homam.png",
+  image: "/services/virtual/Dhanvantari Homam.jpeg",
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -383,7 +383,7 @@ export const homamsGroup02 = {
 },
 "dhanvantari-homam-alt": {
   title: "DHANVANTRI HOMAM",
-  image: "/services/homam/dhanvantari-homam-alt.png",
+  image: "/services/homam/Dhanvantari Homam (Alt).png",
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -442,7 +442,7 @@ export const homamsGroup02 = {
 },
 "durga-homam": {
   title: "DURGA HOMAM",
-  image: "/services/homam/durga-homam.png",
+  image: "/services/virtual/DURGA HOMAM.jpeg",
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -591,7 +591,7 @@ export const homamsGroup02 = {
 },
 "durga-shanti-homam": {
   title: "DURGA SHANTI HOMAM",
-  image: "/services/homam/durga-shanti-homam.png",
+  image: "/services/virtual/Durga Shanti Homam.jpeg",
   priceRange: "₹15,000.00 – ₹35,000.00",
 
   shortDescription:
@@ -756,7 +756,7 @@ export const homamsGroup02 = {
 },
 "ganapathi-homam": {
   title: "GANAPATHI HOMAM",
-  image: "/services/homam/ganapathi-homam.png",
+  image: "/services/homam/Ganapathi Homam.png",
   priceRange: "₹9,999.00 – ₹27,800.00",
   duration: "1.5 Hours",
 

@@ -9,6 +9,8 @@ import { Home, Search, Users, User, Calendar, Tv } from "lucide-react";
 import { PanchangDropdown } from "../panchang";
 import { SearchDialog } from "../search-dialog";
 import { getUserWithRole } from "@/lib/stream/auth/getUserWithRole";
+import { toast } from "sonner";
+
 
 const navItems = [
   { icon: Home, label: "Home", id: "home" },
@@ -61,9 +63,18 @@ export function Navbar() {
       } else {
         router.push("/live-streams");
       }
-    } else if (id === "profile") {
-      router.push("/profile");
-    } else {
+   } else if (id === "profile") {
+  const userId = localStorage.getItem("user_id");
+  const userEmail = localStorage.getItem("user_email");
+
+  if (!userId || !userEmail) {
+    toast.error("Please log in to view your profile");
+    return;
+  }
+
+  router.push("/profile");
+}
+ else {
       // Handle other navigation here
     }
   };

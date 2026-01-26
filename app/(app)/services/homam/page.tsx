@@ -41,7 +41,8 @@ export default function HomamPage() {
         <div className="mx-auto mt-3 h-px w-24 bg-[#cfd8a3]" />
       </div>
 
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
         {pageItems.map((service, index) => (
           <Link key={`${service.title}-${index}`} href={service.href}>
   <HoverCard>
@@ -49,16 +50,17 @@ export default function HomamPage() {
      <CardContent className="flex h-full flex-col p-4">
 
   {/* Fixed image */}
-  <div className="mb-4 h-44 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf] flex items-center justify-center">
-    <Image
-      src={service.image}
-      alt={service.title}
-      width={240}
-      height={240}
-      className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-      unoptimized
-    />
-  </div>
+  <div className="mb-4 h-44 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
+  <Image
+    src={service.image}
+    alt={service.title}
+    width={240}
+    height={240}
+    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+    unoptimized
+  />
+</div>
+
 
   {/* Fixed-height title */}
   <h2 className="mt-auto min-h-[3rem] flex items-center justify-center text-center text-sm font-semibold leading-snug text-[#2f3a1f] line-clamp-2">
