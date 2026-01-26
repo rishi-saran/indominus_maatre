@@ -4,7 +4,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export async function DELETE(
-  _req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ cart_item_id: string }> }
 ) {
   try {
@@ -17,10 +17,22 @@ export async function DELETE(
       );
     }
 
+    const authHeader = request.headers.get("authorization");
+
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const response = await fetch(
-      `${API_BASE_URL}/cart/item/${cart_item_id}`,
+      `${API_BASE_URL}/api/v1/cart/items/${cart_item_id}`,
       {
         method: "DELETE",
+        headers: {
+          Authorization: authHeader,
+        },
       }
     );
 
@@ -32,10 +44,7 @@ export async function DELETE(
       );
     }
 
-    return NextResponse.json(
-      { success: true },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     console.error("Delete cart item error:", error);
     return NextResponse.json(

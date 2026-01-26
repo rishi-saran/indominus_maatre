@@ -158,11 +158,17 @@ export default function MyAccount() {
         } else {
           // Try to login with demo account
           try {
-            const data = await AuthService.login('maathre@gmail.com', 'maathre@2026');
-            setProfile(data);
-            // Store in localStorage for future use
-            localStorage.setItem('user_id', data.user_id);
-            localStorage.setItem('user_email', data.email);
+            const authResponse = await AuthService.login('maathre@gmail.com', 'maathre@2026');
+            if (authResponse.user) {
+              setProfile({
+                user_id: authResponse.user.id,
+                email: authResponse.user.email || 'maathre@gmail.com',
+                is_new_user: false,
+              });
+              // Store in localStorage for future use
+              localStorage.setItem('user_id', authResponse.user.id);
+              localStorage.setItem('user_email', authResponse.user.email || 'maathre@gmail.com');
+            }
           } catch (error) {
             // Use demo data if API not available - use a valid UUID format
             setProfile({
@@ -197,9 +203,17 @@ export default function MyAccount() {
         const userId = localStorage.getItem('user_id') || '550e8400-e29b-41d4-a716-446655440000';
         console.log('Fetching orders for user:', userId);
         try {
-          const ordersData = await OrdersService.list({ user_id: userId });
+          const ordersData = await OrdersService.list();
           console.log('Orders data:', ordersData);
-          setOrders(ordersData || []);
+          // Map service Order type to profile Order type
+          const mappedOrders = (ordersData || []).map((order: any) => ({
+            order_id: order.id || order.order_id,
+            status: order.status,
+            total_amount: order.total_amount,
+            created_at: order.created_at,
+            updated_at: order.updated_at,
+          }));
+          setOrders(mappedOrders);
         } catch (apiError) {
           // Backend error - use empty orders as fallback
           console.warn('Orders API error, using empty list:', apiError);

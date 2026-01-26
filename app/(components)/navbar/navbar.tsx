@@ -1,18 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Dock, DockIcon } from "../ui/dock";
 import { Brand } from "../brand";
-import { Home, Search, Users, User, Calendar } from "lucide-react";
+import { Home, Search, Users, User, Calendar, Tv } from "lucide-react";
 import { PanchangDropdown } from "../panchang";
 import { SearchDialog } from "../search-dialog";
+import { getUserWithRole } from "@/lib/stream/auth/getUserWithRole";
 
 const navItems = [
   { icon: Home, label: "Home", id: "home" },
   { icon: Search, label: "Explore", id: "explore" },
   { icon: Users, label: "Service", id: "service" },
+    { icon: Tv, label: "Live Streams", id: "live-streams" },
   { icon: Calendar, label: "Panchang", id: "panchang" },
   { icon: User, label: "Profile", id: "profile" },
 ];
@@ -20,14 +22,23 @@ const navItems = [
 export function Navbar() {
   const [panchangOpen, setPanchangOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [role, setRole] = useState<"priest" | "customer" | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    getUserWithRole().then((user) => setRole(user?.role ?? null));
+  }, []);
 
   const isRouteActive = (id: string) => {
     if (id === "home") return pathname === "/" || pathname.startsWith("/landing");
     if (id === "service") return pathname.startsWith("/services");
     if (id === "profile") return pathname.startsWith("/profile");
     if (id === "panchang") return pathname.startsWith("/panchang");
+    if (id === "live-streams") {
+      if (role === "priest") return pathname.startsWith("/priest/dashboard");
+      return pathname.startsWith("/live-streams");
+    }
     return false;
   };
 
@@ -44,6 +55,12 @@ export function Navbar() {
       setSearchOpen(true);
     } else if (id === "service") {
       router.push("/services");
+    } else if (id === "live-streams") {
+      if (role === "priest") {
+        router.push("/priest/dashboard");
+      } else {
+        router.push("/live-streams");
+      }
     } else if (id === "profile") {
       router.push("/profile");
     } else {

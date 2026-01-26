@@ -3,16 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AuthService } from '@/lib/services/auth.service';
-import { RegisterRequest } from '@/lib/types/auth';
+import { AuthService, SignupCredentials } from '@/lib/services/auth.service';
 
 export default function SignupPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState<RegisterRequest>({
+  const [formData, setFormData] = useState<SignupCredentials>({
     email: '',
+    password: '',
     first_name: '',
     last_name: '',
     phone: '',
+    role: 'customer',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,7 +21,7 @@ export default function SignupPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: SignupCredentials) => ({
       ...prev,
       [name]: value,
     }));
@@ -32,19 +33,28 @@ export default function SignupPage() {
     setError('');
     setSuccess('');
     
+    if (!formData.email || !formData.password || !formData.first_name || !formData.last_name || !formData.phone) {
+      setError('Please fill in all fields');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      const response = await AuthService.register(formData);
-      setSuccess(`Registration successful! User ID: ${response.user_id}`);
+      const response = await AuthService.signup(formData);
       
-      // Store user data
-      localStorage.setItem('user', JSON.stringify(response));
-      
-      // Redirect to login or landing page
-      setTimeout(() => {
-        router.push('/landing');
-      }, 1500);
-    } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+      if (response.user) {
+        setSuccess('Account created successfully! Redirecting...');
+        // Redirect to landing page after successful signup
+        setTimeout(() => {
+          router.push('/landing');
+        }, 1500);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -52,10 +62,14 @@ export default function SignupPage() {
 
   const handleGoogleSignup = async () => {
     setIsLoading(true);
-    console.log('Google Signup');
-    // Redirect to login page after successful Google signup
-    router.push('/login');
-    setIsLoading(false);
+    setError('');
+    try {
+      setError('Google signup coming soon');
+    } catch (err) {
+      setError('Google signup failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -96,8 +110,42 @@ export default function SignupPage() {
             </div>
 
             <div>
+              <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">Password</label>
+              <input id="password" type="password" placeholder="Enter a strong password" name="password" value={formData.password} onChange={handleChange} required minLength={8} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-900"/>
+              <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+            </div>
+
+            <div>
               <label htmlFor="phone" className="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
               <input id="phone" type="tel" placeholder="9876543210" name="phone" value={formData.phone} onChange={handleChange} pattern="[0-9]{10}" required className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400 text-gray-900"/>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+              <div className="flex items-center gap-4 text-sm text-gray-800">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="role"
+                    value="customer"
+                    checked={formData.role === 'customer'}
+                    onChange={handleChange}
+                    className="text-[var(--spiritual-green)]"
+                  />
+                  Customer
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="role"
+                    value="priest"
+                    checked={formData.role === 'priest'}
+                    onChange={handleChange}
+                    className="text-[var(--spiritual-green)]"
+                  />
+                  Priest
+                </label>
+              </div>
             </div>
 
             <button type="submit" disabled={isLoading} className="w-full px-4 py-2 font-bold text-xs text-white bg-[#2f9e44] hover:bg-[#268a3b] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer rounded-lg hover:-translate-y-1">

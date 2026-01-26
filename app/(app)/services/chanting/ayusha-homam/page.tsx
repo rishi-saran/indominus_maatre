@@ -3,10 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Star } from "lucide-react";
+import { CartService } from '@/lib/services/cart.service';
+import { ServicesService } from '@/lib/services/services.service';
 import {
   Select,
   SelectTrigger,
@@ -19,7 +21,27 @@ export default function AyushaHomamPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
+  const [serviceId, setServiceId] = useState<string | null>(null);
   
+  // Fetch service UUID from backend
+  useEffect(() => {
+    const fetchServiceId = async () => {
+      try {
+        const services = await ServicesService.list();
+        const ayushaService = services.find(
+          (s: any) => s.name?.toLowerCase().includes('ayusha') || s.id === 'ayusha-homam'
+        );
+        if (ayushaService) {
+          setServiceId(ayushaService.id);
+        } else {
+          console.warn('Ayusha Homam service not found in backend');
+        }
+      } catch (error) {
+        console.error('Failed to fetch services:', error);
+      }
+    };
+    fetchServiceId();
+  }, []);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -31,33 +53,52 @@ export default function AyushaHomamPage() {
     flowers: 'No'
   });
 
-  const handleBookService = () => {
-    // Save service details to localStorage with current timestamp as ID
-    const serviceId = Date.now();
+  const handleBookService = async () => {
+    // Step 1: Add to backend cart first
+    if (!serviceId) {
+      toast.error("Service not available. Please try again.", {
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      await CartService.addItem({
+        service_id: serviceId,
+        quantity: 1,
+      });
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      toast.error("Failed to add service to cart. Please try again.", {
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Step 2: Also save to localStorage for UI (with timestamp as local ID)
+    const localId = Date.now();
     const serviceData = {
-      id: serviceId,
+      id: localId,
       title: 'AYUSHA HOMAM',
       description: 'Ayusha Homam is performed to revere divine energies for vitality, wellness, and longevity.',
       image: '/services/chanting/ayusha-homam.png',
       formData: formData,
       addedAt: new Date().toISOString()
     };
-    
-    // Get existing services from localStorage
+
     const existingServices = JSON.parse(localStorage.getItem('addedServices') || '[]');
     existingServices.push(serviceData);
     localStorage.setItem('addedServices', JSON.stringify(existingServices));
-    
+
     // Dispatch custom event to notify other components
     window.dispatchEvent(new Event('servicesUpdated'));
 
     toast.success("Service booked successfully", {
       description: "Your booking has been added to cart",
-      duration: 3000, // 3 seconds
+      duration: 3000,
     });
-    toast.dismiss(); // clears existing toasts
+    toast.dismiss();
 
-    
     // Clear form after adding
     setFormData({
       location: '',

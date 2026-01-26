@@ -10,9 +10,13 @@
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",
+    "@stream-io/node-sdk": "^0.7.33",
+    "@stream-io/video-react-sdk": "^1.31.0",
+    "@supabase/supabase-js": "^2.91.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cobe": "^0.6.5",
+    "dotenv": "^17.2.3",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
     "motion": "^12.23.26",
@@ -20,6 +24,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "sonner": "^2.0.7",
+    "stream-chat": "^9.28.0",
+    "stream-chat-react": "^13.13.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
