@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
@@ -11,28 +12,38 @@ const services = [
     title: "Rudrabhishekam",
     description: "Holy abhishekam to Lord Shiva",
     image: "/popular/Abhishekam.png",
+    href: "/services/homam/rudrabhishekam",
   },
   {
     id: 2,
     title: "Engagement",
     description: "Blessings for your engagement ceremony",
     image: "/popular/Engagement.png",
+    href: "/services/homam/engagement",
   },
   {
     id: 3,
     title: "Ganapathi Homam",
     description: "Seek Lord Ganesha's blessings",
     image: "/popular/Ganapathi Homom.png",
+    href: "/services/homam/ganapathi-homam",
   },
   {
     id: 4,
     title: "Namakarana",
     description: "Baby naming ceremony with divine blessings",
     image: "/popular/Namakarana.png",
+    href: "/services/homam/namakarana",
   },
 ];
 
 export function PopularServicesSection() {
+  const router = useRouter();
+
+  const handleServiceClick = (href: string) => {
+    router.push(href);
+  };
+
   return (
     <section className="py-20 relative overflow-hidden">
       {/* Floating Glow Orbs */}
@@ -70,7 +81,10 @@ export function PopularServicesSection() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.05 }}
             >
-              <div className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf] flex flex-col p-6 cursor-pointer">
+              <div 
+                onClick={() => handleServiceClick(service.href)}
+                className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf] flex flex-col p-6 cursor-pointer"
+              >
                 {/* Image */}
                 <div className="mb-5 h-40 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
                   <img

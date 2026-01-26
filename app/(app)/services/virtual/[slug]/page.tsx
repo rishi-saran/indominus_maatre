@@ -35,6 +35,23 @@ export default function VirtualServicePage() {
   });
 
   const handleBookService = () => {
+    // Check authentication first
+    const userId = localStorage.getItem('user_id');
+    const userEmail = localStorage.getItem('user_email');
+    
+    if (!userId || !userEmail) {
+      // User not logged in - show toast with action
+      toast.error('Please login to book services', {
+        description: 'Click the Login button below',
+        duration: 5000,
+        action: {
+          label: 'Login',
+          onClick: () => router.push('/login'),
+        },
+      });
+      return;
+    }
+
     const serviceId = Date.now();
     const serviceData = {
       id: serviceId,
