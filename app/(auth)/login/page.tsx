@@ -29,8 +29,21 @@ export default function LoginPage() {
       const response = await AuthService.login(email, password);
       
       if (response.user) {
-        // Login successful, redirect to landing
-        router.push('/landing');
+        // Store user info in localStorage and cookies for authentication
+        const userId = response.user.id;
+        const userEmail = response.user.email || email;
+        
+        localStorage.setItem('user_id', userId);
+        localStorage.setItem('user_email', userEmail);
+        
+        // Also set cookies for server-side authentication check with SameSite attribute
+        document.cookie = `user_id=${userId}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+        document.cookie = `user_email=${encodeURIComponent(userEmail)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+        
+        // Login successful, redirect to profile
+        router.push('/profile');
+      } else {
+        setError('Login failed. Please try again.');
       }
     } catch (err: unknown) {
       if (err instanceof Error) {

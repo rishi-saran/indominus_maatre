@@ -1,11 +1,13 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ServiceCard from '@/app/components/ui/ServiceCard';
 import { AuthService } from '@/lib/services/auth.service';
 import { OrdersService } from '@/lib/services/orders.service';
 import { ViewCartButton } from '@/components/ui/view-cart';
 
+// Make this page dynamic (not static) so auth checks work properly
+export const dynamic = 'force-dynamic';
 
 interface Notification {
   id: string;
@@ -34,9 +36,24 @@ interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'PROCESSING';
 }
 
-export default function MyAccount() {
+function MyAccountContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // IMMEDIATE auth check before ANY state initialization
+  if (typeof window !== 'undefined') {
+    const storedUserId = localStorage.getItem('user_id');
+    const storedEmail = localStorage.getItem('user_email');
+    
+    if (!storedUserId || !storedEmail) {
+      // Redirect immediately, don't render anything
+      window.location.href = '/login';
+      return null;
+    }
+  }
+  
+  const [isMounted, setIsMounted] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [popupNotifications, setPopupNotifications] = useState<Notification[]>([]);
@@ -140,6 +157,32 @@ export default function MyAccount() {
       status: isToday(b.date) ? 'PROCESSING' : b.status,
     }));
   const confirmedBooking: Booking | undefined = allBookings.find(b => b.status === 'CONFIRMED');
+
+  // Check authentication first - this is the primary guard
+  useEffect(() => {
+    // Immediate check - no delays
+    const checkAuth = () => {
+      const storedUserId = localStorage.getItem('user_id');
+      const storedEmail = localStorage.getItem('user_email');
+      
+      console.log('Profile page: Auth check - userId:', !!storedUserId, 'email:', !!storedEmail);
+      
+      // If user is not logged in, redirect to login page immediately
+      if (!storedUserId || !storedEmail) {
+        console.log('Profile page: No auth found, redirecting to /login');
+        window.location.href = '/login'; // Force redirect
+        return false;
+      }
+      
+      return true;
+    };
+    
+    // Check auth and only allow rendering if authenticated
+    if (checkAuth()) {
+      setIsMounted(true);
+      setIsChecking(false);
+    }
+  }, [router]);
 
 // Authenticate user on component mount
   useEffect(() => {
@@ -336,6 +379,16 @@ export default function MyAccount() {
 
   return (
     <div className="text-sm text-[#2f3a1f] antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-accent/30 bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+      {/* If not mounted or checking, show loading */}
+      {!isMounted || isChecking ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2f9e44] mx-auto mb-4"></div>
+            <p className="text-[#4f5d2f]">Redirecting...</p>
+          </div>
+        </div>
+      ) : (
+        <>
       <ViewCartButton redirectTo="/cart" />
       
       {/* Notification Popups */}
@@ -1074,9 +1127,19 @@ export default function MyAccount() {
           </div>
         </div>
       </footer>
+        </>
+      )}
     </div>
   );
-};
+}
+
+export default function MyAccount() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2f9e44] mx-auto mb-4"></div><p className="text-[#4f5d2f]">Loading...</p></div></div>}>
+      <MyAccountContent />
+    </Suspense>
+  );
+}
 
 // Component: Navigation Link
 interface NavLinkProps {

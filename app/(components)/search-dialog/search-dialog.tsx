@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { Search, X, Clock, TrendingUp } from "lucide-react";
 
 interface SearchDialogProps {
@@ -28,6 +29,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
@@ -59,8 +61,81 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
 
   const handleSearch = (query: string) => {
     console.log("Searching for:", query);
-    // Add search logic here
+    
+    // Service mapping for direct navigation
+    const serviceMap: Record<string, string> = {
+      "aavahanthi homam": "/services/homam/aavahanthi-homam",
+      "aavani avittam": "/services/homam/aavani-avittam",
+      "abdha poorthi ayush homam": "/services/homam/abdha-poorthi-ayush-homam",
+      "ayusha homam": "/services/homam/ayusha-homam",
+      "ayushya homam": "/services/homam/ayusha-homam",
+      "ayyappa pooja": "/services/homam/ayyappa-pooja",
+      "bheemaratha shanti": "/services/homam/bheemaratha-shanti",
+      "bhoomi puja": "/services/homam/bhoomi-puja",
+      "chandi homam": "/services/homam/chandi-homam",
+      "sapta sati": "/services/homam/chandi-homam",
+      "dhanvantari homam": "/services/homam/dhanvantari-homam",
+      "durga homam": "/services/homam/durga-homam",
+      "durga shanti homam": "/services/homam/durga-shanti-homam",
+      "engagement": "/services/homam/engagement",
+      "ganapathi homam": "/services/homam/ganapathi-homam",
+      "ganapathi": "/services/homam/ganapathi-homam",
+      "ganesh chathurthi": "/services/homam/ganesh-vinyagar-chathurthi-pooja",
+      "vinayagar chathurthi": "/services/homam/ganesh-vinyagar-chathurthi-pooja",
+      "haridra ganapathy homam": "/services/homam/haridra-ganapathy-homam",
+      "hiranya srardham": "/services/homam/hiranya-srardham",
+      "housewarming": "/services/homam/housewarming",
+      "grihapravesham": "/services/homam/housewarming",
+      "jathakarma": "/services/homam/jathakarma",
+      "kanakabhishekam": "/services/homam/kanakabishekam",
+      "lakshmi kubera homam": "/services/homam/lakshmi-kubera-homam",
+      "maha mrutyunjaya homam": "/services/homam/maha-mrutynjaya-homam",
+      "mahalakshmi homam": "/services/homam/mahalakshmi-homam",
+      "mahalakshmi puja": "/services/homam/mahalakshmi-puja",
+      "marriage": "/services/homam/marriage-vivaham",
+      "vivaham": "/services/homam/marriage-vivaham",
+      "mrutyunjaya homam": "/services/homam/mrutyunjaya-homam",
+      "navagraha homam": "/services/homam/navagraha-homam",
+      "nichayathartham": "/services/homam/nichayathartham",
+      "pratyangira badrakali homam": "/services/homam/pratyangira-badrakali",
+      "badrakali homam": "/services/homam/pratyangira-badrakali",
+      "punyaha vachanam": "/services/homam/punyaha-vachanam",
+      "rudra ekadashi homam": "/services/homam/rudra-ekadashi",
+      "rudrabhishekam": "/services/homam/rudrabhishekam",
+      "rudrabhishek": "/services/homam/rudrabhishekam",
+      "sadakshari durga gayatri homam": "/services/homam/sadakshari-durga-gayatri",
+      "saraswathi poojai": "/services/homam/saraswathi-poojai",
+      "sathabhishekam": "/services/homam/sathabhishekam",
+      "sathyanarayana puja": "/services/homam/sathyanarayana-puja",
+      "seemantham": "/services/homam/seemantham",
+      "shashtyabdapoorthi": "/services/homam/shashtyabdapoorthiy",
+      "shatru samhara homam": "/services/homam/shatru-samhara-homam",
+      "sidhi vinayaga puja": "/services/homam/sidhi-vinayaga-puja",
+      "srardham": "/services/homam/srardham",
+      "sudarshana homam": "/services/homam/sudarshana-homam",
+      "maha sudarshana homam": "/services/homam/sudarshana-homam",
+      "swayamvara parvathi homam": "/services/homam/swayamvara-parvathi",
+      "ugraratha shanti": "/services/homam/ugraratha-shanti",
+      "upanayanam": "/services/homam/upanayanam",
+      "vancha kalpalatha maha ganapathi homam": "/services/homam/vancha-kalpalatha-ganapathi",
+      "vastu shanthi": "/services/homam/vastu-shanthi",
+      "vijayaratha shanti": "/services/homam/vijayaratha-shanti",
+      "namakarana": "/services/homam/namakarana",
+    };
+
+    // Check if query matches a known service (case-insensitive)
+    const lowerQuery = query.toLowerCase().trim();
+    const detailPage = serviceMap[lowerQuery];
+
     onClose();
+
+    if (detailPage) {
+      // Navigate directly to service detail page
+      router.push(detailPage);
+    } else {
+      // Navigate to services page with search query
+      router.push(`/services?search=${encodeURIComponent(query)}`);
+    }
   };
 
   if (!mounted) return null;

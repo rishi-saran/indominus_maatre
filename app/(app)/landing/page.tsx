@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { Navbar } from "../../(components)/navbar";
 import { VideoCard } from "../../(components)/video-dialog";
 import { Search, ArrowRight, Star, Users, BadgeCheck } from "lucide-react";
@@ -16,6 +17,83 @@ import {
 } from "./_sections";
 
 export default function LandingPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+
+  const handleExplore = () => {
+    // Service mapping for direct navigation
+    const serviceMap: Record<string, string> = {
+      "aavahanthi homam": "/services/homam/aavahanthi-homam",
+      "aavani avittam": "/services/homam/aavani-avittam",
+      "abdha poorthi ayush homam": "/services/homam/abdha-poorthi-ayush-homam",
+      "ayusha homam": "/services/homam/ayusha-homam",
+      "ayushya homam": "/services/homam/ayusha-homam",
+      "ayyappa pooja": "/services/homam/ayyappa-pooja",
+      "bheemaratha shanti": "/services/homam/bheemaratha-shanti",
+      "bhoomi puja": "/services/homam/bhoomi-puja",
+      "chandi homam": "/services/homam/chandi-homam",
+      "sapta sati": "/services/homam/chandi-homam",
+      "dhanvantari homam": "/services/homam/dhanvantari-homam",
+      "durga homam": "/services/homam/durga-homam",
+      "durga shanti homam": "/services/homam/durga-shanti-homam",
+      "engagement": "/services/homam/engagement",
+      "ganapathi homam": "/services/homam/ganapathi-homam",
+      "ganapathi": "/services/homam/ganapathi-homam",
+      "ganesh chathurthi": "/services/homam/ganesh-vinyagar-chathurthi-pooja",
+      "vinayagar chathurthi": "/services/homam/ganesh-vinyagar-chathurthi-pooja",
+      "haridra ganapathy homam": "/services/homam/haridra-ganapathy-homam",
+      "hiranya srardham": "/services/homam/hiranya-srardham",
+      "housewarming": "/services/homam/housewarming",
+      "grihapravesham": "/services/homam/housewarming",
+      "jathakarma": "/services/homam/jathakarma",
+      "kanakabhishekam": "/services/homam/kanakabishekam",
+      "lakshmi kubera homam": "/services/homam/lakshmi-kubera-homam",
+      "maha mrutyunjaya homam": "/services/homam/maha-mrutynjaya-homam",
+      "mahalakshmi homam": "/services/homam/mahalakshmi-homam",
+      "mahalakshmi puja": "/services/homam/mahalakshmi-puja",
+      "marriage": "/services/homam/marriage-vivaham",
+      "vivaham": "/services/homam/marriage-vivaham",
+      "mrutyunjaya homam": "/services/homam/mrutyunjaya-homam",
+      "navagraha homam": "/services/homam/navagraha-homam",
+      "nichayathartham": "/services/homam/nichayathartham",
+      "pratyangira badrakali homam": "/services/homam/pratyangira-badrakali",
+      "badrakali homam": "/services/homam/pratyangira-badrakali",
+      "punyaha vachanam": "/services/homam/punyaha-vachanam",
+      "rudra ekadashi homam": "/services/homam/rudra-ekadashi",
+      "rudrabhishekam": "/services/homam/rudrabhishekam",
+      "rudrabhishek": "/services/homam/rudrabhishekam",
+      "sadakshari durga gayatri homam": "/services/homam/sadakshari-durga-gayatri",
+      "saraswathi poojai": "/services/homam/saraswathi-poojai",
+      "sathabhishekam": "/services/homam/sathabhishekam",
+      "sathyanarayana puja": "/services/homam/sathyanarayana-puja",
+      "seemantham": "/services/homam/seemantham",
+      "shashtyabdapoorthi": "/services/homam/shashtyabdapoorthiy",
+      "shatru samhara homam": "/services/homam/shatru-samhara-homam",
+      "sidhi vinayaga puja": "/services/homam/sidhi-vinayaga-puja",
+      "srardham": "/services/homam/srardham",
+      "sudarshana homam": "/services/homam/sudarshana-homam",
+      "maha sudarshana homam": "/services/homam/sudarshana-homam",
+      "swayamvara parvathi homam": "/services/homam/swayamvara-parvathi",
+      "ugraratha shanti": "/services/homam/ugraratha-shanti",
+      "upanayanam": "/services/homam/upanayanam",
+      "vancha kalpalatha maha ganapathi homam": "/services/homam/vancha-kalpalatha-ganapathi",
+      "vastu shanthi": "/services/homam/vastu-shanthi",
+      "vijayaratha shanti": "/services/homam/vijayaratha-shanti",
+      "namakarana": "/services/homam/namakarana",
+    };
+
+    const lowerQuery = searchQuery.toLowerCase().trim();
+    const detailPage = serviceMap[lowerQuery];
+
+    if (detailPage) {
+      router.push(detailPage);
+    } else if (searchQuery.trim()) {
+      router.push(`/services?search=${encodeURIComponent(searchQuery)}`);
+    } else {
+      router.push("/services");
+    }
+  };
+
   return (
     <div className="min-h-screen relative">
       {/* Navbar - always visible */}
@@ -124,6 +202,13 @@ export default function LandingPage() {
                       <Search className="w-5 h-5 text-[var(--muted-foreground)]" />
                       <input
                         type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleExplore();
+                          }
+                        }}
                         placeholder="Search for Puja, Pandit, or Temple..."
                         className="flex-1 ml-3 bg-transparent text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none"
                       />
@@ -132,7 +217,10 @@ export default function LandingPage() {
                 </div>
 
                 {/* Explore Button */}
-                <button className="px-8 py-4 bg-[var(--spiritual-green-dark)] text-white rounded-full font-semibold flex items-center gap-2 hover:bg-[#2E7D32] transition-all shadow-lg hover:shadow-xl hover:scale-105">
+                <button 
+                  onClick={handleExplore}
+                  className="px-8 py-4 bg-[var(--spiritual-green-dark)] text-white rounded-full font-semibold flex items-center gap-2 hover:bg-[#2E7D32] transition-all shadow-lg hover:shadow-xl hover:scale-105"
+                >
                   Explore
                   <ArrowRight className="w-5 h-5" />
                 </button>
