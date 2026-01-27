@@ -1,7 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 function getAuthHeader(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -51,9 +50,8 @@ export async function POST(request: NextRequest) {
     if (body?.provider_id) search.append("provider_id", body.provider_id);
     if (body?.address_id) search.append("address_id", body.address_id);
 
-    const url = `${API_BASE_URL}/api/v1/orders/${
-      search.toString() ? `?${search.toString()}` : ''
-    }`;
+    const url = `${API_BASE_URL}/api/v1/orders/${search.toString() ? `?${search.toString()}` : ''
+      }`;
 
     const response = await fetch(url, {
       method: "POST",
