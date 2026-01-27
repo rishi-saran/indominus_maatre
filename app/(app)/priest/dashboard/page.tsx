@@ -6,7 +6,7 @@ import { getUserWithRole } from "@/lib/stream/auth/getUserWithRole";
 import {
   StreamVideo,
   StreamCall,
-  SpeakerLayout,
+  LivestreamLayout,
 } from "@stream-io/video-react-sdk";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { supabase } from "@/lib/supabase/client";
@@ -188,6 +188,34 @@ export default function PriestDashboard() {
         setStreamDuration(prev => prev + 1);
       }, 1000);
     }
+    return () => clearInterval(interval);
+  }, [call]);
+
+  // Track viewer count from call state
+  useEffect(() => {
+    if (!call) {
+      setViewerCount(0);
+      return;
+    }
+
+    // Update viewer count every 2 seconds
+    const updateViewerCount = () => {
+      try {
+        const participants = call.state.participants;
+        // Subtract 1 to exclude the priest themselves
+        const viewers = Math.max(0, participants.length - 1);
+        setViewerCount(viewers);
+      } catch (e) {
+        console.warn("Could not get participant count:", e);
+      }
+    };
+
+    // Initial count
+    updateViewerCount();
+
+    // Poll for updates
+    const interval = setInterval(updateViewerCount, 2000);
+
     return () => clearInterval(interval);
   }, [call]);
 
@@ -463,7 +491,7 @@ export default function PriestDashboard() {
                     <StreamVideo client={client}>
                       <StreamCall call={call}>
                         <div className="w-full h-full">
-                          <SpeakerLayout />
+                          <LivestreamLayout showParticipantCount={false} showLiveBadge={false} showDuration={false} />
                         </div>
                       </StreamCall>
                     </StreamVideo>
@@ -564,9 +592,56 @@ export default function PriestDashboard() {
       </div>
 
       <style jsx global>{`
-        .str-video__speaker-layout { height: 100% !important; }
-        .str-video__participant-view { border-radius: 0 !important; }
+        /* Livestream layout should fill container */
+        .str-video__livestream-layout,
+        .str-video__speaker-layout { 
+          height: 100% !important; 
+          width: 100% !important;
+        }
+        
+        .str-video__participant-view { 
+          border-radius: 0 !important; 
+          height: 100% !important;
+          width: 100% !important;
+        }
+        
         .str-video__call-controls { display: none !important; }
+        
+        /* Hide known overlay classes */
+        .str-video__participant-count,
+        .str-video__livestream-layout__participant-count,
+        .str-video__speaker-layout__participant-count,
+        .str-video__session-stats,
+        .str-video__livestream-layout__live-badge,
+        .str-video__call-stats,
+        .str-video__participant-view__participant-details,
+        .str-video__overlay,
+        .str-video__livestream-layout__overlay,
+        .str-video__livestream-layout__livestream-info,
+        .str-video__livestream-layout__duration { 
+          display: none !important; 
+        }
+        
+        /* Hide span text elements */
+        .str-video__speaker-layout > span,
+        .str-video__speaker-layout__wrapper > span,
+        .str-video__livestream-layout > span,
+        .str-video__livestream-layout__wrapper > span { 
+          display: none !important; 
+        }
+        
+        /* Hide the participants bar */
+        .str-video__speaker-layout__participants-bar,
+        .str-video__livestream-layout__participants-bar {
+          display: none !important;
+        }
+        
+        /* Make video fill the container */
+        .str-video__video {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+        }
       `}</style>
     </div>
   );

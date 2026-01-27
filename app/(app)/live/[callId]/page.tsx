@@ -7,7 +7,7 @@ import { createVideoClient } from "@/lib/stream/stream/videoClient";
 import {
   StreamVideo,
   StreamCall,
-  SpeakerLayout,
+  LivestreamLayout,
 } from "@stream-io/video-react-sdk";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 
@@ -40,6 +40,19 @@ const LeaveIcon = () => (
   </svg>
 );
 
+const SpeakerIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+  </svg>
+);
+
+const SpeakerMuteIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+  </svg>
+);
+
 export default function LiveViewerPage() {
   const params = useParams();
   const router = useRouter();
@@ -51,6 +64,7 @@ export default function LiveViewerPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAudioMuted, setIsAudioMuted] = useState(true); // Start muted due to browser autoplay policy
 
   useEffect(() => {
     if (!callId) return;
@@ -110,6 +124,16 @@ export default function LiveViewerPage() {
     } finally {
       router.push("/live-streams");
     }
+  };
+
+  // Toggle audio playback for the viewer
+  const toggleAudio = () => {
+    // Find all video elements and toggle their muted state
+    const videos = document.querySelectorAll('video');
+    videos.forEach((video) => {
+      video.muted = !isAudioMuted;
+    });
+    setIsAudioMuted(!isAudioMuted);
   };
 
   if (!callId) {
@@ -220,7 +244,7 @@ export default function LiveViewerPage() {
                   <StreamVideo client={client}>
                     <StreamCall call={call}>
                       <div className="w-full h-full">
-                        <SpeakerLayout />
+                        <LivestreamLayout showParticipantCount={false} showLiveBadge={false} showDuration={false} />
                       </div>
                     </StreamCall>
                   </StreamVideo>
@@ -258,6 +282,31 @@ export default function LiveViewerPage() {
                 >
                   <LeaveIcon />
                   Leave Stream
+                </button>
+
+                {/* Audio toggle button */}
+                <button
+                  type="button"
+                  onClick={toggleAudio}
+                  style={{
+                    padding: "12px 24px",
+                    backgroundColor: isAudioMuted ? "#f59e0b" : "#22c55e",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 12,
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                    fontSize: 14,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    position: "relative",
+                    zIndex: 10000,
+                    marginLeft: 12
+                  }}
+                >
+                  {isAudioMuted ? <SpeakerMuteIcon /> : <SpeakerIcon />}
+                  {isAudioMuted ? "Unmute Audio" : "Mute Audio"}
                 </button>
               </div>
             </div>
@@ -351,13 +400,61 @@ export default function LiveViewerPage() {
       </div>
 
       <style jsx global>{`
-        .str-video__speaker-layout { height: 100% !important; }
-        .str-video__participant-view { border-radius: 0 !important; }
+        /* Livestream layout should fill container */
+        .str-video__livestream-layout,
+        .str-video__speaker-layout { 
+          height: 100% !important; 
+          width: 100% !important;
+        }
+        
+        .str-video__participant-view { 
+          border-radius: 0 !important; 
+          height: 100% !important;
+          width: 100% !important;
+        }
+        
         .str-video__call-controls { display: none !important; }
+        
+        /* Hide known overlay classes */
+        .str-video__participant-count,
+        .str-video__livestream-layout__participant-count,
+        .str-video__speaker-layout__participant-count,
+        .str-video__session-stats,
+        .str-video__livestream-layout__live-badge,
+        .str-video__call-stats,
+        .str-video__participant-view__participant-details,
+        .str-video__overlay,
+        .str-video__livestream-layout__overlay,
+        .str-video__livestream-layout__livestream-info,
+        .str-video__livestream-layout__duration { 
+          display: none !important; 
+        }
+        
+        /* Hide span text elements */
+        .str-video__speaker-layout > span,
+        .str-video__speaker-layout__wrapper > span,
+        .str-video__livestream-layout > span,
+        .str-video__livestream-layout__wrapper > span { 
+          display: none !important; 
+        }
+        
+        /* Hide the participants bar */
+        .str-video__speaker-layout__participants-bar,
+        .str-video__livestream-layout__participants-bar {
+          display: none !important;
+        }
+        
+        /* Make video fill the container */
+        .str-video__video {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+        }
         
         /* Disable pointer events on stream overlays so our buttons work */
         .str-video__speaker-layout__wrapper,
         .str-video__speaker-layout,
+        .str-video__livestream-layout,
         .str-video__participant-view { pointer-events: none !important; }
         
         /* But re-enable on the video element itself */
