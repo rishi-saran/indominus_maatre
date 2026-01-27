@@ -51,7 +51,6 @@ export default function LiveViewerPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     if (!callId) return;
@@ -100,25 +99,22 @@ export default function LiveViewerPage() {
     init();
   }, [callId, router]);
 
-  // Handle leaving the stream - use window.location for guaranteed navigation
-  const handleLeaveStream = () => {
-    setLeaving(true);
-
-    // Clean up in background
-    if (call) {
-      call.leave().catch(() => { });
+  // Handle leaving the stream
+  const handleLeaveStream = async () => {
+    try {
+      if (call) {
+        await call.leave();
+      }
+    } catch (err: any) {
+      console.warn("Error leaving call (may already be ended):", err);
+    } finally {
+      router.push("/live-streams");
     }
-    if (client) {
-      try { client.disconnectUser(); } catch { }
-    }
-
-    // Force navigation using window.location
-    window.location.href = "/live-streams";
   };
 
   if (!callId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-10 text-center max-w-md">
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-50 flex items-center justify-center">
             <span className="text-4xl">❌</span>
@@ -139,7 +135,7 @@ export default function LiveViewerPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-10 text-center max-w-md">
           <div className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: `${PRIMARY_GREEN}15` }}>
             <div
@@ -156,7 +152,7 @@ export default function LiveViewerPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-10 text-center max-w-md">
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-50 flex items-center justify-center">
             <span className="text-4xl">⚠️</span>
@@ -176,7 +172,7 @@ export default function LiveViewerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+    <div className="min-h-screen bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
 
         {/* Header */}
@@ -232,19 +228,37 @@ export default function LiveViewerPage() {
               </div>
 
               {/* Controls */}
-              <div className="px-5 py-4 bg-[#2f3a1f] flex items-center justify-center">
-                <a
-                  href="/live-streams"
-                  onClick={() => {
-                    // Clean up stream before leaving
-                    if (call) call.leave().catch(() => { });
-                    if (client) try { client.disconnectUser(); } catch { }
+              <div style={{
+                padding: "16px 20px",
+                backgroundColor: "#2f3a1f",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "relative",
+                zIndex: 9999
+              }}>
+                <button
+                  type="button"
+                  onClick={handleLeaveStream}
+                  style={{
+                    padding: "12px 32px",
+                    backgroundColor: "#dc2626",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 12,
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                    fontSize: 14,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    position: "relative",
+                    zIndex: 10000
                   }}
-                  className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all shadow-lg hover:shadow-red-600/30 no-underline"
                 >
                   <LeaveIcon />
                   Leave Stream
-                </a>
+                </button>
               </div>
             </div>
 
@@ -340,6 +354,15 @@ export default function LiveViewerPage() {
         .str-video__speaker-layout { height: 100% !important; }
         .str-video__participant-view { border-radius: 0 !important; }
         .str-video__call-controls { display: none !important; }
+        
+        /* Disable pointer events on stream overlays so our buttons work */
+        .str-video__speaker-layout__wrapper,
+        .str-video__speaker-layout,
+        .str-video__participant-view { pointer-events: none !important; }
+        
+        /* But re-enable on the video element itself */
+        .str-video__participant-view video,
+        .str-video__participant-view__video-element { pointer-events: auto !important; }
       `}</style>
     </div>
   );

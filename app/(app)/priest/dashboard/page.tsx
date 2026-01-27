@@ -291,13 +291,17 @@ export default function PriestDashboard() {
 
   async function endLive() {
     if (!call) return;
+
     try {
-      await call.stopLive();
       await call.endCall();
-    } catch { }
-    setCall(null);
-    setClient(null);
-    setStreamDuration(0);
+      setCall(null);
+      setClient(null);
+      setPriestId(null);
+      setStreamDuration(0);
+    } catch (err) {
+      console.error("Error ending stream:", err);
+      alert("Failed to end stream");
+    }
   }
 
   async function toggleMute() {
@@ -350,7 +354,7 @@ export default function PriestDashboard() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
         <div className="flex flex-col items-center gap-3">
           <div
             className="w-10 h-10 border-3 border-t-transparent rounded-full animate-spin"
@@ -363,7 +367,7 @@ export default function PriestDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
+    <div className="min-h-screen bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
@@ -493,8 +497,13 @@ export default function PriestDashboard() {
                   </button>
 
                   <button
-                    onClick={endLive}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-all"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      endLive();
+                    }}
+                    type="button"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-all z-50 relative cursor-pointer"
                   >
                     <StopIcon />
                     End Stream
