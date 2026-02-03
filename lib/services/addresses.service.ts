@@ -5,22 +5,18 @@ import { API_ENDPOINTS } from '@/lib/config/api.config';
 
 export interface Address {
   id: string;
-  line1: string;
-  line2?: string | null;
+  user_id: string;
+  address: string;
   city: string;
   state: string;
-  postal_code: string;
-  country?: string;
-  created_at?: string;
+  pincode: string;
 }
 
 export interface CreateAddressPayload {
-  line1: string;
-  line2?: string;
+  address: string;
   city: string;
   state: string;
-  postal_code: string;
-  country?: string;
+  pincode: string;
 }
 
 export class AddressesService {

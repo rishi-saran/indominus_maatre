@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { homams } from "@/data/homams";
@@ -34,19 +34,36 @@ type Homam = {
 };
 
 
+import { PagesService } from "@/lib/services/pages.service";
+
+// ... previous imports
+
 export default function HomamDetailPage() {
   const router = useRouter();
-    const params = useParams();
+  const params = useParams();
   const slug = params?.slug as string;
 
+  // Local Mock Data
   const homam = homams[slug as keyof typeof homams] as Homam | undefined;
 
+  // API Data State
+  const [apiPage, setApiPage] = useState<any>(null);
 
+  // Fetch from API
+  useEffect(() => {
+    if (slug) {
+      console.log("Fetching content for:", slug);
+      PagesService.getBySlug(slug).then((data) => {
+        console.log("API Response:", data);
+        if (data) setApiPage(data);
+      });
+    }
+  }, [slug]);
 
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
-  
-  
+
+
   // Form state
   const [formData, setFormData] = useState({
     location: '',
@@ -61,7 +78,7 @@ export default function HomamDetailPage() {
     // Check authentication first
     const userId = localStorage.getItem('user_id');
     const userEmail = localStorage.getItem('user_email');
-    
+
     if (!userId || !userEmail) {
       // User not logged in - show toast with action
       toast.error('Please login to book services', {
@@ -80,28 +97,28 @@ export default function HomamDetailPage() {
     const serviceData = {
       id: serviceId,
       title: homam?.title,
-description: homam?.shortDescription,
-image: homam?.image,
+      description: homam?.shortDescription,
+      image: homam?.image,
 
       formData: formData,
       addedAt: new Date().toISOString()
     };
-    
+
     // Get existing services from localStorage
     const existingServices = JSON.parse(localStorage.getItem('addedServices') || '[]');
     existingServices.push(serviceData);
     localStorage.setItem('addedServices', JSON.stringify(existingServices));
-    
+
     // Dispatch custom event to notify other components
     window.dispatchEvent(new Event('servicesUpdated'));
 
     toast.success("Service booked successfully", {
-  description: "Your booking has been added successfully",
-  duration: 3000, // 3 seconds
-});
-toast.dismiss(); // clears existing toasts
+      description: "Your booking has been added successfully",
+      duration: 3000, // 3 seconds
+    });
+    toast.dismiss(); // clears existing toasts
 
-    
+
     // Clear form after adding
     setFormData({
       location: '',
@@ -116,42 +133,43 @@ toast.dismiss(); // clears existing toasts
 
   return (
     <section className="w-full px-6 pt-4 pb-16">
+
       {/* Back Button */}
       <div className="fixed top-6 left-6 z-50">
         <Link href="/services/homam" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
           <ArrowLeft className="h-5 w-5" />
         </Link>
       </div>
-     
+
       {/* Title */}
       <div className="mx-auto mt-4 mb-8 max-w-6xl text-center">
-       <h1 className="text-3xl font-serif tracking-wide leading-tight text-[#2f3a1f]">
-        {homam?.title}
+        <h1 className="text-3xl font-serif tracking-wide leading-tight text-[#2f3a1f]">
+          {homam?.title}
         </h1>
         {homam?.shortDescription && (
-  <p className="mt-2 text-sm text-[#4f5d2f]">
-    {homam.shortDescription}
-  </p>
-)}
+          <p className="mt-2 text-sm text-[#4f5d2f]">
+            {homam.shortDescription}
+          </p>
+        )}
 
       </div>
 
       {/* Main Layout */}
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 gap-8 items-start">
-          
+
           {/* Image */}
           <div className="flex justify-center">
             <div className="w-[300px] rounded-2xl border border-[#cfd8a3] bg-white p-4 shadow-sm">
               <div className="aspect-square overflow-hidden rounded-xl bg-[#eef4cf]">
                 <Image
-  src={homam?.image || ""}
-  alt={homam?.title ?? "Homam Image"}
-  width={400}
-  height={400}
-  className="h-full w-full object-cover"
-  unoptimized
-/>
+                  src={homam?.image || ""}
+                  alt={homam?.title ?? "Homam Image"}
+                  width={400}
+                  height={400}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
 
               </div>
             </div>
@@ -160,22 +178,22 @@ toast.dismiss(); // clears existing toasts
           {/* Info */}
           <div className="space-y-4 text-center">
             <p className="text-lg font-semibold text-[#2f3a1f]">
-  {homam?.priceRange}
-</p>
+              {homam?.priceRange}
+            </p>
 
 
             {homam?.duration && (
-  <p className="text-sm text-[#4f5d2f]">
-    <strong>Duration:</strong> {homam.duration}
-  </p>
-)}
+              <p className="text-sm text-[#4f5d2f]">
+                <strong>Duration:</strong> {homam.duration}
+              </p>
+            )}
 
 
             {homam?.objective && (
-  <p className="text-sm text-[#4f5d2f]">
-    <strong>Objective:</strong> {homam.objective}
-  </p>
-)}
+              <p className="text-sm text-[#4f5d2f]">
+                <strong>Objective:</strong> {homam.objective}
+              </p>
+            )}
 
           </div>
 
@@ -184,20 +202,20 @@ toast.dismiss(); // clears existing toasts
             {/* Location */}
             <div className="mb-4">
               <label className="mb-1 block text-sm font-medium">Location *</label>
-              <input 
+              <input
                 value={formData.location}
-                onChange={(e) => setFormData({...formData, location: e.target.value})}
-                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" 
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
               />
             </div>
 
             {/* Venue */}
             <div className="mb-4">
               <label className="mb-1 block text-sm font-medium">Pooja Venue *</label>
-              <input 
+              <input
                 value={formData.venue}
-                onChange={(e) => setFormData({...formData, venue: e.target.value})}
-                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" 
+                onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
               />
             </div>
 
@@ -207,7 +225,7 @@ toast.dismiss(); // clears existing toasts
                 <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
                   Priest Preference *
                 </label>
-                <Select value={formData.priestPreference} onValueChange={(value) => setFormData({...formData, priestPreference: value})}>
+                <Select value={formData.priestPreference} onValueChange={(value) => setFormData({ ...formData, priestPreference: value })}>
                   <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
                     <SelectValue placeholder="Select Language" />
                   </SelectTrigger>
@@ -224,7 +242,7 @@ toast.dismiss(); // clears existing toasts
                 <input
                   type="date"
                   value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
                 />
               </div>
@@ -234,21 +252,21 @@ toast.dismiss(); // clears existing toasts
                   Select Package
                 </label>
                 <Select
-  value={formData.package}
-  onValueChange={(value) =>
-    setFormData({ ...formData, package: value })
-  }
->
-  <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
-    <SelectValue placeholder="Select Package" />
-  </SelectTrigger>
+                  value={formData.package}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, package: value })
+                  }
+                >
+                  <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
+                    <SelectValue placeholder="Select Package" />
+                  </SelectTrigger>
 
-  <SelectContent className="rounded-lg border border-[#cfd8a3] bg-white">
-    <SelectItem value="Economy">Economy</SelectItem>
-    <SelectItem value="Standard">Standard</SelectItem>
-    <SelectItem value="Premium">Premium</SelectItem>
-  </SelectContent>
-</Select>
+                  <SelectContent className="rounded-lg border border-[#cfd8a3] bg-white">
+                    <SelectItem value="Economy">Economy</SelectItem>
+                    <SelectItem value="Standard">Standard</SelectItem>
+                    <SelectItem value="Premium">Premium</SelectItem>
+                  </SelectContent>
+                </Select>
 
               </div>
 
@@ -256,28 +274,28 @@ toast.dismiss(); // clears existing toasts
                 <label className="mb-1 block text-sm font-medium">Add-on: Flowers</label>
                 <div className="mt-2 flex gap-4">
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      name="flowers" 
+                    <input
+                      type="radio"
+                      name="flowers"
                       checked={formData.flowers === 'Yes'}
-                      onChange={() => setFormData({...formData, flowers: 'Yes'})}
-                    /> 
+                      onChange={() => setFormData({ ...formData, flowers: 'Yes' })}
+                    />
                     Yes (+₹250)
                   </label>
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      name="flowers" 
+                    <input
+                      type="radio"
+                      name="flowers"
                       checked={formData.flowers === 'No'}
-                      onChange={() => setFormData({...formData, flowers: 'No'})}
-                    /> 
+                      onChange={() => setFormData({ ...formData, flowers: 'No' })}
+                    />
                     No
                   </label>
                 </div>
               </div>
             </div>
 
-            <button 
+            <button
               onClick={handleBookService}
               className="w-full rounded-full bg-[#2f9e44] py-3 text-sm font-medium text-white hover:bg-[#256b32]">
               Book Service
@@ -290,19 +308,18 @@ toast.dismiss(); // clears existing toasts
       <div className="mx-auto mt-14 max-w-6xl">
         <div className="flex gap-6 border-b text-sm">
           {[
-  "description",
-  "reviews",
-  ...(homam?.faq && homam.faq.length > 0 ? ["faq"] : []),
-].map((t) => (
+            "description",
+            "reviews",
+            ...(homam?.faq && homam.faq.length > 0 ? ["faq"] : []),
+          ].map((t) => (
 
             <button
               key={t}
               onClick={() => setTab(t as any)}
-              className={`pb-3 ${
-                tab === t
-                  ? "border-b-2 border-[#2f9e44] font-semibold text-[#2f9e44]"
-                  : "text-[#4f5d2f]"
-              }`}
+              className={`pb-3 ${tab === t
+                ? "border-b-2 border-[#2f9e44] font-semibold text-[#2f9e44]"
+                : "text-[#4f5d2f]"
+                }`}
             >
               {t === "description" && "Description"}
               {t === "reviews" && "Reviews (0)"}
@@ -312,162 +329,167 @@ toast.dismiss(); // clears existing toasts
         </div>
 
         {/* TAB CONTENT */}
-       <div className="mt-6 text-sm text-[#4f5d2f]">
-  {tab === "description" && (
-    <div className="space-y-5 text-sm text-[#4f5d2f] leading-relaxed">
-      {homam?.description?.map((block: any, index: number) => {
-        // Heading
-        if (block.type === "h") {
-          return (
-            <p
-              key={index}
-              className="pt-4 text-base font-semibold text-[#2f3a1f]"
-            >
-              {block.text}
-            </p>
-          );
-        }
-
-        // Paragraph
-        if (block.type === "p") {
-          return <p key={index}>{block.text}</p>;
-        }
-
-        // Bullet list
-        if (block.type === "ul") {
-          return (
-            <ul key={index} className="list-disc pl-5 space-y-1">
-              {block.items.map((item: string, i: number) => (
-                <li key={i}>{item}</li>
-              ))}
-            </ul>
-          );
-        }
-
-        // ✅ TABLE (for Ganesh / Vinayagar Chaturthi kit etc.)
-        if (block.type === "table") {
-          return (
-            <div key={index} className="overflow-x-auto pt-2">
-              <table className="w-full border border-[#cfd8a3] text-sm">
-                <thead className="bg-[#eef4cf]">
-                  <tr>
-                    {block.headers.map((head: string, i: number) => (
-                      <th
-                        key={i}
-                        className="border border-[#cfd8a3] px-3 py-2 text-left font-semibold text-[#2f3a1f]"
-                      >
-                        {head}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {block.rows.map((row: string[], rIdx: number) => (
-                    <tr key={rIdx} className="bg-white">
-                      {row.map((cell: string, cIdx: number) => (
-                        <td
-                          key={cIdx}
-                          className="border border-[#cfd8a3] px-3 py-2 text-[#4f5d2f]"
-                        >
-                          {cell}
-                        </td>
-                      ))}
-                    </tr>
+        <div className="mt-6 text-sm text-[#4f5d2f]">
+          {tab === "description" && (
+            <div className="space-y-5 text-sm text-[#4f5d2f] leading-relaxed">
+              {apiPage?.content?.sections?.[0]?.delta?.ops ? (
+                <div className="whitespace-pre-wrap text-[15px] leading-7 text-gray-700">
+                  {apiPage.content.sections[0].delta.ops.map((op: any, i: number) => (
+                    <span key={i}>{op.insert}</span>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ) : homam?.description?.map((block: any, index: number) => {
+                // Heading
+                if (block.type === "h") {
+                  return (
+                    <p
+                      key={index}
+                      className="pt-4 text-base font-semibold text-[#2f3a1f]"
+                    >
+                      {block.text}
+                    </p>
+                  );
+                }
+
+                // Paragraph
+                if (block.type === "p") {
+                  return <p key={index}>{block.text}</p>;
+                }
+
+                // Bullet list
+                if (block.type === "ul") {
+                  return (
+                    <ul key={index} className="list-disc pl-5 space-y-1">
+                      {block.items.map((item: string, i: number) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  );
+                }
+
+                // ✅ TABLE (for Ganesh / Vinayagar Chaturthi kit etc.)
+                if (block.type === "table") {
+                  return (
+                    <div key={index} className="overflow-x-auto pt-2">
+                      <table className="w-full border border-[#cfd8a3] text-sm">
+                        <thead className="bg-[#eef4cf]">
+                          <tr>
+                            {block.headers.map((head: string, i: number) => (
+                              <th
+                                key={i}
+                                className="border border-[#cfd8a3] px-3 py-2 text-left font-semibold text-[#2f3a1f]"
+                              >
+                                {head}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {block.rows.map((row: string[], rIdx: number) => (
+                            <tr key={rIdx} className="bg-white">
+                              {row.map((cell: string, cIdx: number) => (
+                                <td
+                                  key={cIdx}
+                                  className="border border-[#cfd8a3] px-3 py-2 text-[#4f5d2f]"
+                                >
+                                  {cell}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                }
+
+                return null;
+              })}
             </div>
-          );
-        }
-
-        return null;
-      })}
-    </div>
-  )}
-</div>
+          )}
+        </div>
 
 
 
-      {tab === "reviews" && (
-  <div className="mt-6 space-y-6 text-sm text-[#4f5d2f]">
+        {tab === "reviews" && (
+          <div className="mt-6 space-y-6 text-sm text-[#4f5d2f]">
 
-   {/* No reviews message */}
-<div className="rounded-lg bg-[#2f9e44] px-4 py-3 text-white shadow-sm">
-  There are no reviews yet.
-</div>
-
-
-    <p>
-      Your email address will not be published. Required fields are marked{" "}
-      <span className="text-red-500">*</span>
-    </p>
-
-    {/* Rating */}
-<div className="mb-6">
-  <label className="mb-2 block text-sm font-medium text-[#2f3a1f]">
-    Your rating <span className="text-red-500">*</span>
-  </label>
-
-  <div className="flex gap-1">
-    {[1, 2, 3, 4, 5].map((star) => (
-      <Star
-        key={star}
-        size={24}
-        onClick={() => setRating(star)}
-        className={`cursor-pointer transition ${
-          star <= rating
-            ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
-            : "text-[#9ca67a]"                  // visible grey
-        }`}
-      />
-    ))}
-  </div>
-</div>
+            {/* No reviews message */}
+            <div className="rounded-lg bg-[#2f9e44] px-4 py-3 text-white shadow-sm">
+              There are no reviews yet.
+            </div>
 
 
-    {/* Review textarea */}
-    <div>
-      <label className="mb-2 block font-medium text-[#2f3a1f]">
-        Your review <span className="text-red-500">*</span>
-      </label>
-      <textarea
-        rows={4}
-        className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-      />
-    </div>
+            <p>
+              Your email address will not be published. Required fields are marked{" "}
+              <span className="text-red-500">*</span>
+            </p>
 
-    {/* Name & Email */}
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div>
-        <label className="mb-1 block font-medium text-[#2f3a1f]">
-          Name <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-        />
-      </div>
+            {/* Rating */}
+            <div className="mb-6">
+              <label className="mb-2 block text-sm font-medium text-[#2f3a1f]">
+                Your rating <span className="text-red-500">*</span>
+              </label>
 
-      <div>
-        <label className="mb-1 block font-medium text-[#2f3a1f]">
-          Email <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="email"
-          className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-        />
-      </div>
-    </div>
-
-    <button className="rounded-full bg-[#2f9e44] px-8 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#268a3b]">
-  Submit
-</button>
-
-  </div>
-)}
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={24}
+                    onClick={() => setRating(star)}
+                    className={`cursor-pointer transition ${star <= rating
+                      ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
+                      : "text-[#9ca67a]"                  // visible grey
+                      }`}
+                  />
+                ))}
+              </div>
+            </div>
 
 
-                {tab === "faq" && (
+            {/* Review textarea */}
+            <div>
+              <label className="mb-2 block font-medium text-[#2f3a1f]">
+                Your review <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows={4}
+                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+              />
+            </div>
+
+            {/* Name & Email */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block font-medium text-[#2f3a1f]">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block font-medium text-[#2f3a1f]">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                />
+              </div>
+            </div>
+
+            <button className="rounded-full bg-[#2f9e44] px-8 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#268a3b]">
+              Submit
+            </button>
+
+          </div>
+        )}
+
+
+        {tab === "faq" && (
           <div className="space-y-6 text-sm leading-relaxed text-[#2f3a1f]">
             {homam?.faq?.map((item, index) => (
               <div key={index}>
@@ -479,67 +501,65 @@ toast.dismiss(); // clears existing toasts
             ))}
           </div>
         )}
-              {/* PRICING / PACKAGES */}
-      {homam?.packages && homam.packages.length > 0 && (
-        <section className="mt-20">
-          <h2 className="mb-10 text-center text-2xl font-serif text-[#2f3a1f]">
-            PRICING / PACKAGES
-          </h2>
+        {/* PRICING / PACKAGES */}
+        {homam?.packages && homam.packages.length > 0 && (
+          <section className="mt-20">
+            <h2 className="mb-10 text-center text-2xl font-serif text-[#2f3a1f]">
+              PRICING / PACKAGES
+            </h2>
 
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-            {homam.packages.map(
-              (
-                pkg: {
-                  name: string;
-                  price: string;
-                  priests: string;
-                  description: string;
-                  procedures: string[];
-                },
-                index: number
-              ) => (
-                <div
-                  key={index}
-                  className={`overflow-hidden rounded-2xl border ${
-                    pkg.name === "Standard"
+            <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
+              {homam.packages.map(
+                (
+                  pkg: {
+                    name: string;
+                    price: string;
+                    priests: string;
+                    description: string;
+                    procedures: string[];
+                  },
+                  index: number
+                ) => (
+                  <div
+                    key={index}
+                    className={`overflow-hidden rounded-2xl border ${pkg.name === "Standard"
                       ? "border-2 border-[#2f9e44] shadow-lg"
                       : "border-[#d8e2a8] shadow-sm"
-                  } bg-white`}
-                >
-                  <div
-                    className={`py-4 text-center text-lg font-medium ${
-                      pkg.name === "Standard"
+                      } bg-white`}
+                  >
+                    <div
+                      className={`py-4 text-center text-lg font-medium ${pkg.name === "Standard"
                         ? "bg-[#2f9e44] text-white"
                         : "bg-[#f3f4f6]"
-                    }`}
-                  >
-                    {pkg.name}
+                        }`}
+                    >
+                      {pkg.name}
+                    </div>
+
+                    <div className="p-6">
+                      <p className="mb-4 text-center text-2xl font-semibold">
+                        {pkg.price}
+                      </p>
+
+                      <p className="mb-3 font-medium">{pkg.priests}</p>
+
+                      <p className="mb-5 text-sm text-[#4f5d2f]">
+                        {pkg.description}
+                      </p>
+
+                      <p className="mb-2 font-medium">Procedure involved:</p>
+                      <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
+                        {pkg.procedures.map((item: string, i: number) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-
-                  <div className="p-6">
-                    <p className="mb-4 text-center text-2xl font-semibold">
-                      {pkg.price}
-                    </p>
-
-                    <p className="mb-3 font-medium">{pkg.priests}</p>
-
-                    <p className="mb-5 text-sm text-[#4f5d2f]">
-                      {pkg.description}
-                    </p>
-
-                    <p className="mb-2 font-medium">Procedure involved:</p>
-                    <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-                      {pkg.procedures.map((item: string, i: number) => (
-                        <li key={i}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-        </section>
-      )}
+                )
+              )}
+            </div>
+          </section>
+        )}
       </div>
     </section>
   );

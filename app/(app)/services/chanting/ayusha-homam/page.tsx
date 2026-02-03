@@ -22,27 +22,33 @@ export default function AyushaHomamPage() {
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
   const [serviceId, setServiceId] = useState<string | null>(null);
-  
-  // Fetch service UUID from backend
+
+  // Fetch service UUID from backend (optional - works without it)
   useEffect(() => {
     const fetchServiceId = async () => {
       try {
         const services = await ServicesService.list();
-        const ayushaService = services.find(
-          (s: any) => s.name?.toLowerCase().includes('ayusha') || s.id === 'ayusha-homam'
-        );
-        if (ayushaService) {
-          setServiceId(ayushaService.id);
-        } else {
-          console.warn('Ayusha Homam service not found in backend');
+        // Handle case where services is an array
+        if (Array.isArray(services)) {
+          const ayushaService = services.find(
+            (s: any) => s.name?.toLowerCase().includes('ayusha') || s.slug === 'ayusha-homam'
+          );
+          if (ayushaService) {
+            setServiceId(ayushaService.id);
+            return;
+          }
         }
+        // If not found in backend, use a local identifier
+        setServiceId('ayusha-homam-local');
       } catch (error) {
-        console.error('Failed to fetch services:', error);
+        // API not available - use local identifier for localStorage-based cart
+        console.log('Using local service ID (backend not available)');
+        setServiceId('ayusha-homam-local');
       }
     };
     fetchServiceId();
   }, []);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     location: '',
@@ -57,7 +63,7 @@ export default function AyushaHomamPage() {
     // Check authentication first
     const userId = localStorage.getItem('user_id');
     const userEmail = localStorage.getItem('user_email');
-    
+
     if (!userId || !userEmail) {
       // User not logged in - show toast with action
       toast.error('Please login to book services', {
@@ -71,7 +77,7 @@ export default function AyushaHomamPage() {
       return;
     }
 
-    // Step 1: Add to backend cart first
+    // Check if service is available
     if (!serviceId) {
       toast.error("Service not available. Please try again.", {
         duration: 3000,
@@ -79,20 +85,21 @@ export default function AyushaHomamPage() {
       return;
     }
 
-    try {
-      await CartService.addItem({
-        service_id: serviceId,
-        quantity: 1,
-      });
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
-      toast.error("Failed to add service to cart. Please try again.", {
-        duration: 3000,
-      });
-      return;
+    // Try to add to backend cart (optional - works without it)
+    const isLocalOnly = serviceId.includes('-local');
+    if (!isLocalOnly) {
+      try {
+        await CartService.addItem({
+          service_id: serviceId,
+          quantity: 1,
+        });
+      } catch (error) {
+        console.log('Backend cart not available, using localStorage only');
+        // Continue with localStorage - don't block the user
+      }
     }
 
-    // Step 2: Also save to localStorage for UI (with timestamp as local ID)
+    // Save to localStorage for UI
     const localId = Date.now();
     const serviceData = {
       id: localId,
@@ -114,7 +121,6 @@ export default function AyushaHomamPage() {
       description: "Your booking has been added to cart",
       duration: 3000,
     });
-    toast.dismiss();
 
     // Clear form after adding
     setFormData({
@@ -141,11 +147,11 @@ export default function AyushaHomamPage() {
           <ArrowLeft className="h-5 w-5" />
         </Link>
       </div>
-     
+
       {/* Title */}
       <div className="mx-auto mt-4 mb-8 max-w-6xl text-center">
-       <h1 className="text-3xl font-serif tracking-wide leading-tight text-[#2f3a1f]">
-        AYUSHA HOMAM
+        <h1 className="text-3xl font-serif tracking-wide leading-tight text-[#2f3a1f]">
+          AYUSHA HOMAM
         </h1>
         <p className="mt-2 text-sm text-[#4f5d2f]">
           Ayusha Homam is performed to revere divine energies for vitality,
@@ -156,7 +162,7 @@ export default function AyushaHomamPage() {
       {/* Main Layout */}
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 gap-8 items-start">
-          
+
           {/* Image */}
           <div className="flex justify-center">
             <div className="w-[300px] rounded-2xl border border-[#cfd8a3] bg-white p-4 shadow-sm">
@@ -193,20 +199,20 @@ export default function AyushaHomamPage() {
             {/* Location */}
             <div className="mb-4">
               <label className="mb-1 block text-sm font-medium">Location *</label>
-              <input 
+              <input
                 value={formData.location}
-                onChange={(e) => setFormData({...formData, location: e.target.value})}
-                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" 
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
               />
             </div>
 
             {/* Venue */}
             <div className="mb-4">
               <label className="mb-1 block text-sm font-medium">Pooja Venue *</label>
-              <input 
+              <input
                 value={formData.venue}
-                onChange={(e) => setFormData({...formData, venue: e.target.value})}
-                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" 
+                onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
               />
             </div>
 
@@ -216,7 +222,7 @@ export default function AyushaHomamPage() {
                 <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
                   Priest Preference *
                 </label>
-                <Select value={formData.priestPreference} onValueChange={(value) => setFormData({...formData, priestPreference: value})}>
+                <Select value={formData.priestPreference} onValueChange={(value) => setFormData({ ...formData, priestPreference: value })}>
                   <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
                     <SelectValue placeholder="Select Language" />
                   </SelectTrigger>
@@ -233,7 +239,7 @@ export default function AyushaHomamPage() {
                 <input
                   type="date"
                   value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
                 />
               </div>
@@ -243,21 +249,21 @@ export default function AyushaHomamPage() {
                   Select Package
                 </label>
                 <Select
-  value={formData.package}
-  onValueChange={(value) =>
-    setFormData({ ...formData, package: value })
-  }
->
-  <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
-    <SelectValue placeholder="Select Package" />
-  </SelectTrigger>
+                  value={formData.package}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, package: value })
+                  }
+                >
+                  <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
+                    <SelectValue placeholder="Select Package" />
+                  </SelectTrigger>
 
-  <SelectContent className="rounded-lg border border-[#cfd8a3] bg-white">
-    <SelectItem value="Economy">Economy</SelectItem>
-    <SelectItem value="Standard">Standard</SelectItem>
-    <SelectItem value="Premium">Premium</SelectItem>
-  </SelectContent>
-</Select>
+                  <SelectContent className="rounded-lg border border-[#cfd8a3] bg-white">
+                    <SelectItem value="Economy">Economy</SelectItem>
+                    <SelectItem value="Standard">Standard</SelectItem>
+                    <SelectItem value="Premium">Premium</SelectItem>
+                  </SelectContent>
+                </Select>
 
               </div>
 
@@ -265,28 +271,28 @@ export default function AyushaHomamPage() {
                 <label className="mb-1 block text-sm font-medium">Add-on: Flowers</label>
                 <div className="mt-2 flex gap-4">
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      name="flowers" 
+                    <input
+                      type="radio"
+                      name="flowers"
                       checked={formData.flowers === 'Yes'}
-                      onChange={() => setFormData({...formData, flowers: 'Yes'})}
-                    /> 
+                      onChange={() => setFormData({ ...formData, flowers: 'Yes' })}
+                    />
                     Yes (+₹250)
                   </label>
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      name="flowers" 
+                    <input
+                      type="radio"
+                      name="flowers"
                       checked={formData.flowers === 'No'}
-                      onChange={() => setFormData({...formData, flowers: 'No'})}
-                    /> 
+                      onChange={() => setFormData({ ...formData, flowers: 'No' })}
+                    />
                     No
                   </label>
                 </div>
               </div>
             </div>
 
-            <button 
+            <button
               onClick={handleBookService}
               className="w-full rounded-full bg-[#2f9e44] py-3 text-sm font-medium text-white hover:bg-[#256b32]">
               Book Service
@@ -302,11 +308,10 @@ export default function AyushaHomamPage() {
             <button
               key={t}
               onClick={() => setTab(t as any)}
-              className={`pb-3 ${
-                tab === t
+              className={`pb-3 ${tab === t
                   ? "border-b-2 border-[#2f9e44] font-semibold text-[#2f9e44]"
                   : "text-[#4f5d2f]"
-              }`}
+                }`}
             >
               {t === "description" && "Description"}
               {t === "reviews" && "Reviews (0)"}
@@ -317,156 +322,155 @@ export default function AyushaHomamPage() {
 
         {/* TAB CONTENT */}
         <div className="mt-6 text-sm text-[#4f5d2f]">
-         {tab === "description" && (
-  <div className="space-y-5 text-sm text-[#4f5d2f] leading-relaxed">
-    
-    <p>
-      <strong>Ayusha Homam</strong> is performed to Revered for bestowing vitality
-      and wellness.
-    </p>
+          {tab === "description" && (
+            <div className="space-y-5 text-sm text-[#4f5d2f] leading-relaxed">
 
-    <p>
-      <strong>Suitable for:</strong> Individuals of all ages.
-    </p>
+              <p>
+                <strong>Ayusha Homam</strong> is performed to Revered for bestowing vitality
+                and wellness.
+              </p>
 
-    <p>
-      <strong>Scheduling:</strong> The ceremony date is determined based on the
-      individual’s birth star for optimal efficacy.
-    </p>
+              <p>
+                <strong>Suitable for:</strong> Individuals of all ages.
+              </p>
 
-    <p>
-      <strong>Deity Worshipped:</strong> Ayur Devata (God of Fire)
-    </p>
+              <p>
+                <strong>Scheduling:</strong> The ceremony date is determined based on the
+                individual’s birth star for optimal efficacy.
+              </p>
 
-    <p>
-      <strong>Primary Offerings:</strong> Steamed rice and ghee are the main
-      sacrificial elements used during the ritual. “This sacred ceremony aims
-      to invoke divine blessings for a robust and enduring life through
-      traditional Vedic practices.”
-    </p>
+              <p>
+                <strong>Deity Worshipped:</strong> Ayur Devata (God of Fire)
+              </p>
 
+              <p>
+                <strong>Primary Offerings:</strong> Steamed rice and ghee are the main
+                sacrificial elements used during the ritual. “This sacred ceremony aims
+                to invoke divine blessings for a robust and enduring life through
+                traditional Vedic practices.”
+              </p>
+
+            </div>
+          )}
+
+          {tab === "reviews" && (
+            <div className="mt-6 space-y-6 text-sm text-[#4f5d2f]">
+
+              {/* No reviews message */}
+              <div className="rounded-lg bg-[#2f9e44] px-4 py-3 text-white shadow-sm">
+                There are no reviews yet.
+              </div>
+
+
+              <p>
+                Your email address will not be published. Required fields are marked{" "}
+                <span className="text-red-500">*</span>
+              </p>
+
+              {/* Rating */}
+              <div className="mb-6">
+                <label className="mb-2 block text-sm font-medium text-[#2f3a1f]">
+                  Your rating <span className="text-red-500">*</span>
+                </label>
+
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      size={24}
+                      onClick={() => setRating(star)}
+                      className={`cursor-pointer transition ${star <= rating
+                          ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
+                          : "text-[#9ca67a]"                  // visible grey
+                        }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+
+              {/* Review textarea */}
+              <div>
+                <label className="mb-2 block font-medium text-[#2f3a1f]">
+                  Your review <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                />
+              </div>
+
+              {/* Name & Email */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block font-medium text-[#2f3a1f]">
+                    Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block font-medium text-[#2f3a1f]">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                  />
+                </div>
+              </div>
+
+              <button className="rounded-full bg-[#2f9e44] px-8 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#268a3b]">
+                Submit
+              </button>
+
+            </div>
+          )}
+
+
+          {tab === "faq" && (
+            <div className="space-y-6 text-sm leading-relaxed text-[#2f3a1f]">
+              <div>
+                <p className="font-semibold">
+                  1. Can I pay a Partial amount in advance to confirm the Homam and pay the
+                  balance as cash or pay online after the Homam?
+                </p>
+                <p className="mt-2 text-[#4f5d2f]">
+                  Yes, you can pay the partial amount as a token advance to confirm your
+                  booking. You can pay the balance amount after the Homam with cash
+                  directly to our Priests or through an Online transfer (Click on the
+                  “Pay-Balance” button in your My- Account section corresponding to your
+                  order number).
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold">
+                  2. How Long does the Homam take to complete?
+                </p>
+                <p className="mt-2 text-[#4f5d2f]">
+                  Homams are typically performed for 2+ hours at the same time it also
+                  depends on the package selected for the homam.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold">
+                  3. When will I get the Prasad for my Homam if I select Vedic Pooja Center
+                  since I'm abroad?
+                </p>
+                <p className="mt-2 text-[#4f5d2f]">
+                  You will receive the Prasad for your Homam within 14 working days after
+                  the homam has been performed (Subject to the country and the customs
+                  department of that particular country).
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-
-      {tab === "reviews" && (
-  <div className="mt-6 space-y-6 text-sm text-[#4f5d2f]">
-
-   {/* No reviews message */}
-<div className="rounded-lg bg-[#2f9e44] px-4 py-3 text-white shadow-sm">
-  There are no reviews yet.
-</div>
-
-
-    <p>
-      Your email address will not be published. Required fields are marked{" "}
-      <span className="text-red-500">*</span>
-    </p>
-
-    {/* Rating */}
-<div className="mb-6">
-  <label className="mb-2 block text-sm font-medium text-[#2f3a1f]">
-    Your rating <span className="text-red-500">*</span>
-  </label>
-
-  <div className="flex gap-1">
-    {[1, 2, 3, 4, 5].map((star) => (
-      <Star
-        key={star}
-        size={24}
-        onClick={() => setRating(star)}
-        className={`cursor-pointer transition ${
-          star <= rating
-            ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
-            : "text-[#9ca67a]"                  // visible grey
-        }`}
-      />
-    ))}
-  </div>
-</div>
-
-
-    {/* Review textarea */}
-    <div>
-      <label className="mb-2 block font-medium text-[#2f3a1f]">
-        Your review <span className="text-red-500">*</span>
-      </label>
-      <textarea
-        rows={4}
-        className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-      />
-    </div>
-
-    {/* Name & Email */}
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div>
-        <label className="mb-1 block font-medium text-[#2f3a1f]">
-          Name <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-        />
-      </div>
-
-      <div>
-        <label className="mb-1 block font-medium text-[#2f3a1f]">
-          Email <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="email"
-          className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm text-[#2f3a1f] outline-none focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-        />
-      </div>
-    </div>
-
-    <button className="rounded-full bg-[#2f9e44] px-8 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#268a3b]">
-  Submit
-</button>
-
-  </div>
-)}
-
-
-         {tab === "faq" && (
-  <div className="space-y-6 text-sm leading-relaxed text-[#2f3a1f]">
-    <div>
-      <p className="font-semibold">
-        1. Can I pay a Partial amount in advance to confirm the Homam and pay the
-        balance as cash or pay online after the Homam?
-      </p>
-      <p className="mt-2 text-[#4f5d2f]">
-        Yes, you can pay the partial amount as a token advance to confirm your
-        booking. You can pay the balance amount after the Homam with cash
-        directly to our Priests or through an Online transfer (Click on the
-        “Pay-Balance” button in your My- Account section corresponding to your
-        order number).
-      </p>
-    </div>
-
-    <div>
-      <p className="font-semibold">
-        2. How Long does the Homam take to complete?
-      </p>
-      <p className="mt-2 text-[#4f5d2f]">
-        Homams are typically performed for 2+ hours at the same time it also
-        depends on the package selected for the homam.
-      </p>
-    </div>
-
-    <div>
-      <p className="font-semibold">
-        3. When will I get the Prasad for my Homam if I select Vedic Pooja Center
-        since I'm abroad?
-      </p>
-      <p className="mt-2 text-[#4f5d2f]">
-        You will receive the Prasad for your Homam within 14 working days after
-        the homam has been performed (Subject to the country and the customs
-        department of that particular country).
-      </p>
-    </div>
-  </div>
-)}
-</div>
       </div>
 
       {/* PRICING / PACKAGES */}
@@ -476,85 +480,85 @@ export default function AyushaHomamPage() {
         </h2>
 
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
-      <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
-        Economy
-      </div>
+          <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
+            <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
+              Economy
+            </div>
 
-      <div className="p-6">
-        <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 9,999
-        </p>
+            <div className="p-6">
+              <p className="mb-4 text-center text-2xl font-semibold">
+                Rs. 9,999
+              </p>
 
-        <p className="mb-3 font-medium">1 Vadhyar</p>
-        <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Economy package 1 Vadhyar will be there, 2000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
-        </p>
+              <p className="mb-3 font-medium">1 Vadhyar</p>
+              <p className="mb-5 text-sm text-[#4f5d2f]">
+                In Economy package 1 Vadhyar will be there, 2000 japam avartis will be
+                performed and homam goes on for 2:30 to 3 hours.
+              </p>
 
-        <p className="mb-2 font-medium">Procedure involved:</p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
-          <li>Punyaha Vachanam, Maha Sankalpam</li>
-          <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
-        </ul>
-      </div>
-    </div>
+              <p className="mb-2 font-medium">Procedure involved:</p>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
+                <li>Homam</li>
+                <li>Punyaha Vachanam, Maha Sankalpam</li>
+                <li>Kalasa Pooja</li>
+                <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+              </ul>
+            </div>
+          </div>
 
-    {/* Standard (Highlighted) */}
-    <div className="overflow-hidden rounded-2xl border-2 border-[#2f9e44] bg-white shadow-lg">
-      <div className="bg-[#2f9e44] py-4 text-center text-lg font-medium text-white">
-        Standard
-      </div>
+          {/* Standard (Highlighted) */}
+          <div className="overflow-hidden rounded-2xl border-2 border-[#2f9e44] bg-white shadow-lg">
+            <div className="bg-[#2f9e44] py-4 text-center text-lg font-medium text-white">
+              Standard
+            </div>
 
-      <div className="p-6">
-        <p className="mb-4 text-center text-2xl font-semibold text-[#2f9e44]">
-          Rs. 12,999
-        </p>
+            <div className="p-6">
+              <p className="mb-4 text-center text-2xl font-semibold text-[#2f9e44]">
+                Rs. 12,999
+              </p>
 
-        <p className="mb-3 font-medium">2 Vadhyar</p>
-        <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Standard package 2 Vadhyar will be there, 2000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
-        </p>
+              <p className="mb-3 font-medium">2 Vadhyar</p>
+              <p className="mb-5 text-sm text-[#4f5d2f]">
+                In Standard package 2 Vadhyar will be there, 2000 japam avartis will be
+                performed and homam goes on for 2:30 to 3 hours.
+              </p>
 
-        <p className="mb-2 font-medium">Procedure involved:</p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
-          <li>Punyaha Vachanam, Maha Sankalpam</li>
-          <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
-        </ul>
-      </div>
-    </div>
+              <p className="mb-2 font-medium">Procedure involved:</p>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
+                <li>Homam</li>
+                <li>Punyaha Vachanam, Maha Sankalpam</li>
+                <li>Kalasa Pooja</li>
+                <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+              </ul>
+            </div>
+          </div>
 
-    {/* Premium */}
-    <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
-      <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
-        Premium
-      </div>
+          {/* Premium */}
+          <div className="overflow-hidden rounded-2xl border border-[#d8e2a8] bg-white shadow-sm">
+            <div className="bg-[#f3f4f6] py-4 text-center text-lg font-medium">
+              Premium
+            </div>
 
-      <div className="p-6">
-        <p className="mb-4 text-center text-2xl font-semibold">
-          Rs. 20,000
-        </p>
+            <div className="p-6">
+              <p className="mb-4 text-center text-2xl font-semibold">
+                Rs. 20,000
+              </p>
 
-        <p className="mb-3 font-medium">4 Vadhyar</p>
-        <p className="mb-5 text-sm text-[#4f5d2f]">
-          In Premium package 4 Vadhyar will be there, 2000 japam avartis will be
-          performed and homam goes on for 2:30 to 3 hours.
-        </p>
+              <p className="mb-3 font-medium">4 Vadhyar</p>
+              <p className="mb-5 text-sm text-[#4f5d2f]">
+                In Premium package 4 Vadhyar will be there, 2000 japam avartis will be
+                performed and homam goes on for 2:30 to 3 hours.
+              </p>
 
-        <p className="mb-2 font-medium">Procedure involved:</p>
-        <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
-          <li>Homam</li>
-          <li>Punyaha Vachanam, Maha Sankalpam</li>
-          <li>Kalasa Pooja</li>
-          <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
-        </ul>
-        </div>
-      </div>
+              <p className="mb-2 font-medium">Procedure involved:</p>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-[#4f5d2f]">
+                <li>Homam</li>
+                <li>Punyaha Vachanam, Maha Sankalpam</li>
+                <li>Kalasa Pooja</li>
+                <li>Ganapathi Homam (2000 japams and tat dasams homam)</li>
+              </ul>
+            </div>
+          </div>
 
         </div>
       </section>

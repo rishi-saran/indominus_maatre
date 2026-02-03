@@ -1,38 +1,52 @@
 //(app)\services\page.tsx
-"use client";
 
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { HoverCard } from "@/components/ui/magic/hover-card";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { ViewCartButton } from "@/components/ui/view-cart";
 
+// Type for API response
+interface ServiceCategory {
+  id: string;
+  name: string;
+  description: string;
+  slug?: string;
+  image?: string;
+  short_description?: string;
+  display_order?: number;
+  is_active?: boolean;
+}
 
-const services = [
+// Fallback data if API fails
+const fallbackServices = [
   {
-    title: "Chanting",
+    id: "chanting",
+    name: "Chanting",
     description:
       "Sacred Vedic chants performed with devotion to bring peace, clarity, and positive energy.",
     href: "/services/chanting",
     image: "/services/chanting1.png",
   },
   {
-    title: "Parihara Pooja",
+    id: "parihara-pooja",
+    name: "Parihara Pooja",
     description:
       "Traditional remedies and poojas performed to resolve doshas and life obstacles.",
     href: "/services/parihara-pooja",
     image: "/services/parihara-pooja.png",
   },
   {
-    title: "Rituals / Homam",
+    id: "homam",
+    name: "Rituals / Homam",
     description:
       "Powerful fire rituals conducted by expert priests for spiritual upliftment.",
     href: "/services/homam",
     image: "/services/homam.png",
   },
   {
-    title: "Virtual",
+    id: "virtual",
+    name: "Virtual",
     description:
       "Participate in sacred rituals and homams remotely through live virtual services.",
     href: "/services/virtual",
@@ -40,9 +54,75 @@ const services = [
   },
 ];
 
+// Map category name to image and href
+function getCategoryMeta(name: string): { image: string; href: string } {
+  const normalized = name.toLowerCase();
 
+  if (normalized.includes("chant")) {
+    return { image: "/services/chanting1.png", href: "/services/chanting" };
+  }
+  if (normalized.includes("parihara")) {
+    return { image: "/services/parihara-pooja.png", href: "/services/parihara-pooja" };
+  }
+  if (normalized.includes("homam") || normalized.includes("ritual")) {
+    return { image: "/services/homam.png", href: "/services/homam" };
+  }
+  if (normalized.includes("virtual")) {
+    return { image: "/services/virtual.png", href: "/services/virtual" };
+  }
 
-export default function ServicesPage() {
+  // Default fallback
+  return { image: "/services/chanting1.png", href: "/services/chanting" };
+}
+
+// Fetch categories from backend
+async function getServiceCategories(): Promise<typeof fallbackServices> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!baseUrl) {
+      console.warn("NEXT_PUBLIC_API_URL not set, using fallback data");
+      return fallbackServices;
+    }
+
+    // baseUrl already includes /api/v1, so just append the endpoint
+    const url = `${baseUrl}/service-categories/`;
+    console.log("[Services Page] Fetching from:", url);
+
+    const res = await fetch(url, {
+      next: { revalidate: 60 }, // Cache for 60 seconds
+    });
+
+    if (!res.ok) {
+      console.warn(`API returned ${res.status}, using fallback data`);
+      return fallbackServices;
+    }
+
+    const data: ServiceCategory[] = await res.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return fallbackServices;
+    }
+
+    // Map API data to service card format (use database fields when available)
+    return data.map((category) => {
+      const meta = getCategoryMeta(category.name);
+      return {
+        id: category.id,
+        name: category.name,
+        description: category.short_description || category.description || "Explore our sacred spiritual services.",
+        href: category.slug ? `/services/${category.slug}` : meta.href,
+        image: category.image || meta.image,
+      };
+    });
+  } catch (error) {
+    console.error("Failed to fetch service categories:", error);
+    return fallbackServices;
+  }
+}
+
+export default async function ServicesPage() {
+  const services = await getServiceCategories();
+
   return (
     <>
       <ViewCartButton redirectTo="/cart" />
@@ -63,7 +143,7 @@ export default function ServicesPage() {
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
 
           {services.map((service) => (
-            <Link key={service.title} href={service.href}>
+            <Link key={service.id} href={service.href} data-category-id={service.id}>
               <Card className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf]">
                 <CardContent className="flex h-[420px] flex-col p-6">
 
@@ -71,7 +151,7 @@ export default function ServicesPage() {
                   <div className="mb-5 h-40 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
                     <Image
                       src={service.image}
-                      alt={service.title}
+                      alt={service.name}
                       width={400}
                       height={260}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -82,7 +162,7 @@ export default function ServicesPage() {
                   {/* Title + Description */}
                   <div>
                     <h2 className="mb-2 text-xl font-semibold text-[#2f3a1f]">
-                      {service.title}
+                      {service.name}
                     </h2>
 
                     <p className="text-sm leading-relaxed text-[#4f5d2f]">

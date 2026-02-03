@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
   try {
     const authHeader = getAuthHeader(request);
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/addresses/`, {
+    // Note: API_BASE_URL already includes /api/v1, so we just append /addresses/
+    const response = await fetch(`${API_BASE_URL}/addresses/`, {
       method: "GET",
       headers: {
         Authorization: authHeader,
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     const authHeader = getAuthHeader(request);
     const body = await request.json();
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/addresses/`, {
+    const response = await fetch(`${API_BASE_URL}/addresses/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,4 +1,3 @@
-import { readFileSync } from "fs";
 import { ReactNode } from "react";
 
 export default function PanchangLayout({
@@ -6,5 +5,6 @@ export default function PanchangLayout({
 }: {
   children: ReactNode;
 }) {
+  // Panchang page handles its own layout
   return <>{children}</>;
 }

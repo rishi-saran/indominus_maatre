@@ -48,4 +48,8 @@ export const API_ENDPOINTS = {
     list: `${BASE_URL}/services`,
     getById: (serviceId: string) => `${BASE_URL}/services/${serviceId}`,
   },
+
+  pages: {
+    getBySlug: (slug: string) => `${BASE_URL}/pages/${slug}`,
+  },
 } as const;

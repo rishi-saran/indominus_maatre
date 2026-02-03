@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ServiceCard from '@/app/components/ui/ServiceCard';
 import { AuthService } from '@/lib/services/auth.service';
 import { OrdersService } from '@/lib/services/orders.service';
+import { AddressesService, Address } from '@/lib/services/addresses.service';
 import { ViewCartButton } from '@/components/ui/view-cart';
 
 // Make this page dynamic (not static) so auth checks work properly
@@ -39,19 +40,19 @@ interface Booking {
 function MyAccountContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // IMMEDIATE auth check before ANY state initialization
   if (typeof window !== 'undefined') {
     const storedUserId = localStorage.getItem('user_id');
     const storedEmail = localStorage.getItem('user_email');
-    
+
     if (!storedUserId || !storedEmail) {
       // Redirect immediately, don't render anything
       window.location.href = '/login';
       return null;
     }
   }
-  
+
   const [isMounted, setIsMounted] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -64,6 +65,26 @@ function MyAccountContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState<string | null>(null);
+
+  // Addresses State
+  const [userAddresses, setUserAddresses] = useState<Address[]>([]);
+
+  // Fetch Addresses
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      try {
+        const storedUserId = localStorage.getItem('user_id');
+        if (!storedUserId) return;
+
+        const data = await AddressesService.list();
+        console.log("✅ Fetched Addresses for Profile:", data);
+        setUserAddresses(data || []);
+      } catch (err) {
+        console.error("Failed to fetch addresses:", err);
+      }
+    };
+    fetchAddresses();
+  }, []);
 
   // Profile state from API response
   const [profile, setProfile] = useState({
@@ -164,19 +185,19 @@ function MyAccountContent() {
     const checkAuth = () => {
       const storedUserId = localStorage.getItem('user_id');
       const storedEmail = localStorage.getItem('user_email');
-      
+
       console.log('Profile page: Auth check - userId:', !!storedUserId, 'email:', !!storedEmail);
-      
+
       // If user is not logged in, redirect to login page immediately
       if (!storedUserId || !storedEmail) {
         console.log('Profile page: No auth found, redirecting to /login');
         window.location.href = '/login'; // Force redirect
         return false;
       }
-      
+
       return true;
     };
-    
+
     // Check auth and only allow rendering if authenticated
     if (checkAuth()) {
       setIsMounted(true);
@@ -184,7 +205,7 @@ function MyAccountContent() {
     }
   }, [router]);
 
-// Authenticate user on component mount
+  // Authenticate user on component mount
   useEffect(() => {
     const authenticateUser = async () => {
       try {
@@ -389,744 +410,770 @@ function MyAccountContent() {
         </div>
       ) : (
         <>
-      <ViewCartButton redirectTo="/cart" />
+          <ViewCartButton redirectTo="/cart" />
 
-      {/* Notification Popups */}
-      <div className="fixed top-8 right-8 z-80 space-y-3 pointer-events-none">
-        {popupNotifications.map((notification: Notification) => {
-          const isProfile = notification.type === 'profile';
-          if (!isProfile) return null;
-          return (
-            <div
-              key={notification.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => { if (isProfile) openEditModal(); }}
-              onKeyDown={(e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && isProfile) { e.preventDefault(); openEditModal(); } }}
-              className={`animate-pop-strong popup-green px-6 py-4 rounded-2xl font-semibold text-sm text-[#4f5d2f] flex items-center gap-3 pointer-events-auto shadow-2xl border-2 border-amber-200 hover:shadow-amber-100/50 cursor-pointer`}
-            >
-              <span className="text-2xl animate-pulse">{notification.emoji}</span>
-              <span className="flex-1">{notification.message}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Background Blobs */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[70vw] h-[70vw] bg-yellow-300/30 rounded-full mix-blend-multiply filter blur-[100px] animate-blob"></div>
-        <div
-          className="absolute bottom-[-10%] left-[-10%] w-[60vw] h-[60vw] bg-lime-400/30 rounded-full mix-blend-multiply filter blur-[80px] animate-blob"
-          style={{ animationDelay: '2s' }}
-        ></div>
-        <div
-          className="absolute top-[40%] left-[30%] w-[40vw] h-[40vw] bg-yellow-200/40 rounded-full mix-blend-multiply filter blur-[60px] animate-blob"
-          style={{ animationDelay: '4s' }}
-        ></div>
-        <div
-          className="absolute inset-0 opacity-[0.3]"
-          style={{
-            backgroundImage: `url('data:image/svg+xml,%3Csvg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23a16207" fill-opacity="0.08"%3E%3Cpath d="M40 40c0-8.8-7.2-16-16-16V8c17.7 0 32 14.3 32 32h-16zM0 40c0-8.8 7.2-16 16-16V8C-1.7 8-16 22.3-16 40h16zm40 0c0 8.8-7.2 16-16 16v16c17.7 0 32-14.3 32-32h-16zM0 40c0 8.8 7.2 16 16 16v16C-1.7 72-16 57.7-16 40h16z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')`,
-          }}
-        ></div>
-      </div>
-
-      {/* Header backdrop to match body gradient without transparency shift */}
-      <div className="fixed inset-x-0 top-0 h-40 bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3] opacity-100 mix-blend-normal pointer-events-none z-0"></div>
-
-      {/* Edit Profile Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          <div className="absolute inset-0 modal-backdrop" onClick={closeEditModal}></div>
-          <div className="relative z-70 w-full max-w-md p-6 rounded-2xl bg-white shadow-2xl">
-            <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-3">Edit Profile</h2>
-            <form
-              onSubmit={(e: React.FormEvent) => {
-                e.preventDefault();
-                saveProfile();
-              }}
-              className="space-y-3"
-            >
-              <div>
-                <label className="text-sm text-[#4f5d2f] font-medium">User ID</label>
-                <input name="user_id" defaultValue={profile.user_id} className="w-full p-2 border rounded mt-1 bg-gray-50 text-sm" readOnly />
-              </div>
-              <div>
-                <label className="text-sm text-[#4f5d2f] font-medium">Email</label>
-                <input
-                  value={editEmail}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditEmail(e.target.value)}
-                  className="w-full p-2 border rounded mt-1 text-sm"
-                />
-              </div>
-              <div className="flex justify-end gap-2 mt-2">
-                <button type="button" onClick={closeEditModal} className="px-4 py-2 rounded bg-gray-100 text-sm">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-[#2f9e44] text-white hover:bg-[#268a3b] text-sm">Save</button>
-              </div>
-            </form>
+          {/* Notification Popups */}
+          <div className="fixed top-8 right-8 z-80 space-y-3 pointer-events-none">
+            {popupNotifications.map((notification: Notification) => {
+              const isProfile = notification.type === 'profile';
+              if (!isProfile) return null;
+              return (
+                <div
+                  key={notification.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { if (isProfile) openEditModal(); }}
+                  onKeyDown={(e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && isProfile) { e.preventDefault(); openEditModal(); } }}
+                  className={`animate-pop-strong popup-green px-6 py-4 rounded-2xl font-semibold text-sm text-[#4f5d2f] flex items-center gap-3 pointer-events-auto shadow-2xl border-2 border-amber-200 hover:shadow-amber-100/50 cursor-pointer`}
+                >
+                  <span className="text-2xl animate-pulse">{notification.emoji}</span>
+                  <span className="flex-1">{notification.message}</span>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      )}
 
-      {/* Add To Services Modal */}
-      {isAddServicesModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          <div className="absolute inset-0 modal-backdrop" onClick={closeAddServicesModal}></div>
-          <div className="relative z-70 w-full max-w-4xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[85vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
-            {checkoutStep === 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-serif font-semibold text-[#2f3a1f]">Add Services</h2>
-                  {selectedServiceIds.length > 0 && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Clear selected services
-                        setSelectedServiceIds([]);
-                        setServiceConfigs({});
-                        setShowCouponInput(false);
-                        setCouponCode('');
-                        setAppliedCoupon(null);
-                        // Clear from localStorage and update available services
-                        localStorage.removeItem('addedServices');
-                        setAvailableServices([]);
-                        window.dispatchEvent(new Event('servicesUpdated'));
-                      }}
-                      className="px-4 py-2 text-sm font-semibold text-white bg-[#2f9e44] hover:bg-[#268a3b] rounded-lg transition-all shadow-md hover:shadow-lg"
-                    >
-                      Clear All ({selectedServiceIds.length})
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                  <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {availableServices.length === 0 ? (
-                      <p className="col-span-2 text-center text-sm text-[#4f5d2f] py-8">No services available yet. Please add services from the services page.</p>
-                    ) : availableServices.map((svc) => {
-                      const checked = selectedServiceIds.includes(svc.id);
-                      const config = serviceConfigs[svc.id] || { flowers: 'No', package: 'Economy' };
+          {/* Background Blobs */}
+          <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+            <div className="absolute top-[-10%] right-[-10%] w-[70vw] h-[70vw] bg-yellow-300/30 rounded-full mix-blend-multiply filter blur-[100px] animate-blob"></div>
+            <div
+              className="absolute bottom-[-10%] left-[-10%] w-[60vw] h-[60vw] bg-lime-400/30 rounded-full mix-blend-multiply filter blur-[80px] animate-blob"
+              style={{ animationDelay: '2s' }}
+            ></div>
+            <div
+              className="absolute top-[40%] left-[30%] w-[40vw] h-[40vw] bg-yellow-200/40 rounded-full mix-blend-multiply filter blur-[60px] animate-blob"
+              style={{ animationDelay: '4s' }}
+            ></div>
+            <div
+              className="absolute inset-0 opacity-[0.3]"
+              style={{
+                backgroundImage: `url('data:image/svg+xml,%3Csvg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23a16207" fill-opacity="0.08"%3E%3Cpath d="M40 40c0-8.8-7.2-16-16-16V8c17.7 0 32 14.3 32 32h-16zM0 40c0-8.8 7.2-16 16-16V8C-1.7 8-16 22.3-16 40h16zm40 0c0 8.8-7.2 16-16 16v16c17.7 0 32-14.3 32-32h-16zM0 40c0 8.8 7.2 16 16 16v16C-1.7 72-16 57.7-16 40h16z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')`,
+              }}
+            ></div>
+          </div>
 
-                      if (!checked) {
-                        // Compact view when not selected
-                        return (
-                          <div
-                            key={svc.id}
-                            onClick={() => {
-                              setSelectedServiceIds((prev) => {
-                                // Use formData from service if available, otherwise use defaults
-                                const serviceFormData = svc.formData || { flowers: 'No', package: 'Economy' };
-                                setServiceConfigs(configs => ({
-                                  ...configs,
-                                  [svc.id]: {
-                                    flowers: serviceFormData.flowers || 'No',
-                                    package: serviceFormData.package || 'Economy'
-                                  }
-                                }));
-                                return [...prev, svc.id];
-                              });
-                            }}
-                            className="rounded-xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf] transition-all p-3 cursor-pointer"
-                          >
-                            <div className="relative mb-2">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                readOnly
-                                className="absolute top-2 right-2 z-10 w-5 h-5 rounded border-[#cfd8a3] cursor-pointer"
-                              />
-                              <img src={svc.image} alt={svc.title} className="w-full h-20 rounded-lg object-cover border border-[#cfd8a3]" />
-                            </div>
-                            <h3 className="text-sm font-semibold text-[#2f3a1f] mb-1">{svc.title}</h3>
-                            <p className="text-xs text-[#4f5d2f]">{svc.description}</p>
-                          </div>
-                        );
-                      }
+          {/* Header backdrop to match body gradient without transparency shift */}
+          <div className="fixed inset-x-0 top-0 h-40 bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3] opacity-100 mix-blend-normal pointer-events-none z-0"></div>
 
-                      // Expanded view when selected
-                      return (
-                        <div
-                          key={svc.id}
-                          className="sm:col-span-2 rounded-2xl border border-[#2f9e44] bg-white ring-1 ring-[#2f9e44] transition-all p-4"
-                        >
-                          <div className="flex gap-4">
-                            {/* Checkbox + Image */}
-                            <div className="flex-shrink-0">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => {
-                                  setSelectedServiceIds((prev) => prev.filter(id => id !== svc.id));
-                                }}
-                                className="w-5 h-5 rounded border-[#cfd8a3] cursor-pointer mb-3"
-                              />
-                              <img src={svc.image} alt={svc.title} className="w-20 h-20 rounded-lg object-cover border border-[#cfd8a3]" />
-                            </div>
-
-                            {/* Details */}
-                            <div className="flex-1">
-                              <h3 className="text-base font-semibold text-[#2f3a1f] mb-1">{svc.title}</h3>
-                              <p className="text-xs text-[#4f5d2f] mb-2">{svc.description}</p>
-
-                              <div className="space-y-2">
-                                {/* Add-on: Flowers */}
-                                <div>
-                                  <label className="text-xs font-semibold text-[#2f3a1f] mb-1 block">Add-on: Flowers</label>
-                                  <div className="flex gap-3">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                      <input
-                                        type="radio"
-                                        name={`flowers-${svc.id}`}
-                                        checked={config.flowers === 'Yes'}
-                                        onChange={() => setServiceConfigs(configs => ({
-                                          ...configs,
-                                          [svc.id]: { ...config, flowers: 'Yes' }
-                                        }))}
-                                        className="cursor-pointer"
-                                      />
-                                      <span className="text-xs text-[#4f5d2f]">Yes (+₹250)</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                      <input
-                                        type="radio"
-                                        name={`flowers-${svc.id}`}
-                                        checked={config.flowers === 'No'}
-                                        onChange={() => setServiceConfigs(configs => ({
-                                          ...configs,
-                                          [svc.id]: { ...config, flowers: 'No' }
-                                        }))}
-                                        className="cursor-pointer"
-                                      />
-                                      <span className="text-xs text-[#4f5d2f]">No</span>
-                                    </label>
-                                  </div>
-                                </div>
-
-                                {/* Select Package */}
-                                <div>
-                                  <label className="text-xs font-semibold text-[#2f3a1f] mb-1 block">Select Package</label>
-                                  <select
-                                    value={config.package}
-                                    onChange={(e) => setServiceConfigs(configs => ({
-                                      ...configs,
-                                      [svc.id]: { ...config, package: e.target.value }
-                                    }))}
-                                    className="w-full px-2 py-1 rounded text-xs border border-[#cfd8a3] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                                  >
-                                    <option value="Economy">Economy - ₹9,999</option>
-                                    <option value="Standard">Standard - ₹12,999</option>
-                                    <option value="Premium">Premium - ₹20,000</option>
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+          {/* Edit Profile Modal */}
+          {isEditModalOpen && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center">
+              <div className="absolute inset-0 modal-backdrop" onClick={closeEditModal}></div>
+              <div className="relative z-70 w-full max-w-md p-6 rounded-2xl bg-white shadow-2xl">
+                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-3">Edit Profile</h2>
+                <form
+                  onSubmit={(e: React.FormEvent) => {
+                    e.preventDefault();
+                    saveProfile();
+                  }}
+                  className="space-y-3"
+                >
+                  <div>
+                    <label className="text-sm text-[#4f5d2f] font-medium">User ID</label>
+                    <input name="user_id" defaultValue={profile.user_id} className="w-full p-2 border rounded mt-1 bg-gray-50 text-sm" readOnly />
                   </div>
-                  <div className="lg:col-span-1">
-                    <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] sticky top-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined text-[#2f9e44]">task_alt</span>
-                        <span className="text-sm font-semibold text-[#2f3a1f]">Selected ({selectedServiceIds.length})</span>
-                      </div>
-                      <ul className="space-y-2 mb-4 text-xs">
-                        {selectedServiceIds.length === 0 && (
-                          <li className="text-text-light">No services selected.</li>
-                        )}
-                        {selectedServiceIds.map(id => {
-                          const svc = availableServices.find(s => s.id === id)!;
-                          return <li key={id} className="text-[#4f5d2f]">• {svc?.title || 'Service'}</li>;
-                        })}
-                      </ul>
-                      <button
-                        disabled={selectedServiceIds.length === 0}
-                        onClick={() => setCheckoutStep(1)}
-                        className={`w-full px-4 py-2 rounded-lg font-semibold text-sm transition-all ${selectedServiceIds.length === 0 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#2f9e44] text-white hover:bg-[#268a3b] hover:-translate-y-0.5'}`}
-                      >
-                        Proceed to Checkout
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            {checkoutStep === 1 && (
-              <div>
-                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Contact Details</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
-                    <label className="text-xs font-bold text-text-light uppercase">Full Name</label>
-                    <input className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" defaultValue="Priya Sharma" />
-                  </div>
-                  <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
-                    <label className="text-xs font-bold text-text-light uppercase">Email</label>
+                  <div>
+                    <label className="text-sm text-[#4f5d2f] font-medium">Email</label>
                     <input
-                      type="email"
-                      className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                      value={profile.email}
-                      readOnly
+                      value={editEmail}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditEmail(e.target.value)}
+                      className="w-full p-2 border rounded mt-1 text-sm"
                     />
                   </div>
-                  <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
-                    <label className="text-xs font-bold text-text-light uppercase">Phone</label>
-                    <input className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" defaultValue="9876543210" />
+                  <div className="flex justify-end gap-2 mt-2">
+                    <button type="button" onClick={closeEditModal} className="px-4 py-2 rounded bg-gray-100 text-sm">Cancel</button>
+                    <button type="submit" className="px-4 py-2 rounded bg-[#2f9e44] text-white hover:bg-[#268a3b] text-sm">Save</button>
                   </div>
-                  <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
-                    <label className="text-xs font-bold text-text-light uppercase">Address</label>
-                    <textarea className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" rows={3} defaultValue="123, Green Meadows, Chennai" />
-                  </div>
-                </div>
-                <div className="flex justify-between gap-2 mt-4">
-                  <button onClick={() => setCheckoutStep(0)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
-                  <button onClick={() => setCheckoutStep(2)} className="px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b]">Continue to Payment</button>
-                </div>
+                </form>
               </div>
-            )}
-            {checkoutStep === 2 && (
-              <div>
-                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Payment Method</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {['UPI', 'Credit/Debit Card', 'Cash on Delivery'].map((m, i) => (
-                    <button key={i} className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all text-left">
-                      <span className="text-sm font-semibold text-[#2f3a1f]">{m}</span>
-                      <p className="text-xs text-[#4f5d2f] mt-1">Secure and fast checkout</p>
-                    </button>
-                  ))}
-                </div>
-                <div className="flex justify-between gap-2 mt-4">
-                  <button onClick={() => setCheckoutStep(1)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
-                  <button onClick={() => setCheckoutStep(3)} className="px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b]">Review Order</button>
-                </div>
-              </div>
-            )}
-            {checkoutStep === 3 && (
-              <div>
-                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-6">Review & Place Order</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Selected Services */}
-                  <div className="lg:col-span-2">
-                    <h3 className="text-sm font-semibold mb-4 text-[#2f3a1f]">SERVICES</h3>
-                    <div className="space-y-4">
-                      {selectedServiceIds.map(id => {
-                        const svc = availableServices.find(s => s.id === id)!;
-                        const config = serviceConfigs[id] || { flowers: 'No', package: 'Economy' };
-                        return (
-                          <div key={id} className="flex gap-4 p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
-                            {/* Product Image */}
-                            <div className="flex-shrink-0">
-                              <img src={svc.image} alt={svc.title} className="w-24 h-24 rounded-lg object-cover border border-[#cfd8a3]" />
-                            </div>
+            </div>
+          )}
 
-                            {/* Product Details */}
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-[#2f3a1f] mb-2">{svc.title}</h4>
-                              <p className="text-sm text-[#4f5d2f] mb-3">{svc.description}</p>
+          {/* Add To Services Modal */}
+          {isAddServicesModalOpen && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center">
+              <div className="absolute inset-0 modal-backdrop" onClick={closeAddServicesModal}></div>
+              <div className="relative z-70 w-full max-w-4xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[85vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
+                {checkoutStep === 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-serif font-semibold text-[#2f3a1f]">Add Services</h2>
+                      {selectedServiceIds.length > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Clear selected services
+                            setSelectedServiceIds([]);
+                            setServiceConfigs({});
+                            setShowCouponInput(false);
+                            setCouponCode('');
+                            setAppliedCoupon(null);
+                            // Clear from localStorage and update available services
+                            localStorage.removeItem('addedServices');
+                            setAvailableServices([]);
+                            window.dispatchEvent(new Event('servicesUpdated'));
+                          }}
+                          className="px-4 py-2 text-sm font-semibold text-white bg-[#2f9e44] hover:bg-[#268a3b] rounded-lg transition-all shadow-md hover:shadow-lg"
+                        >
+                          Clear All ({selectedServiceIds.length})
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                      <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {availableServices.length === 0 ? (
+                          <p className="col-span-2 text-center text-sm text-[#4f5d2f] py-8">No services available yet. Please add services from the services page.</p>
+                        ) : availableServices.map((svc) => {
+                          const checked = selectedServiceIds.includes(svc.id);
+                          const config = serviceConfigs[svc.id] || { flowers: 'No', package: 'Economy' };
 
-                              {/* Details like in the screenshot */}
-                              <div className="space-y-1 text-xs text-[#4f5d2f]">
-                                <p><strong>Add-on:</strong> Flowers: {config.flowers}</p>
-                                <p><strong>Select Package:</strong> {config.package}</p>
-                              </div>
-
-                              {/* Remove Button */}
-                              <button
-                                onClick={() => setSelectedServiceIds(prev => prev.filter(sid => sid !== id))}
-                                className="text-xs text-[#2f9e44] hover:text-[#268a3b] mt-3 underline"
+                          if (!checked) {
+                            // Compact view when not selected
+                            return (
+                              <div
+                                key={svc.id}
+                                onClick={() => {
+                                  setSelectedServiceIds((prev) => {
+                                    // Use formData from service if available, otherwise use defaults
+                                    const serviceFormData = svc.formData || { flowers: 'No', package: 'Economy' };
+                                    setServiceConfigs(configs => ({
+                                      ...configs,
+                                      [svc.id]: {
+                                        flowers: serviceFormData.flowers || 'No',
+                                        package: serviceFormData.package || 'Economy'
+                                      }
+                                    }));
+                                    return [...prev, svc.id];
+                                  });
+                                }}
+                                className="rounded-xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf] transition-all p-3 cursor-pointer"
                               >
-                                Remove item
-                              </button>
-                            </div>
+                                <div className="relative mb-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    readOnly
+                                    className="absolute top-2 right-2 z-10 w-5 h-5 rounded border-[#cfd8a3] cursor-pointer"
+                                  />
+                                  <img src={svc.image} alt={svc.title} className="w-full h-20 rounded-lg object-cover border border-[#cfd8a3]" />
+                                </div>
+                                <h3 className="text-sm font-semibold text-[#2f3a1f] mb-1">{svc.title}</h3>
+                                <p className="text-xs text-[#4f5d2f]">{svc.description}</p>
+                              </div>
+                            );
+                          }
 
-                            {/* Price */}
-                            <div className="text-right flex-shrink-0">
-                              <p className="font-semibold text-[#2f3a1f]">₹15,000.00</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Cart Totals */}
-                  <div className="lg:col-span-1">
-                    <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] sticky top-4">
-                      <h3 className="text-sm font-semibold mb-4 text-[#2f3a1f]">CART TOTALS</h3>
-
-                      <div className="space-y-3 mb-4 pb-4 border-b border-[#cfd8a3]">
-                        {!showCouponInput && !appliedCoupon && (
-                          <button
-                            onClick={() => setShowCouponInput(true)}
-                            className="text-xs text-[#2f9e44] hover:text-[#268a3b] font-semibold"
-                          >
-                            Add coupons ▼
-                          </button>
-                        )}
-
-                        {showCouponInput && (
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="Enter coupon code"
-                              value={couponCode}
-                              onChange={(e) => setCouponCode(e.target.value)}
-                              className="flex-1 px-2 py-1 rounded text-xs border border-[#cfd8a3] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                            />
-                            <button
-                              onClick={() => {
-                                if (couponCode.trim()) {
-                                  setAppliedCoupon(couponCode);
-                                  setShowCouponInput(false);
-                                  setCouponCode('');
-                                }
-                              }}
-                              className="px-3 py-1 rounded text-xs bg-[#2f9e44] text-white hover:bg-[#268a3b]"
+                          // Expanded view when selected
+                          return (
+                            <div
+                              key={svc.id}
+                              className="sm:col-span-2 rounded-2xl border border-[#2f9e44] bg-white ring-1 ring-[#2f9e44] transition-all p-4"
                             >
-                              Apply
-                            </button>
-                          </div>
-                        )}
+                              <div className="flex gap-4">
+                                {/* Checkbox + Image */}
+                                <div className="flex-shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => {
+                                      setSelectedServiceIds((prev) => prev.filter(id => id !== svc.id));
+                                    }}
+                                    className="w-5 h-5 rounded border-[#cfd8a3] cursor-pointer mb-3"
+                                  />
+                                  <img src={svc.image} alt={svc.title} className="w-20 h-20 rounded-lg object-cover border border-[#cfd8a3]" />
+                                </div>
 
-                        {appliedCoupon && (
-                          <div className="flex items-center justify-between bg-[#eef4cf] px-3 py-2 rounded">
-                            <span className="text-xs text-[#2f3a1f]">Coupon: <strong>{appliedCoupon}</strong></span>
-                            <button
-                              onClick={() => setAppliedCoupon(null)}
-                              className="text-xs text-[#2f9e44] hover:text-[#268a3b] underline"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                                {/* Details */}
+                                <div className="flex-1">
+                                  <h3 className="text-base font-semibold text-[#2f3a1f] mb-1">{svc.title}</h3>
+                                  <p className="text-xs text-[#4f5d2f] mb-2">{svc.description}</p>
 
-                      <div className="mb-6">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-xs text-[#4f5d2f]">Subtotal</span>
-                          <span className="font-semibold text-[#2f3a1f]">₹{selectedServiceIds.length * 15000}.00</span>
-                        </div>
-                        {appliedCoupon && (
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="text-xs text-[#4f5d2f]">Discount</span>
-                            <span className="font-semibold text-[#2f9e44]">-₹1,500.00</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between items-center pt-3 border-t border-[#cfd8a3]">
-                          <span className="font-semibold text-[#2f3a1f]">Estimated total</span>
-                          <span className="font-semibold text-lg text-[#2f3a1f]">
-                            ₹{appliedCoupon ? (selectedServiceIds.length * 15000 - 1500).toFixed(2) : (selectedServiceIds.length * 15000).toFixed(2)}.00
-                          </span>
-                        </div>
-                      </div>
+                                  <div className="space-y-2">
+                                    {/* Add-on: Flowers */}
+                                    <div>
+                                      <label className="text-xs font-semibold text-[#2f3a1f] mb-1 block">Add-on: Flowers</label>
+                                      <div className="flex gap-3">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                          <input
+                                            type="radio"
+                                            name={`flowers-${svc.id}`}
+                                            checked={config.flowers === 'Yes'}
+                                            onChange={() => setServiceConfigs(configs => ({
+                                              ...configs,
+                                              [svc.id]: { ...config, flowers: 'Yes' }
+                                            }))}
+                                            className="cursor-pointer"
+                                          />
+                                          <span className="text-xs text-[#4f5d2f]">Yes (+₹250)</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                          <input
+                                            type="radio"
+                                            name={`flowers-${svc.id}`}
+                                            checked={config.flowers === 'No'}
+                                            onChange={() => setServiceConfigs(configs => ({
+                                              ...configs,
+                                              [svc.id]: { ...config, flowers: 'No' }
+                                            }))}
+                                            className="cursor-pointer"
+                                          />
+                                          <span className="text-xs text-[#4f5d2f]">No</span>
+                                        </label>
+                                      </div>
+                                    </div>
 
-                      <button onClick={() => setCheckoutStep(4)} className="w-full px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b] transition-all">
-                        Confirm Order
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between gap-2 mt-6">
-                  <button onClick={() => setCheckoutStep(2)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
-                </div>
-              </div>
-            )}
-            {checkoutStep === 4 && (
-              <div className="text-center">
-                <span className="material-symbols-outlined text-[#2f9e44] text-5xl">check_circle</span>
-                <h2 className="mt-3 text-xl font-serif font-semibold text-[#2f3a1f]">Order Placed Successfully</h2>
-                <p className="text-sm text-[#4f5d2f] mt-1">You will receive a confirmation email shortly.</p>
-                <div className="mt-4">
-                  <button onClick={closeAddServicesModal} className="px-4 py-2 rounded bg-[#2f9e44] text-white hover:bg-[#268a3b]">Close</button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Orders Modal */}
-      {isOrdersModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          <div className="absolute inset-0 modal-backdrop" onClick={closeOrdersModal}></div>
-          <div className="relative z-70 w-full max-w-2xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto">
-            <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Order History</h2>
-
-            {ordersLoading && <p className="text-center text-text-light">Loading orders...</p>}
-            {ordersError && <p className="text-center text-red-500">Error: {ordersError}</p>}
-
-            {!ordersLoading && orders.length === 0 && (
-              <p className="text-center text-text-light">No orders found</p>
-            )}
-
-            {!ordersLoading && orders.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-primary/5">
-                    <tr>
-                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Product/Service</th>
-                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Order ID</th>
-                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Date</th>
-                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/60">
-                    {(orders || [])
-                      .filter((order) => Boolean(order.order_id))
-                      .map((order, idx) => {
-                        const orderDate = new Date(order.created_at || new Date().toISOString()).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        });
-
-                        const statusColor =
-                          order.status === 'CONFIRMED' || order.status === 'Delivered' ? 'green' :
-                            order.status === 'COMPLETED' || order.status === 'Completed' ? 'blue' :
-                              order.status === 'SHIPPED' || order.status === 'Shipped' ? 'yellow' : 'blue';
-
-                        return (
-                          <tr key={order.order_id || `order-${idx}`} className="align-middle">
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <img
-                                  alt={order.product_name || `Order ${order.order_id}`}
-                                  className="w-8 h-8 rounded-lg object-cover border border-[#cfd8a3]"
-                                  src={order.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w"}
-                                />
-                                <div>
-                                  <p className="text-sm font-semibold text-[#2f3a1f]">{order.product_name || order.order_id || `Order ${idx + 1}`}</p>
-                                  <p className="text-xs text-text-light">{order.category || 'Service'}</p>
+                                    {/* Select Package */}
+                                    <div>
+                                      <label className="text-xs font-semibold text-[#2f3a1f] mb-1 block">Select Package</label>
+                                      <select
+                                        value={config.package}
+                                        onChange={(e) => setServiceConfigs(configs => ({
+                                          ...configs,
+                                          [svc.id]: { ...config, package: e.target.value }
+                                        }))}
+                                        className="w-full px-2 py-1 rounded text-xs border border-[#cfd8a3] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                                      >
+                                        <option value="Economy">Economy - ₹9,999</option>
+                                        <option value="Standard">Standard - ₹12,999</option>
+                                        <option value="Premium">Premium - ₹20,000</option>
+                                      </select>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-[#4f5d2f]">{order.order_id}</td>
-                            <td className="px-4 py-3 text-sm text-[#4f5d2f]">{orderDate}</td>
-                            <td className="px-4 py-3 text-sm">
-                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${statusColor === 'green' ? 'bg-amber-100 text-[#4f5d2f]' : statusColor === 'blue' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-[#4f5d2f]'}`}>
-                                {order.status}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="lg:col-span-1">
+                        <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] sticky top-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="material-symbols-outlined text-[#2f9e44]">task_alt</span>
+                            <span className="text-sm font-semibold text-[#2f3a1f]">Selected ({selectedServiceIds.length})</span>
+                          </div>
+                          <ul className="space-y-2 mb-4 text-xs">
+                            {selectedServiceIds.length === 0 && (
+                              <li className="text-text-light">No services selected.</li>
+                            )}
+                            {selectedServiceIds.map(id => {
+                              const svc = availableServices.find(s => s.id === id)!;
+                              return <li key={id} className="text-[#4f5d2f]">• {svc?.title || 'Service'}</li>;
+                            })}
+                          </ul>
+                          <button
+                            disabled={selectedServiceIds.length === 0}
+                            onClick={() => setCheckoutStep(1)}
+                            className={`w-full px-4 py-2 rounded-lg font-semibold text-sm transition-all ${selectedServiceIds.length === 0 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#2f9e44] text-white hover:bg-[#268a3b] hover:-translate-y-0.5'}`}
+                          >
+                            Proceed to Checkout
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {checkoutStep === 1 && (
+                  <div>
+                    <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Contact Details</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                        <label className="text-xs font-bold text-text-light uppercase">Full Name</label>
+                        <input className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" defaultValue="Priya Sharma" />
+                      </div>
+                      <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                        <label className="text-xs font-bold text-text-light uppercase">Email</label>
+                        <input
+                          type="email"
+                          className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                          value={profile.email}
+                          readOnly
+                        />
+                      </div>
+                      <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                        <label className="text-xs font-bold text-text-light uppercase">Phone</label>
+                        <input className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" defaultValue="9876543210" />
+                      </div>
+                      <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                        <label className="text-xs font-bold text-text-light uppercase">Address</label>
+                        {userAddresses.length > 0 && (
+                          <select
+                            className="w-full mb-2 p-2 rounded-md border border-[#cfd8a3] text-sm text-[#4f5d2f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                            onChange={(e) => {
+                              const addr = userAddresses.find(a => a.id === e.target.value);
+                              if (addr) {
+                                // We need to trigger a state update or manually update ref/dom if controlled
+                                // Since textarea below is uncontrolled (defaultValue), we use DOM manipulation for this demo 
+                                // or better, switch to controlled state. 
+                                // For now, I'll update key logic or just try direct ref.
+                                const textarea = document.getElementById('checkout-address-input') as HTMLTextAreaElement;
+                                if (textarea) textarea.value = `${addr.address}, ${addr.city}, ${addr.state} - ${addr.pincode}`;
+                              }
+                            }}
+                          >
+                            <option value="">Select a saved address...</option>
+                            {userAddresses.map(a => (
+                              <option key={a.id} value={a.id}>{a.address}, {a.city}</option>
+                            ))}
+                          </select>
+                        )}
+                        <textarea
+                          id="checkout-address-input"
+                          className="w-full mt-1 p-2 rounded-md border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                          rows={3}
+                          defaultValue="123, Green Meadows, Chennai"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-between gap-2 mt-4">
+                      <button onClick={() => setCheckoutStep(0)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
+                      <button onClick={() => setCheckoutStep(2)} className="px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b]">Continue to Payment</button>
+                    </div>
+                  </div>
+                )}
+                {checkoutStep === 2 && (
+                  <div>
+                    <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Payment Method</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {['UPI', 'Credit/Debit Card', 'Cash on Delivery'].map((m, i) => (
+                        <button key={i} className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all text-left">
+                          <span className="text-sm font-semibold text-[#2f3a1f]">{m}</span>
+                          <p className="text-xs text-[#4f5d2f] mt-1">Secure and fast checkout</p>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex justify-between gap-2 mt-4">
+                      <button onClick={() => setCheckoutStep(1)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
+                      <button onClick={() => setCheckoutStep(3)} className="px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b]">Review Order</button>
+                    </div>
+                  </div>
+                )}
+                {checkoutStep === 3 && (
+                  <div>
+                    <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-6">Review & Place Order</h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      {/* Selected Services */}
+                      <div className="lg:col-span-2">
+                        <h3 className="text-sm font-semibold mb-4 text-[#2f3a1f]">SERVICES</h3>
+                        <div className="space-y-4">
+                          {selectedServiceIds.map(id => {
+                            const svc = availableServices.find(s => s.id === id)!;
+                            const config = serviceConfigs[id] || { flowers: 'No', package: 'Economy' };
+                            return (
+                              <div key={id} className="flex gap-4 p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd]">
+                                {/* Product Image */}
+                                <div className="flex-shrink-0">
+                                  <img src={svc.image} alt={svc.title} className="w-24 h-24 rounded-lg object-cover border border-[#cfd8a3]" />
+                                </div>
+
+                                {/* Product Details */}
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-[#2f3a1f] mb-2">{svc.title}</h4>
+                                  <p className="text-sm text-[#4f5d2f] mb-3">{svc.description}</p>
+
+                                  {/* Details like in the screenshot */}
+                                  <div className="space-y-1 text-xs text-[#4f5d2f]">
+                                    <p><strong>Add-on:</strong> Flowers: {config.flowers}</p>
+                                    <p><strong>Select Package:</strong> {config.package}</p>
+                                  </div>
+
+                                  {/* Remove Button */}
+                                  <button
+                                    onClick={() => setSelectedServiceIds(prev => prev.filter(sid => sid !== id))}
+                                    className="text-xs text-[#2f9e44] hover:text-[#268a3b] mt-3 underline"
+                                  >
+                                    Remove item
+                                  </button>
+                                </div>
+
+                                {/* Price */}
+                                <div className="text-right flex-shrink-0">
+                                  <p className="font-semibold text-[#2f3a1f]">₹15,000.00</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Cart Totals */}
+                      <div className="lg:col-span-1">
+                        <div className="p-4 rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] sticky top-4">
+                          <h3 className="text-sm font-semibold mb-4 text-[#2f3a1f]">CART TOTALS</h3>
+
+                          <div className="space-y-3 mb-4 pb-4 border-b border-[#cfd8a3]">
+                            {!showCouponInput && !appliedCoupon && (
+                              <button
+                                onClick={() => setShowCouponInput(true)}
+                                className="text-xs text-[#2f9e44] hover:text-[#268a3b] font-semibold"
+                              >
+                                Add coupons ▼
+                              </button>
+                            )}
+
+                            {showCouponInput && (
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Enter coupon code"
+                                  value={couponCode}
+                                  onChange={(e) => setCouponCode(e.target.value)}
+                                  className="flex-1 px-2 py-1 rounded text-xs border border-[#cfd8a3] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (couponCode.trim()) {
+                                      setAppliedCoupon(couponCode);
+                                      setShowCouponInput(false);
+                                      setCouponCode('');
+                                    }
+                                  }}
+                                  className="px-3 py-1 rounded text-xs bg-[#2f9e44] text-white hover:bg-[#268a3b]"
+                                >
+                                  Apply
+                                </button>
+                              </div>
+                            )}
+
+                            {appliedCoupon && (
+                              <div className="flex items-center justify-between bg-[#eef4cf] px-3 py-2 rounded">
+                                <span className="text-xs text-[#2f3a1f]">Coupon: <strong>{appliedCoupon}</strong></span>
+                                <button
+                                  onClick={() => setAppliedCoupon(null)}
+                                  className="text-xs text-[#2f9e44] hover:text-[#268a3b] underline"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mb-6">
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="text-xs text-[#4f5d2f]">Subtotal</span>
+                              <span className="font-semibold text-[#2f3a1f]">₹{selectedServiceIds.length * 15000}.00</span>
+                            </div>
+                            {appliedCoupon && (
+                              <div className="flex justify-between items-center mb-3">
+                                <span className="text-xs text-[#4f5d2f]">Discount</span>
+                                <span className="font-semibold text-[#2f9e44]">-₹1,500.00</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center pt-3 border-t border-[#cfd8a3]">
+                              <span className="font-semibold text-[#2f3a1f]">Estimated total</span>
+                              <span className="font-semibold text-lg text-[#2f3a1f]">
+                                ₹{appliedCoupon ? (selectedServiceIds.length * 15000 - 1500).toFixed(2) : (selectedServiceIds.length * 15000).toFixed(2)}.00
                               </span>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-[#2f3a1f] text-right font-semibold">₹{order.total_amount}</td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
+                            </div>
+                          </div>
+
+                          <button onClick={() => setCheckoutStep(4)} className="w-full px-4 py-3 rounded-lg bg-[#2f9e44] text-white font-semibold hover:bg-[#268a3b] transition-all">
+                            Confirm Order
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between gap-2 mt-6">
+                      <button onClick={() => setCheckoutStep(2)} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">Back</button>
+                    </div>
+                  </div>
+                )}
+                {checkoutStep === 4 && (
+                  <div className="text-center">
+                    <span className="material-symbols-outlined text-[#2f9e44] text-5xl">check_circle</span>
+                    <h2 className="mt-3 text-xl font-serif font-semibold text-[#2f3a1f]">Order Placed Successfully</h2>
+                    <p className="text-sm text-[#4f5d2f] mt-1">You will receive a confirmation email shortly.</p>
+                    <div className="mt-4">
+                      <button onClick={closeAddServicesModal} className="px-4 py-2 rounded bg-[#2f9e44] text-white hover:bg-[#268a3b]">Close</button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button type="button" onClick={closeOrdersModal} className="px-4 py-2 rounded bg-gray-100">Close</button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Ritual Details Modal */}
-      {isRitualDetailsModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          <div className="absolute inset-0 modal-backdrop" onClick={closeRitualDetailsModal}></div>
-          <div className="relative z-70 w-full max-w-2xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
-            <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Griha Pravesh Pooja - Details</h2>
-            <div className="space-y-4">
-              <div className="rounded-xl overflow-hidden shadow-lg mb-4">
-                <img
-                  alt="Griha Pravesh"
-                  className="w-full h-64 object-cover"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBr4CkQZdDBtyiP5TG4kI2jPAKgO9PG9gqOpQCew_k5Kiy09t3kAKd00vzySn_4n25u1rLkqJj9PX3TDadhkGudDl73w3_GvNPR5Te9lbQcdggPDFqrKQ9Cg_l7kWMor-qRbuQ1185SHbniviSZULKNaZRHRFuychoxjarIklVnd5_PLo4dvL9_5Xy59xkmbQEvydncDEu8MXVgtxwunPfQLUoY4vuZAjN_X54uPsCYkVVDHzcpkhSXRr1qjPmw3lfH5q_kR0EHWb7W"
+          {/* Orders Modal */}
+          {isOrdersModalOpen && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center">
+              <div className="absolute inset-0 modal-backdrop" onClick={closeOrdersModal}></div>
+              <div className="relative z-70 w-full max-w-2xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto">
+                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Order History</h2>
+
+                {ordersLoading && <p className="text-center text-text-light">Loading orders...</p>}
+                {ordersError && <p className="text-center text-red-500">Error: {ordersError}</p>}
+
+                {!ordersLoading && orders.length === 0 && (
+                  <p className="text-center text-text-light">No orders found</p>
+                )}
+
+                {!ordersLoading && orders.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead className="bg-primary/5">
+                        <tr>
+                          <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Product/Service</th>
+                          <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Order ID</th>
+                          <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Date</th>
+                          <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider">Status</th>
+                          <th className="px-4 py-2 text-xs font-bold text-text-light uppercase tracking-wider text-right">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/60">
+                        {(orders || [])
+                          .filter((order) => Boolean(order.order_id))
+                          .map((order, idx) => {
+                            const orderDate = new Date(order.created_at || new Date().toISOString()).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            });
+
+                            const statusColor =
+                              order.status === 'CONFIRMED' || order.status === 'Delivered' ? 'green' :
+                                order.status === 'COMPLETED' || order.status === 'Completed' ? 'blue' :
+                                  order.status === 'SHIPPED' || order.status === 'Shipped' ? 'yellow' : 'blue';
+
+                            return (
+                              <tr key={order.order_id || `order-${idx}`} className="align-middle">
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <img
+                                      alt={order.product_name || `Order ${order.order_id}`}
+                                      className="w-8 h-8 rounded-lg object-cover border border-[#cfd8a3]"
+                                      src={order.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuChu4R7OwQ8ETkPLyBovCUHdrB2jioozFFzmFmd7vgObnmLRo7wsqRueSpgGRdzWQF8sudBJEwKxUIhPl4e6ktt1cWSdTKPo7SKd4R0vQldPZ2kQ93SEGxagNTbpenyKVDOZluRtAG8oHpbWAf61cG5l0WYlUMCeQpg16SZ5y9myjMsJCkCakxue4devmQfpfQHcAR6Y18nMkgfWw1_UEeXvIKjxuNcWNX3SMflBo54elTH8Weba2vb1haWBGDFi7GPNUe5ETXixQ9w"}
+                                    />
+                                    <div>
+                                      <p className="text-sm font-semibold text-[#2f3a1f]">{order.product_name || order.order_id || `Order ${idx + 1}`}</p>
+                                      <p className="text-xs text-text-light">{order.category || 'Service'}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-[#4f5d2f]">{order.order_id}</td>
+                                <td className="px-4 py-3 text-sm text-[#4f5d2f]">{orderDate}</td>
+                                <td className="px-4 py-3 text-sm">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${statusColor === 'green' ? 'bg-amber-100 text-[#4f5d2f]' : statusColor === 'blue' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-[#4f5d2f]'}`}>
+                                    {order.status}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm text-[#2f3a1f] text-right font-semibold">₹{order.total_amount}</td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 mt-4">
+                  <button type="button" onClick={closeOrdersModal} className="px-4 py-2 rounded bg-gray-100">Close</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Ritual Details Modal */}
+          {isRitualDetailsModalOpen && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center">
+              <div className="absolute inset-0 modal-backdrop" onClick={closeRitualDetailsModal}></div>
+              <div className="relative z-70 w-full max-w-2xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
+                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Griha Pravesh Pooja - Details</h2>
+                <div className="space-y-4">
+                  <div className="rounded-xl overflow-hidden shadow-lg mb-4">
+                    <img
+                      alt="Griha Pravesh"
+                      className="w-full h-64 object-cover"
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuBr4CkQZdDBtyiP5TG4kI2jPAKgO9PG9gqOpQCew_k5Kiy09t3kAKd00vzySn_4n25u1rLkqJj9PX3TDadhkGudDl73w3_GvNPR5Te9lbQcdggPDFqrKQ9Cg_l7kWMor-qRbuQ1185SHbniviSZULKNaZRHRFuychoxjarIklVnd5_PLo4dvL9_5Xy59xkmbQEvydncDEu8MXVgtxwunPfQLUoY4vuZAjN_X54uPsCYkVVDHzcpkhSXRr1qjPmw3lfH5q_kR0EHWb7W"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">Booking Information</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                        <p className="text-xs text-text-light font-bold uppercase">Booking ID</p>
+                        <p className="text-sm font-semibold text-[#4f5d2f]">#BK-8902</p>
+                      </div>
+                      <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                        <p className="text-xs text-text-light font-bold uppercase">Status</p>
+                        <p className="text-sm font-semibold text-[#4f5d2f]">Confirmed</p>
+                      </div>
+                      <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                        <p className="text-xs text-text-light font-bold uppercase">Date</p>
+                        <p className="text-sm font-semibold text-[#4f5d2f]">Jan 15, 2026</p>
+                      </div>
+                      <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                        <p className="text-xs text-text-light font-bold uppercase">Time</p>
+                        <p className="text-sm font-semibold text-[#4f5d2f]">09:00 AM IST</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">Pandit Information</h3>
+                    <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                      <p className="text-sm font-semibold text-[#4f5d2f]">Pandit Ravi Shastri & Team</p>
+                      <p className="text-xs text-text-light mt-1">Experience: 15+ years</p>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">About This Pooja</h3>
+                    <p className="text-sm text-[#4f5d2f] leading-relaxed p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">Griha Pravesh is a sacred Hindu ritual performed to purify and bless a new home. This ceremony invokes divine blessings for prosperity, peace, and well-being in the household.</p>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">What's Included</h3>
+                    <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
+                      <ul className="text-sm text-[#4f5d2f] space-y-1">
+                        <li>✓ Full Griha Pravesh ceremony</li>
+                        <li>✓ All required materials and offerings</li>
+                        <li>✓ Prasad for all attendees</li>
+                        <li>✓ Certificate of completion</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <button type="button" onClick={closeRitualDetailsModal} className="px-4 py-2 rounded bg-gray-100">Close</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* All Bookings Modal */}
+          {isBookingsModalOpen && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center">
+              <div className="absolute inset-0 modal-backdrop" onClick={closeBookingsModal}></div>
+              <div className="relative z-70 w-full max-w-3xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
+                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">All Upcoming Bookings</h2>
+                <div className="space-y-3">
+                  {/* Column Headers */}
+                  <div className="flex items-center justify-between px-3 py-1.5 bg-primary/5 rounded-lg">
+                    <div className="flex items-center gap-2 flex-[2]">
+                      <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Service</span>
+                    </div>
+                    <div className="flex-1 text-center">
+                      <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Date</span>
+                    </div>
+                    <div className="flex-1 text-center">
+                      <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Time</span>
+                    </div>
+                    <div className="flex-1 text-center">
+                      <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Status</span>
+                    </div>
+                  </div>
+                  {confirmedBooking && (
+                    <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] transition-all cursor-pointer group">
+                      <div className="flex items-center gap-2 flex-[2]">
+                        <img alt={confirmedBooking.service} className="w-6 h-6 rounded-lg object-cover" src={confirmedBooking.image} />
+                        <div>
+                          <p className="text-xs font-semibold text-[#2f3a1f]">{confirmedBooking.service}</p>
+                          <p className="text-[10px] text-text-light">{confirmedBooking.person}</p>
+                        </div>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <span className="text-xs text-[#4f5d2f] font-medium">{confirmedBooking.date}</span>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <span className="text-xs text-[#4f5d2f] font-medium">{confirmedBooking.time}</span>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-[#4f5d2f]">CONFIRMED</span>
+                      </div>
+                    </div>
+                  )}
+                  {pendingBookings.length === 0 && (
+                    <div className="p-3 text-center text-text-light bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
+                      No pending bookings.
+                    </div>
+                  )}
+                  {pendingBookings.map((b, idx) => (
+                    <div key={`${b.service}-${idx}`} className="flex items-center justify-between p-2 bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] transition-all cursor-pointer group">
+                      <div className="flex items-center gap-2 flex-[2]">
+                        <img alt={b.service} className="w-6 h-6 rounded-lg object-cover" src={b.image} />
+                        <div>
+                          <p className="text-xs font-semibold text-[#2f3a1f]">{b.service}</p>
+                          <p className="text-[10px] text-text-light">{b.person}</p>
+                        </div>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <span className="text-xs text-[#4f5d2f] font-medium">{b.date}</span>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <span className="text-xs text-[#4f5d2f] font-medium">{b.time}</span>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-[#4f5d2f]">{b.status}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <button type="button" onClick={closeBookingsModal} className="px-4 py-2 font-semibold text-sm text-[#2f9e44] border border-[#2f9e44] rounded-lg bg-white hover:bg-[#eef4cf]">Close</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content */}
+          <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 md:px-6 pt-24 pb-8 flex flex-col gap-4 relative z-10">
+
+            {/* Main Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+              {/* Sidebar with Preferences */}
+              <aside className="lg:col-span-3 flex flex-col gap-4 sticky top-24">
+                <UserProfileCard handleButtonClick={handleButtonClick} profile={profile} onEdit={openEditModal} isActive={activeSection === 'profilecard'} onActive={() => setActiveSection('profilecard')} />
+                <Preferences
+                  notificationsEnabled={notificationsEnabled}
+                  setNotificationsEnabled={setNotificationsEnabled}
+                  twoFactorEnabled={twoFactorEnabled}
+                  setTwoFactorEnabled={setTwoFactorEnabled}
+                  handleButtonClick={handleButtonClick}
+                  isActive={activeSection === 'preferences'}
+                  activePreference={activePreference}
+                  setActivePreference={setActivePreference}
                 />
-              </div>
-              <div>
-                <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">Booking Information</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                    <p className="text-xs text-text-light font-bold uppercase">Booking ID</p>
-                    <p className="text-sm font-semibold text-[#4f5d2f]">#BK-8902</p>
-                  </div>
-                  <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                    <p className="text-xs text-text-light font-bold uppercase">Status</p>
-                    <p className="text-sm font-semibold text-[#4f5d2f]">Confirmed</p>
-                  </div>
-                  <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                    <p className="text-xs text-text-light font-bold uppercase">Date</p>
-                    <p className="text-sm font-semibold text-[#4f5d2f]">Jan 15, 2026</p>
-                  </div>
-                  <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                    <p className="text-xs text-text-light font-bold uppercase">Time</p>
-                    <p className="text-sm font-semibold text-[#4f5d2f]">09:00 AM IST</p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">Pandit Information</h3>
-                <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                  <p className="text-sm font-semibold text-[#4f5d2f]">Pandit Ravi Shastri & Team</p>
-                  <p className="text-xs text-text-light mt-1">Experience: 15+ years</p>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">About This Pooja</h3>
-                <p className="text-sm text-[#4f5d2f] leading-relaxed p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">Griha Pravesh is a sacred Hindu ritual performed to purify and bless a new home. This ceremony invokes divine blessings for prosperity, peace, and well-being in the household.</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">What's Included</h3>
-                <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                  <ul className="text-sm text-[#4f5d2f] space-y-1">
-                    <li>✓ Full Griha Pravesh ceremony</li>
-                    <li>✓ All required materials and offerings</li>
-                    <li>✓ Prasad for all attendees</li>
-                    <li>✓ Certificate of completion</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button type="button" onClick={closeRitualDetailsModal} className="px-4 py-2 rounded bg-gray-100">Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+              </aside>
 
-      {/* All Bookings Modal */}
-      {isBookingsModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          <div className="absolute inset-0 modal-backdrop" onClick={closeBookingsModal}></div>
-          <div className="relative z-70 w-full max-w-3xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
-            <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">All Upcoming Bookings</h2>
-            <div className="space-y-3">
-              {/* Column Headers */}
-              <div className="flex items-center justify-between px-3 py-1.5 bg-primary/5 rounded-lg">
-                <div className="flex items-center gap-2 flex-[2]">
-                  <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Service</span>
+              {/* Content Area */}
+              <div className="lg:col-span-9 flex flex-col gap-4">
+                <div id="section-stats">
+                  <StatsCards isActive={activeSection === 'stats'} onActive={() => setActiveSection('stats')} />
                 </div>
-                <div className="flex-1 text-center">
-                  <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Date</span>
+                <div id="section-ritual">
+                  <UpcomingRitual handleButtonClick={handleButtonClick} isActive={activeSection === 'ritual'} onActive={() => setActiveSection('ritual')} onViewDetails={openRitualDetailsModal} onViewAllBookings={openBookingsModal} />
                 </div>
-                <div className="flex-1 text-center">
-                  <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Time</span>
-                </div>
-                <div className="flex-1 text-center">
-                  <span className="text-[10px] font-bold text-text-light uppercase tracking-wider">Status</span>
+                <div id="section-orders">
+                  <RecentOrders
+                    isActive={activeSection === 'orders'}
+                    onActive={() => setActiveSection('orders')}
+                    onViewFullOrders={openOrdersModal}
+                    orders={orders}
+                    availableServices={availableServices}
+                  />
                 </div>
               </div>
-              {confirmedBooking && (
-                <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] transition-all cursor-pointer group">
-                  <div className="flex items-center gap-2 flex-[2]">
-                    <img alt={confirmedBooking.service} className="w-6 h-6 rounded-lg object-cover" src={confirmedBooking.image} />
-                    <div>
-                      <p className="text-xs font-semibold text-[#2f3a1f]">{confirmedBooking.service}</p>
-                      <p className="text-[10px] text-text-light">{confirmedBooking.person}</p>
-                    </div>
-                  </div>
-                  <div className="flex-1 text-center">
-                    <span className="text-xs text-[#4f5d2f] font-medium">{confirmedBooking.date}</span>
-                  </div>
-                  <div className="flex-1 text-center">
-                    <span className="text-xs text-[#4f5d2f] font-medium">{confirmedBooking.time}</span>
-                  </div>
-                  <div className="flex-1 text-center">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-[#4f5d2f]">CONFIRMED</span>
-                  </div>
-                </div>
-              )}
-              {pendingBookings.length === 0 && (
-                <div className="p-3 text-center text-text-light bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
-                  No pending bookings.
-                </div>
-              )}
-              {pendingBookings.map((b, idx) => (
-                <div key={`${b.service}-${idx}`} className="flex items-center justify-between p-2 bg-white rounded-xl border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] transition-all cursor-pointer group">
-                  <div className="flex items-center gap-2 flex-[2]">
-                    <img alt={b.service} className="w-6 h-6 rounded-lg object-cover" src={b.image} />
-                    <div>
-                      <p className="text-xs font-semibold text-[#2f3a1f]">{b.service}</p>
-                      <p className="text-[10px] text-text-light">{b.person}</p>
-                    </div>
-                  </div>
-                  <div className="flex-1 text-center">
-                    <span className="text-xs text-[#4f5d2f] font-medium">{b.date}</span>
-                  </div>
-                  <div className="flex-1 text-center">
-                    <span className="text-xs text-[#4f5d2f] font-medium">{b.time}</span>
-                  </div>
-                  <div className="flex-1 text-center">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-[#4f5d2f]">{b.status}</span>
-                  </div>
-                </div>
-              ))}
             </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button type="button" onClick={closeBookingsModal} className="px-4 py-2 font-semibold text-sm text-[#2f9e44] border border-[#2f9e44] rounded-lg bg-white hover:bg-[#eef4cf]">Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+          </main>
 
-      {/* Main Content */}
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 md:px-6 pt-24 pb-8 flex flex-col gap-4 relative z-10">
-
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-          {/* Sidebar with Preferences */}
-          <aside className="lg:col-span-3 flex flex-col gap-4 sticky top-24">
-            <UserProfileCard handleButtonClick={handleButtonClick} profile={profile} onEdit={openEditModal} isActive={activeSection === 'profilecard'} onActive={() => setActiveSection('profilecard')} />
-            <Preferences
-              notificationsEnabled={notificationsEnabled}
-              setNotificationsEnabled={setNotificationsEnabled}
-              twoFactorEnabled={twoFactorEnabled}
-              setTwoFactorEnabled={setTwoFactorEnabled}
-              handleButtonClick={handleButtonClick}
-              isActive={activeSection === 'preferences'}
-              activePreference={activePreference}
-              setActivePreference={setActivePreference}
-            />
-          </aside>
-
-          {/* Content Area */}
-          <div className="lg:col-span-9 flex flex-col gap-4">
-            <div id="section-stats">
-              <StatsCards isActive={activeSection === 'stats'} onActive={() => setActiveSection('stats')} />
+          {/* Footer */}
+          <footer className="bg-white border-t border-primary/10 relative overflow-hidden mt-8">
+            <div className="absolute top-0 left-0 w-full h-2 bg-maathre-gradient"></div>
+            <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="flex items-center gap-3">
+                <h2 className="font-serif text-[24px] font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#dca500] to-[#65a30d]">maathre</h2>
+              </div>
+              <div className="text-text-light/80 text-xs font-medium">© 2026 Maathre Spiritual Services. All rights reserved.</div>
+              <div className="flex gap-6">
+                <a className="text-[#5f6d2b] hover:text-primary transition-colors text-xs font-semibold" href="#">
+                  Privacy Policy
+                </a>
+                <a className="text-[#5f6d2b] hover:text-primary transition-colors text-xs font-semibold" href="#">
+                  Terms of Service
+                </a>
+                <a className="text-[#5f6d2b] hover:text-primary transition-colors text-xs font-semibold" href="#">
+                  Support
+                </a>
+              </div>
             </div>
-            <div id="section-ritual">
-              <UpcomingRitual handleButtonClick={handleButtonClick} isActive={activeSection === 'ritual'} onActive={() => setActiveSection('ritual')} onViewDetails={openRitualDetailsModal} onViewAllBookings={openBookingsModal} />
-            </div>
-            <div id="section-orders">
-              <RecentOrders
-                isActive={activeSection === 'orders'}
-                onActive={() => setActiveSection('orders')}
-                onViewFullOrders={openOrdersModal}
-                orders={orders}
-                availableServices={availableServices}
-              />
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-primary/10 relative overflow-hidden mt-8">
-        <div className="absolute top-0 left-0 w-full h-2 bg-maathre-gradient"></div>
-        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-3">
-            <h2 className="font-serif text-[24px] font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#dca500] to-[#65a30d]">maathre</h2>
-          </div>
-          <div className="text-text-light/80 text-xs font-medium">© 2026 Maathre Spiritual Services. All rights reserved.</div>
-          <div className="flex gap-6">
-            <a className="text-[#5f6d2b] hover:text-primary transition-colors text-xs font-semibold" href="#">
-              Privacy Policy
-            </a>
-            <a className="text-[#5f6d2b] hover:text-primary transition-colors text-xs font-semibold" href="#">
-              Terms of Service
-            </a>
-            <a className="text-[#5f6d2b] hover:text-primary transition-colors text-xs font-semibold" href="#">
-              Support
-            </a>
-          </div>
-        </div>
-      </footer>
+          </footer>
         </>
       )}
     </div>
@@ -1152,8 +1199,8 @@ interface NavLinkProps {
 const NavLink: React.FC<NavLinkProps> = ({ icon, label, active = false, onClick }) => (
   <a
     className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 font-medium text-sm cursor-pointer group hover:bg-amber-200 ${active
-        ? 'bg-primary-dark text-white shadow-md shadow-primary-dark/20'
-        : 'text-[#4f5d2f] hover:text-[#4f5d2f]'
+      ? 'bg-primary-dark text-white shadow-md shadow-primary-dark/20'
+      : 'text-[#4f5d2f] hover:text-[#4f5d2f]'
       }`}
     href="#"
     onClick={(e) => { e.preventDefault(); onClick?.(); }}
@@ -1243,10 +1290,10 @@ interface SidebarItemProps {
 const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active = false, badge, isLogout = false, onItemClick }) => (
   <a
     className={`flex items-center gap-3 px-3 py-1.5 rounded-lg transition-all font-medium text-xs cursor-pointer group hover:-translate-y-0.5 hover:drop-shadow-md ${isLogout
-        ? 'text-red-400 hover:bg-amber-200'
-        : active
-          ? 'sidebar-item-active'
-          : 'sidebar-item-inactive hover:bg-amber-200'
+      ? 'text-red-400 hover:bg-amber-200'
+      : active
+        ? 'sidebar-item-active'
+        : 'sidebar-item-inactive hover:bg-amber-200'
       }`}
     href="#"
     onClick={(e) => {
