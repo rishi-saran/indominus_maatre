@@ -7,9 +7,12 @@ import Script from 'next/script';
 import { initializeRazorpayPayment, verifyRazorpayPayment, type RazorpayResponse } from '@/lib/utils/razorpay';
 import { AddressesService, type CreateAddressPayload } from '@/lib/services/addresses.service';
 import { ServiceProvidersService, type ServiceProvider } from '@/lib/services/service-providers.service';
+import { ApiService } from '@/lib/services/api.service';
+import { ServicesService, type Service } from '@/lib/services/services.service';
 
 interface CartService {
-  id: number;
+  id: string | number;
+  service_id?: string;
   title: string;
   description?: string;
   image: string;
@@ -41,14 +44,22 @@ export default function CartPage() {
   const [addressId, setAddressId] = useState<string | null>(null);
   const [providerId, setProviderId] = useState<string | null>(null);
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
-  const [addressForm, setAddressForm] = useState<CreateAddressPayload>({
+  const [addressForm, setAddressForm] = useState({
     line1: '',
     line2: '',
     city: '',
     state: '',
     postal_code: '',
-    country: 'India',
+    country: '',
   });
+
+  // Safe setter that ensures country is never undefined
+  const safeSetAddressForm = (form: any) => {
+    setAddressForm({
+      ...form,
+      country: form.country ?? '',
+    });
+  };
   
   const [contactInfo, setContactInfo] = useState({
     name: 'Priya Sharma',
@@ -56,6 +67,61 @@ export default function CartPage() {
     phone: '9876543210',
     address: '123, Green Meadows, Chennai'
   });
+
+  const syncLocalCartToBackend = async () => {
+    const stored = JSON.parse(localStorage.getItem('addedServices') || '[]');
+    const localServices: CartService[] = Array.isArray(stored) ? stored : [];
+
+    if (localServices.length === 0) return;
+
+    let backendCart: any = null;
+    try {
+      backendCart = await ApiService.get<any>('/api/cart');
+    } catch (error) {
+      console.warn('[Cart] Backend cart unavailable during sync');
+    }
+
+    const existingServiceIds = new Set<string>();
+    if (backendCart?.cart_items && Array.isArray(backendCart.cart_items)) {
+      backendCart.cart_items.forEach((item: any) => {
+        if (item?.service?.id) existingServiceIds.add(String(item.service.id));
+      });
+    }
+
+    let catalog: Service[] = [];
+    try {
+      catalog = await ServicesService.list();
+    } catch (error) {
+      console.warn('[Cart] Failed to fetch service catalog for sync');
+    }
+
+    const normalize = (value: string) => value.toLowerCase().trim();
+
+    for (const item of localServices) {
+      const directId = item.service_id || (item as any).serviceId || (item as any).apiServiceId;
+      let serviceId = directId ? String(directId) : null;
+
+      if (!serviceId && item.title) {
+        const matched = catalog.find(
+          (svc) =>
+            normalize(svc.name).includes(normalize(item.title)) ||
+            normalize(item.title).includes(normalize(svc.name))
+        );
+        serviceId = matched?.id ? String(matched.id) : null;
+      }
+
+      if (!serviceId || existingServiceIds.has(serviceId)) continue;
+
+      try {
+        await ApiService.post<any>('/api/cart/items', undefined, {
+          params: { service_id: serviceId, quantity: 1 },
+        });
+        existingServiceIds.add(serviceId);
+      } catch (error) {
+        console.warn('[Cart] Failed to sync cart item to backend', error);
+      }
+    }
+  };
 
   const getServicePrice = (svc: CartService) => {
     const pkg = (svc.formData?.package || 'Economy') as 'Economy' | 'Standard' | 'Premium';
@@ -80,10 +146,48 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    const loadServices = () => {
+    const loadServices = async () => {
       try {
+        // Load local services
         const stored = JSON.parse(localStorage.getItem('addedServices') || '[]');
-        setServices(Array.isArray(stored) ? stored : []);
+        const localServices = Array.isArray(stored) ? stored : [];
+
+        // Load backend cart items
+        let backendServices: CartService[] = [];
+        try {
+          const cartData = await ApiService.get<any>('/api/cart');
+          if (cartData?.cart_items && Array.isArray(cartData.cart_items)) {
+            console.log('[Cart] Raw cart items:', cartData.cart_items);
+            console.log('[Cart] ===== CART ITEM IDs FOR DELETE CHECK =====');
+            cartData.cart_items.forEach((item: any, index: number) => {
+              const idString = String(item.id);
+              const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idString);
+              console.log(`[Cart] Item ${index}: ID="${idString}", Length=${idString.length}, IsUUID=${isUUID}`);
+            });
+            backendServices = cartData.cart_items
+              .filter((item: any) => item.service) // Only include items with valid service data
+              .map((item: any) => {
+                const cartItem = {
+                  id: item.id,
+                  title: item.service.name,
+                  description: item.service.description,
+                  image: item.service.image || '/assets/images/bg.jpg',
+                  price: item.service.price,
+                  selected: true,
+                };
+                console.log('[Cart] Mapped cart item:', cartItem, 'ID type:', typeof cartItem.id, 'ID value:', cartItem.id);
+                return cartItem;
+              });
+            console.log('[Cart] Backend items loaded:', backendServices);
+          }
+        } catch (error) {
+          console.log('[Cart] Backend cart unavailable (expected if not logged in)');
+        }
+
+        // Merge both sources
+        const mergedServices = [...localServices, ...backendServices];
+        setServices(mergedServices);
+        console.log('[Cart] Merged services (local + backend):', mergedServices);
       } catch (e) {
         setServices([]);
       } finally {
@@ -132,7 +236,64 @@ export default function CartPage() {
     loadProviders();
   }, [providerId]);
 
-  const toggleSelection = (id: number) => {
+  // Fetch addresses when entering checkout
+  useEffect(() => {
+    if (checkoutStep >= 1) {
+      console.log('[Cart] Checkout step >= 1, fetching addresses...');
+      const loadAddresses = async () => {
+        try {
+          const accessToken = localStorage.getItem('access_token');
+          console.log('[Cart] Access token exists:', !!accessToken);
+          
+          if (!accessToken) {
+            console.warn('[Cart] No access token found, skipping address fetch');
+            return;
+          }
+          
+          console.log('[Cart] Calling GET /api/addresses with Authorization header...');
+          const response = await fetch('/api/addresses', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          console.log('[Cart] GET /api/addresses response status:', response.status);
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.warn('[Cart] Failed to fetch addresses, status:', response.status, 'error:', errorData);
+            return;
+          }
+          
+          const addresses = await response.json();
+          console.log('[Cart] Addresses loaded successfully, count:', addresses.length);
+          
+          // Auto-populate first address if available
+          if (Array.isArray(addresses) && addresses.length > 0) {
+            const firstAddr = addresses[0];
+            console.log('[Cart] Auto-populating address form with first address:', firstAddr);
+            safeSetAddressForm({
+              line1: firstAddr.address || '',
+              line2: firstAddr.landmark || '',
+              city: firstAddr.city || '',
+              state: firstAddr.state || '',
+              postal_code: firstAddr.pincode || '',
+              country: firstAddr.country || '',
+            });
+            setAddressId(firstAddr.id);
+          }
+        } catch (error) {
+          console.error('[Cart] Error loading addresses:', error);
+        }
+      };
+      
+      loadAddresses();
+    }
+  }, [checkoutStep]);
+
+  const toggleSelection = (id: string | number) => {
     const updated = services.map((svc) =>
       svc.id === id ? { ...svc, selected: !svc.selected } : svc
     );
@@ -141,11 +302,73 @@ export default function CartPage() {
     window.dispatchEvent(new Event('servicesUpdated'));
   };
 
-  const removeService = (id: number) => {
+  const removeService = async (id: string | number) => {
+    console.log('========== DELETE FUNCTION START ==========');
+    console.log('[Cart] removeService called for id:', id, 'type:', typeof id);
+    console.log('[Cart] All services:', services);
+    console.log('[Cart] Services count:', services.length);
+    
+    // Check if ID is a UUID (backend cart item) or local ID (timestamp)
+    const idString = String(id);
+    console.log('[Cart] idString:', idString);
+    console.log('[Cart] idString length:', idString.length);
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idString);
+    
+    console.log('[Cart] ID is UUID:', isUUID);
+    console.log('[Cart] UUID regex test result:', isUUID);
+    
+    if (isUUID) {
+      // Backend cart item - DELETE from server first
+      console.log('[Cart] ===== BACKEND ITEM - ATTEMPTING API DELETE =====');
+      try {
+        const accessToken = localStorage.getItem('access_token');
+        console.log('[Cart] access_token exists:', !!accessToken);
+        console.log('[Cart] access_token value:', accessToken ? accessToken.substring(0, 20) + '...' : 'MISSING');
+        
+        const url = `/api/cart/items/${idString}`;
+        console.log('[Cart] URL to call:', url);
+        console.log('[Cart] About to fetch...');
+        
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: {
+            ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        console.log('[Cart] ===== API RESPONSE RECEIVED =====');
+        console.log(`[Cart] DELETE ${url} Status:`, response.status);
+        console.log('[Cart] Response OK:', response.ok);
+        const data = await response.json().catch(() => response.text());
+        console.log(`[Cart] DELETE response:`, data);
+        
+        if (!response.ok) {
+          console.warn('[Cart] Delete returned non-OK status:', response.status, 'Response:', data);
+          console.log('[Cart] NOT removing from local state due to API failure');
+          return; // Don't remove from local state if API failed
+        }
+        
+        console.log('[Cart] Item deleted successfully from backend - now removing from local state');
+      } catch (error) {
+        console.error('[Cart] Delete API error:', error);
+        console.log('[Cart] NOT removing from local state due to error');
+        return; // Don't remove from local state if API call failed
+      }
+    } else {
+      console.log('[Cart] ===== LOCAL ITEM - NO API DELETE =====');
+      console.log('[Cart] Local item (non-UUID), deleting from local state only');
+    }
+    
+    // Only remove from local state if we reach here (success for backend items, or local items)
+    console.log('[Cart] ===== REMOVING FROM LOCAL STATE =====');
+    console.log('[Cart] Removing from local state, id:', id);
     const updated = services.filter((svc) => svc.id !== id);
     setServices(updated);
     localStorage.setItem('addedServices', JSON.stringify(updated));
     window.dispatchEvent(new Event('servicesUpdated'));
+    console.log('[Cart] Item removed. Services remaining:', updated.length);
+    console.log('========== DELETE FUNCTION END ==========');
   };
 
   const clearAll = () => {
@@ -166,17 +389,32 @@ export default function CartPage() {
   const total = subtotal - discount + tax;
 
   const handleContinueToReview = async () => {
+    console.log('========== HANDLE CONTINUE TO REVIEW CLICKED ==========');
     try {
+      console.log('[Cart] Step 1: Ensuring address exists...');
       const resolvedAddressId = await ensureAddress();
+      console.log('[Cart] Step 1 ✓: Address resolved:', resolvedAddressId);
+      
+      console.log('[Cart] Step 2: Ensuring provider is selected...');
       if (!providerId && providers.length > 0) {
+        console.log('[Cart] Setting provider to first available:', providers[0].id);
         setProviderId(providers[0].id);
       }
+      console.log('[Cart] Step 2 ✓: Provider set:', providerId);
+      
       if (!resolvedAddressId) {
+        console.error('[Cart] No address ID resolved');
         throw new Error('Please add an address');
       }
+      
+      console.log('[Cart] Step 3: Moving to checkout step 3 (Review Order)...');
       setCheckoutStep(3);
+      console.log('========== HANDLE CONTINUE TO REVIEW SUCCESS ==========');
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Please complete address details');
+      console.error('========== HANDLE CONTINUE TO REVIEW ERROR ==========');
+      console.error('[Cart] Error:', error);
+      const message = error instanceof Error ? error.message : 'Please complete address details';
+      alert(message);
     }
   };
 
@@ -191,16 +429,41 @@ export default function CartPage() {
   };
 
   const ensureAddress = async (): Promise<string> => {
-    if (addressId) return addressId;
+    console.log('[Cart] ===== ensureAddress called =====');
+    console.log('[Cart] Current addressId:', addressId);
+    
+    // If address already exists, return it
+    if (addressId) {
+      console.log('[Cart] Address already exists, returning:', addressId);
+      return addressId;
+    }
+    
+    // Check if all required fields are filled
+    console.log('[Cart] Checking required fields...');
     if (!requireAddressFields()) {
-      throw new Error('Please fill all required address fields');
+      console.warn('[Cart] Required fields missing:', {
+        line1: addressForm.line1,
+        city: addressForm.city,
+        state: addressForm.state,
+        postal_code: addressForm.postal_code,
+      });
+      throw new Error('Please fill all required address fields (line1, city, state, postal_code)');
     }
 
+    console.log('[Cart] All fields filled, creating address...');
     setSavingAddress(true);
     try {
+      console.log('[Cart] Calling AddressesService.create with payload:', addressForm);
       const created = await AddressesService.create(addressForm);
+      console.log('[Cart] ===== ADDRESS CREATED SUCCESSFULLY =====');
+      console.log('[Cart] Created address ID:', created.id);
+      console.log('[Cart] Created address details:', created);
       setAddressId(created.id);
       return created.id;
+    } catch (error) {
+      console.error('[Cart] ===== ERROR CREATING ADDRESS =====');
+      console.error('[Cart] Error details:', error);
+      throw error;
     } finally {
       setSavingAddress(false);
     }
@@ -225,6 +488,7 @@ export default function CartPage() {
     setProcessingPayment(true);
 
     try {
+      await syncLocalCartToBackend();
       const resolvedAddressId = await ensureAddress();
       const resolvedProviderId = ensureProvider();
 
@@ -383,7 +647,10 @@ export default function CartPage() {
                             <p className="text-base font-bold text-[#2f3a1f]">₹{getServicePrice(svc).toLocaleString()}</p>
                           </div>
                           <button
-                            onClick={() => removeService(svc.id)}
+                            onClick={() => {
+                              console.log('[Cart] DELETE BUTTON CLICKED for svc.id:', svc.id);
+                              removeService(svc.id);
+                            }}
                             className="self-start p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                             aria-label="Remove item"
                           >

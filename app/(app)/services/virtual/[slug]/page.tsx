@@ -113,8 +113,8 @@ export default function VirtualServicePage() {
             <div className="w-[300px] rounded-2xl border border-[#cfd8a3] bg-white p-4 shadow-sm">
               <div className="aspect-square overflow-hidden rounded-xl bg-[#eef4cf]">
                 <Image
-                  src={service?.image || ""}
-                  alt={service?.title || ""}
+                  src={service?.image || "/assets/images/bg.jpg"}
+                  alt={service?.title || "Virtual service"}
                   width={400}
                   height={400}
                   className="h-full w-full object-cover"

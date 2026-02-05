@@ -69,8 +69,19 @@ function MyAccountContent() {
   // Addresses State
   const [userAddresses, setUserAddresses] = useState<Address[]>([]);
 
+  // Profile state from API response
+  const [profile, setProfile] = useState({
+    user_id: '',
+    email: '',
+    is_new_user: false,
+  });
+  const [authLoading, setAuthLoading] = useState(false);
+  const [editEmail, setEditEmail] = useState('');
+
   // Fetch Addresses
   useEffect(() => {
+    if (authLoading || !isMounted) return;
+
     const fetchAddresses = async () => {
       try {
         const storedUserId = localStorage.getItem('user_id');
@@ -84,16 +95,7 @@ function MyAccountContent() {
       }
     };
     fetchAddresses();
-  }, []);
-
-  // Profile state from API response
-  const [profile, setProfile] = useState({
-    user_id: '',
-    email: '',
-    is_new_user: false,
-  });
-  const [authLoading, setAuthLoading] = useState(false);
-  const [editEmail, setEditEmail] = useState('');
+  }, [authLoading, isMounted]);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
@@ -262,6 +264,8 @@ function MyAccountContent() {
 
   // Fetch orders from API
   useEffect(() => {
+    if (authLoading || !isMounted) return;
+
     const fetchOrders = async () => {
       try {
         setOrdersLoading(true);
@@ -292,7 +296,7 @@ function MyAccountContent() {
     };
 
     fetchOrders();
-  }, []);
+  }, [authLoading, isMounted]);
 
   // Load available services
   useEffect(() => {

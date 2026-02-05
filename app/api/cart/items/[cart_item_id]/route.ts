@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
+const API_BASE = API_BASE_URL.replace(/\/$/, "");
 
+function getAuthHeader(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader) {
+    throw new Error("Unauthorized");
+  }
+  return authHeader;
+}
+
+/**
+ * DELETE /cart/items/[cart_item_id]
+ * Remove item from cart
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ cart_item_id: string }> }
@@ -16,17 +29,10 @@ export async function DELETE(
       );
     }
 
-    const authHeader = request.headers.get("authorization");
-
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const authHeader = getAuthHeader(request);
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/cart/items/${cart_item_id}`,
+      `${API_BASE}/cart/items/${cart_item_id}`,
       {
         method: "DELETE",
         headers: {
@@ -43,7 +49,7 @@ export async function DELETE(
       );
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json({ status: "item removed" }, { status: 200 });
   } catch (error) {
     console.error("Delete cart item error:", error);
     return NextResponse.json(

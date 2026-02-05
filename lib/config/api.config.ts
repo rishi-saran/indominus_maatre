@@ -5,7 +5,7 @@ export const API_ENDPOINTS = {
   cart: {
     get: `${BASE_URL}/cart`,
     addItem: `${BASE_URL}/cart/items`,
-    removeItem: (itemId: string) => `${BASE_URL}/cart/item/${itemId}`,
+    removeItem: (itemId: string) => `${BASE_URL}/cart/items/${itemId}`,
   },
 
   orders: {

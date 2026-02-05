@@ -35,6 +35,7 @@ type Homam = {
 
 
 import { PagesService } from "@/lib/services/pages.service";
+import { ServicesService, Service } from "@/lib/services/services.service";
 
 // ... previous imports
 
@@ -48,8 +49,41 @@ export default function HomamDetailPage() {
 
   // API Data State
   const [apiPage, setApiPage] = useState<any>(null);
+  const [apiService, setApiService] = useState<Service | null>(null);
+  const [serviceAvailability, setServiceAvailability] = useState<'loading' | 'available' | 'not-found'>('loading');
 
-  // Fetch from API
+  // Fetch Service from API using title to match
+  useEffect(() => {
+    if (homam?.title) {
+      console.log("[Service Detail] Fetching service from API for:", homam.title);
+      setServiceAvailability('loading');
+      
+      ServicesService.list()
+        .then((services) => {
+          console.log("[Service Detail] All services from API:", services);
+          // Try to match by title (case-insensitive)
+          const matchedService = services.find(
+            (s) => s.name.toLowerCase().includes(homam.title.toLowerCase()) ||
+                   homam.title.toLowerCase().includes(s.name.toLowerCase())
+          );
+          
+          if (matchedService) {
+            console.log("[Service Detail] ✅ Service found in API:", matchedService);
+            setApiService(matchedService);
+            setServiceAvailability('available');
+          } else {
+            console.warn("[Service Detail] ❌ Service NOT found in API");
+            setServiceAvailability('not-found');
+          }
+        })
+        .catch((error) => {
+          console.error("[Service Detail] Error fetching services:", error);
+          setServiceAvailability('not-found');
+        });
+    }
+  }, [homam?.title]);
+
+  // Fetch from API (kept for backward compatibility)
   useEffect(() => {
     if (slug) {
       console.log("Fetching content for:", slug);
@@ -134,6 +168,28 @@ export default function HomamDetailPage() {
   return (
     <section className="w-full px-6 pt-4 pb-16">
 
+      {/* API Status Indicator - Top Right */}
+      <div className="fixed top-6 right-6 z-50">
+        {serviceAvailability === 'loading' && (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-300">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            Checking API...
+          </div>
+        )}
+        {serviceAvailability === 'available' && (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-700 text-xs font-semibold border border-green-300">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            ✅ Available in API
+          </div>
+        )}
+        {serviceAvailability === 'not-found' && (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 text-red-700 text-xs font-semibold border border-red-300">
+            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+            ❌ Not in API
+          </div>
+        )}
+      </div>
+
       {/* Back Button */}
       <div className="fixed top-6 left-6 z-50">
         <Link href="/services/homam" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
@@ -163,7 +219,7 @@ export default function HomamDetailPage() {
             <div className="w-[300px] rounded-2xl border border-[#cfd8a3] bg-white p-4 shadow-sm">
               <div className="aspect-square overflow-hidden rounded-xl bg-[#eef4cf]">
                 <Image
-                  src={homam?.image || ""}
+                  src={homam?.image || "/assets/images/bg.jpg"}
                   alt={homam?.title ?? "Homam Image"}
                   width={400}
                   height={400}

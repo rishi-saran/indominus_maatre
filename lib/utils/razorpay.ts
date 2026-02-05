@@ -62,7 +62,9 @@ export const initializeRazorpayPayment = async (
   });
 
   if (!createOrderResponse.ok) {
-    throw new Error('Failed to create order in database');
+    const errorData = await createOrderResponse.json().catch(() => null);
+    const detail = errorData?.detail || errorData?.error || errorData?.message;
+    throw new Error(detail ? `Failed to create order: ${detail}` : 'Failed to create order in database');
   }
 
   const orderData = await createOrderResponse.json();
@@ -92,7 +94,9 @@ export const initializeRazorpayPayment = async (
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create Razorpay order');
+    const errorData = await response.json().catch(() => null);
+    const detail = errorData?.detail || errorData?.error || errorData?.message;
+    throw new Error(detail ? `Failed to create Razorpay order: ${detail}` : 'Failed to create Razorpay order');
   }
 
   const razorpayOrderData = await response.json();

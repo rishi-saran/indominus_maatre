@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
+const API_BASE = API_BASE_URL.replace(/\/$/, "");
 
 function getAuthHeader(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const authHeader = getAuthHeader(request);
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/orders/`, {
+    const response = await fetch(`${API_BASE}/orders/`, {
       method: "GET",
       headers: {
         Authorization: authHeader,
@@ -50,8 +51,7 @@ export async function POST(request: NextRequest) {
     if (body?.provider_id) search.append("provider_id", body.provider_id);
     if (body?.address_id) search.append("address_id", body.address_id);
 
-    const url = `${API_BASE_URL}/api/v1/orders/${search.toString() ? `?${search.toString()}` : ''
-      }`;
+    const url = `${API_BASE}/orders/${search.toString() ? `?${search.toString()}` : ''}`;
 
     const response = await fetch(url, {
       method: "POST",

@@ -13,10 +13,11 @@ export interface Address {
 }
 
 export interface CreateAddressPayload {
-  address: string;
+  line1: string;      // Backend expects line1, not address
+  line2?: string;     // Optional second line
   city: string;
   state: string;
-  pincode: string;
+  postal_code: string; // Backend expects postal_code, not pincode
 }
 
 export class AddressesService {

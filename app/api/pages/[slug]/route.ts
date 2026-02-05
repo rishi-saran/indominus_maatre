@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
+function toTitle(slug: string) {
+    return slug
+        .split("-")
+        .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part))
+        .join(" ");
+}
+
 export async function GET(
     request: NextRequest,
     props: { params: Promise<{ slug: string }> }
@@ -25,8 +32,16 @@ export async function GET(
         if (!response.ok) {
             console.error(`[Pages API] Backend returned ${response.status} for URL: ${url}`);
             return NextResponse.json(
-                { error: `Failed to fetch page content from ${url} (Status: ${response.status})` },
-                { status: response.status }
+                {
+                    id: `fallback-${slug}`,
+                    slug,
+                    title: toTitle(slug),
+                    type: "page",
+                    content: null,
+                    published: false,
+                    fallback: true,
+                },
+                { status: 200 }
             );
         }
 
@@ -35,8 +50,16 @@ export async function GET(
     } catch (error) {
         console.error("[Pages API] Internal Error:", error);
         return NextResponse.json(
-            { error: "Internal Server Error" },
-            { status: 500 }
+            {
+                id: `fallback-${slug}`,
+                slug,
+                title: toTitle(slug),
+                type: "page",
+                content: null,
+                published: false,
+                fallback: true,
+            },
+            { status: 200 }
         );
     }
 }

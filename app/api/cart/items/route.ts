@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
+const API_BASE = API_BASE_URL.replace(/\/$/, "");
 
 function getAuthHeader(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     ).toString();
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/cart/items${queryString ? `?${queryString}` : ''}`,
+      `${API_BASE}/cart/items${queryString ? `?${queryString}` : ''}`,
       {
         method: "POST",
         headers: {

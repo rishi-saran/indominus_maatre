@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
+const API_BASE = API_BASE_URL.replace(/\/$/, "");
 
 /**
  * GET /service-providers
@@ -12,8 +13,8 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams.toString();
     const url = searchParams
-      ? `${API_BASE_URL}/api/v1/service-providers/?${searchParams}`
-      : `${API_BASE_URL}/api/v1/service-providers/`;
+      ? `${API_BASE}/service-providers?${searchParams}`
+      : `${API_BASE}/service-providers`;
 
     const response = await fetch(url, { method: "GET" });
 
