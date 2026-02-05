@@ -13,6 +13,7 @@ export interface CartItem {
   package_id?: string | null;
   addon_id?: string | null;
   quantity: number;
+  price?: number;
 }
 
 export interface Cart {
@@ -26,6 +27,7 @@ export interface AddItemParams {
   package_id?: string;
   addon_id?: string;
   quantity?: number;
+  price: number;
 }
 
 export class CartService {

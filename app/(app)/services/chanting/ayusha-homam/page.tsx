@@ -22,6 +22,7 @@ export default function AyushaHomamPage() {
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
   const [serviceId, setServiceId] = useState<string | null>(null);
+  const [servicePrice, setServicePrice] = useState<number | null>(null);
 
   // Fetch service UUID from backend (optional - works without it)
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function AyushaHomamPage() {
           );
           if (ayushaService) {
             setServiceId(ayushaService.id);
+            setServicePrice(typeof ayushaService.base_price === 'number' ? ayushaService.base_price : null);
             return;
           }
         }
@@ -48,6 +50,16 @@ export default function AyushaHomamPage() {
     };
     fetchServiceId();
   }, []);
+
+  const getSelectedPrice = () => {
+    const packagePriceMap: Record<'Economy' | 'Standard' | 'Premium', number> = {
+      Economy: 15000,
+      Standard: 25000,
+      Premium: 35000,
+    };
+
+    return servicePrice ?? packagePriceMap[formData.package as 'Economy' | 'Standard' | 'Premium'] ?? packagePriceMap.Economy;
+  };
 
   // Form state
   const [formData, setFormData] = useState({
@@ -91,6 +103,7 @@ export default function AyushaHomamPage() {
       try {
         await CartService.addItem({
           service_id: serviceId,
+          price: getSelectedPrice(),
           quantity: 1,
         });
       } catch (error) {

@@ -6,6 +6,7 @@ import { AuthService } from '@/lib/services/auth.service';
 import { OrdersService } from '@/lib/services/orders.service';
 import { AddressesService, Address } from '@/lib/services/addresses.service';
 import { ViewCartButton } from '@/components/ui/view-cart';
+import { supabase } from '@/lib/supabase/client';
 
 // Make this page dynamic (not static) so auth checks work properly
 export const dynamic = 'force-dynamic';
@@ -80,12 +81,13 @@ function MyAccountContent() {
 
   // Fetch Addresses
   useEffect(() => {
-    if (authLoading || !isMounted) return;
-
     const fetchAddresses = async () => {
       try {
         const storedUserId = localStorage.getItem('user_id');
         if (!storedUserId) return;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        localStorage.setItem('access_token', session.access_token);
 
         const data = await AddressesService.list();
         console.log("✅ Fetched Addresses for Profile:", data);
@@ -95,7 +97,7 @@ function MyAccountContent() {
       }
     };
     fetchAddresses();
-  }, [authLoading, isMounted]);
+  }, []);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
@@ -264,14 +266,15 @@ function MyAccountContent() {
 
   // Fetch orders from API
   useEffect(() => {
-    if (authLoading || !isMounted) return;
-
     const fetchOrders = async () => {
       try {
         setOrdersLoading(true);
         setOrdersError(null);
         const userId = localStorage.getItem('user_id') || '550e8400-e29b-41d4-a716-446655440000';
         console.log('Fetching orders for user:', userId);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        localStorage.setItem('access_token', session.access_token);
         try {
           const ordersData = await OrdersService.list();
           console.log('Orders data:', ordersData);
@@ -296,7 +299,7 @@ function MyAccountContent() {
     };
 
     fetchOrders();
-  }, [authLoading, isMounted]);
+  }, []);
 
   // Load available services
   useEffect(() => {
@@ -380,7 +383,7 @@ function MyAccountContent() {
     };
     setProfile(updated);
     closeEditModal();
-    showNotification('Profile updated successfully', 'profile', '✅');
+    showNotification('Saved changes', 'profile', '✅');
   };
 
   const showNotification = (
@@ -417,7 +420,7 @@ function MyAccountContent() {
           <ViewCartButton redirectTo="/cart" />
 
           {/* Notification Popups */}
-          <div className="fixed top-8 right-8 z-80 space-y-3 pointer-events-none">
+          <div className="fixed top-20 right-8 z-80 space-y-3 pointer-events-none">
             {popupNotifications.map((notification: Notification) => {
               const isProfile = notification.type === 'profile';
               if (!isProfile) return null;
@@ -428,7 +431,7 @@ function MyAccountContent() {
                   tabIndex={0}
                   onClick={() => { if (isProfile) openEditModal(); }}
                   onKeyDown={(e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && isProfile) { e.preventDefault(); openEditModal(); } }}
-                  className={`animate-pop-strong popup-green px-6 py-4 rounded-2xl font-semibold text-sm text-[#4f5d2f] flex items-center gap-3 pointer-events-auto shadow-2xl border-2 border-amber-200 hover:shadow-amber-100/50 cursor-pointer`}
+                  className={`animate-pop-strong px-4 py-2 rounded-xl font-semibold text-xs text-[#2f3a1f] flex items-center gap-2 pointer-events-auto shadow-md border border-[#e3ebbd] bg-white/90 backdrop-blur-sm cursor-pointer`}
                 >
                   <span className="text-2xl animate-pulse">{notification.emoji}</span>
                   <span className="flex-1">{notification.message}</span>
@@ -977,70 +980,6 @@ function MyAccountContent() {
           )}
 
           {/* Ritual Details Modal */}
-          {isRitualDetailsModalOpen && (
-            <div className="fixed inset-0 z-60 flex items-center justify-center">
-              <div className="absolute inset-0 modal-backdrop" onClick={closeRitualDetailsModal}></div>
-              <div className="relative z-70 w-full max-w-2xl p-6 rounded-2xl bg-white shadow-2xl animate-pop-strong max-h-[80vh] overflow-y-auto border border-[#cfd8a3] ring-1 ring-[#e3ebbd]">
-                <h2 className="text-xl font-serif font-semibold text-[#2f3a1f] mb-4">Griha Pravesh Pooja - Details</h2>
-                <div className="space-y-4">
-                  <div className="rounded-xl overflow-hidden shadow-lg mb-4">
-                    <img
-                      alt="Griha Pravesh"
-                      className="w-full h-64 object-cover"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuBr4CkQZdDBtyiP5TG4kI2jPAKgO9PG9gqOpQCew_k5Kiy09t3kAKd00vzySn_4n25u1rLkqJj9PX3TDadhkGudDl73w3_GvNPR5Te9lbQcdggPDFqrKQ9Cg_l7kWMor-qRbuQ1185SHbniviSZULKNaZRHRFuychoxjarIklVnd5_PLo4dvL9_5Xy59xkmbQEvydncDEu8MXVgtxwunPfQLUoY4vuZAjN_X54uPsCYkVVDHzcpkhSXRr1qjPmw3lfH5q_kR0EHWb7W"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">Booking Information</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                        <p className="text-xs text-text-light font-bold uppercase">Booking ID</p>
-                        <p className="text-sm font-semibold text-[#4f5d2f]">#BK-8902</p>
-                      </div>
-                      <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                        <p className="text-xs text-text-light font-bold uppercase">Status</p>
-                        <p className="text-sm font-semibold text-[#4f5d2f]">Confirmed</p>
-                      </div>
-                      <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                        <p className="text-xs text-text-light font-bold uppercase">Date</p>
-                        <p className="text-sm font-semibold text-[#4f5d2f]">Jan 15, 2026</p>
-                      </div>
-                      <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                        <p className="text-xs text-text-light font-bold uppercase">Time</p>
-                        <p className="text-sm font-semibold text-[#4f5d2f]">09:00 AM IST</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">Pandit Information</h3>
-                    <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                      <p className="text-sm font-semibold text-[#4f5d2f]">Pandit Ravi Shastri & Team</p>
-                      <p className="text-xs text-text-light mt-1">Experience: 15+ years</p>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">About This Pooja</h3>
-                    <p className="text-sm text-[#4f5d2f] leading-relaxed p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">Griha Pravesh is a sacred Hindu ritual performed to purify and bless a new home. This ceremony invokes divine blessings for prosperity, peace, and well-being in the household.</p>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-serif font-semibold text-[#2f3a1f] mb-2">What's Included</h3>
-                    <div className="p-3 bg-white rounded-lg border border-[#cfd8a3] ring-1 ring-[#e3ebbd] hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:-translate-y-0.5 transition-all cursor-pointer">
-                      <ul className="text-sm text-[#4f5d2f] space-y-1">
-                        <li>✓ Full Griha Pravesh ceremony</li>
-                        <li>✓ All required materials and offerings</li>
-                        <li>✓ Prasad for all attendees</li>
-                        <li>✓ Certificate of completion</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 mt-4">
-                  <button type="button" onClick={closeRitualDetailsModal} className="px-4 py-2 rounded bg-gray-100">Close</button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* All Bookings Modal */}
           {isBookingsModalOpen && (
             <div className="fixed inset-0 z-60 flex items-center justify-center">

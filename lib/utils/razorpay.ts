@@ -37,13 +37,14 @@ export const initializeRazorpayPayment = async (
 ): Promise<void> => {
   // Get auth token
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session || !session.access_token) {
+  const accessToken = session?.access_token || (typeof window !== 'undefined' ? localStorage.getItem('access_token') : null);
+  if (!accessToken) {
     console.error('No valid Supabase session found');
     throw new Error('Please login to continue');
   }
   
   console.log('✓ Valid Supabase session found, token exists');
-  console.log('Token preview:', session.access_token.substring(0, 20) + '...');
+  console.log('Token preview:', accessToken.substring(0, 20) + '...');
 
   // Step 1: Create order in database FIRST (status: PENDING)
   console.log('📝 Creating order in database...');
@@ -51,7 +52,7 @@ export const initializeRazorpayPayment = async (
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`
+      'Authorization': `Bearer ${accessToken}`
     },
     body: JSON.stringify({
       provider_id: orderContext.providerId,
@@ -78,7 +79,7 @@ export const initializeRazorpayPayment = async (
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`
+      'Authorization': `Bearer ${accessToken}`
     },
     body: JSON.stringify({
       order_id: databaseOrderId,

@@ -113,8 +113,9 @@ export default function CartPage() {
       if (!serviceId || existingServiceIds.has(serviceId)) continue;
 
       try {
+        const price = getServicePrice(item);
         await ApiService.post<any>('/api/cart/items', undefined, {
-          params: { service_id: serviceId, quantity: 1 },
+          params: { service_id: serviceId, quantity: 1, price },
         });
         existingServiceIds.add(serviceId);
       } catch (error) {
@@ -554,10 +555,9 @@ export default function CartPage() {
           {checkoutStep > 0 && (
             <button
               onClick={() => setCheckoutStep(prev => Math.max(0, prev - 1) as 0 | 1 | 2 | 3 | 4)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-[#2f3a1f] hover:bg-[#e5f0d8] hover:text-[#2f9e44] transition-colors mb-3"
+              className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32] transition-colors mb-3"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back
+              <ArrowLeft className="h-5 w-5" />
             </button>
           )}
           <h1 className="text-2xl font-semibold text-[#2f3a1f]">

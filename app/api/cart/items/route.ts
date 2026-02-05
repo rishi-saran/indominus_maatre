@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       package_id: searchParams.get('package_id'),
       addon_id: searchParams.get('addon_id'),
       quantity: searchParams.get('quantity'),
+      price: searchParams.get('price'),
     };
 
     // Build backend URL with query params

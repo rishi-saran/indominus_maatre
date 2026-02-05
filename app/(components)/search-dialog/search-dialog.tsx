@@ -12,17 +12,16 @@ interface SearchDialogProps {
 }
 
 const trendingSearches = [
-  "Ganga Aarti",
-  "Satyanarayan Puja",
-  "Navgraha Shanti",
-  "Griha Pravesh",
-  "Rudrabhishek",
+  "Ayyappa Pooja",
+  "Ayusha Homam (Ayushya Homam)",
+  "Engagement",
+  "Ganapathi Homam",
+  "Marriage (Vivaham)",
 ];
 
 const recentSearches = [
   "Pandit near me",
   "Live Darshan",
-  "Temple booking",
 ];
 
 export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
@@ -67,8 +66,9 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
       "aavahanthi homam": "/services/homam/aavahanthi-homam",
       "aavani avittam": "/services/homam/aavani-avittam",
       "abdha poorthi ayush homam": "/services/homam/abdha-poorthi-ayush-homam",
-      "ayusha homam": "/services/homam/ayusha-homam",
-      "ayushya homam": "/services/homam/ayusha-homam",
+      "ayusha homam": "/services/chanting/ayusha-homam",
+      "ayushya homam": "/services/chanting/ayusha-homam",
+      "ayusha homam (ayushya homam)": "/services/chanting/ayusha-homam",
       "ayyappa pooja": "/services/homam/ayyappa-pooja",
       "bheemaratha shanti": "/services/homam/bheemaratha-shanti",
       "bhoomi puja": "/services/homam/bhoomi-puja",
@@ -93,6 +93,7 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
       "mahalakshmi homam": "/services/homam/mahalakshmi-homam",
       "mahalakshmi puja": "/services/homam/mahalakshmi-puja",
       "marriage": "/services/homam/marriage-vivaham",
+      "marriage (vivaham)": "/services/homam/marriage-vivaham",
       "vivaham": "/services/homam/marriage-vivaham",
       "mrutyunjaya homam": "/services/homam/mrutyunjaya-homam",
       "navagraha homam": "/services/homam/navagraha-homam",
@@ -129,7 +130,11 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
 
     onClose();
 
-    if (detailPage) {
+    if (lowerQuery === "pandit near me") {
+      router.push("/services");
+    } else if (lowerQuery === "live darshan") {
+      router.push("/live-streams");
+    } else if (detailPage) {
       // Navigate directly to service detail page
       router.push(detailPage);
     } else {

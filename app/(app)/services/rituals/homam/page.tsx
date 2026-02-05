@@ -43,10 +43,9 @@ export default function HomamPage() {
       <div className="mb-2">
         <Link
           href="/services"
-          className="inline-flex items-center text-sm font-medium text-[#5f6d2b] hover:underline"
+          className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Services
+          <ArrowLeft className="h-5 w-5" />
         </Link>
       </div>
 
