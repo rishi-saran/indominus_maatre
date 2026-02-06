@@ -60,7 +60,7 @@ export default function CartPage() {
       country: form.country ?? '',
     });
   };
-  
+
   const [contactInfo, setContactInfo] = useState({
     name: 'Priya Sharma',
     email: 'maathre@gmail.com',
@@ -142,7 +142,14 @@ export default function CartPage() {
     };
 
     const priceMap = specialPrices[titleKey] || defaultPrices;
-    return svc.price ?? priceMap[pkg] ?? defaultPrices.Economy;
+    let finalPrice = svc.price ?? priceMap[pkg] ?? defaultPrices.Economy;
+
+    // Fallback: Add flowers cost if not already included (if svc.price was missing)
+    if (!svc.price && svc.formData?.flowers === 'Yes') {
+      finalPrice += 250;
+    }
+
+    return finalPrice;
   };
 
   useEffect(() => {
@@ -196,11 +203,11 @@ export default function CartPage() {
     };
 
     loadServices();
-    
+
     const handler = () => loadServices();
     window.addEventListener('storage', handler);
     window.addEventListener('servicesUpdated', handler as EventListener);
-    
+
     // Fallback: Enable payment gateway after 5 seconds if script hasn't loaded
     const timeout = setTimeout(() => {
       if (!razorpayLoaded) {
@@ -208,7 +215,7 @@ export default function CartPage() {
         setRazorpayLoaded(true);
       }
     }, 5000);
-    
+
     return () => {
       clearTimeout(timeout);
       window.removeEventListener('storage', handler);
@@ -244,12 +251,12 @@ export default function CartPage() {
         try {
           const accessToken = localStorage.getItem('access_token');
           console.log('[Cart] Access token exists:', !!accessToken);
-          
+
           if (!accessToken) {
             console.warn('[Cart] No access token found, skipping address fetch');
             return;
           }
-          
+
           console.log('[Cart] Calling GET /api/addresses with Authorization header...');
           const response = await fetch('/api/addresses', {
             method: 'GET',
@@ -258,18 +265,18 @@ export default function CartPage() {
               'Content-Type': 'application/json',
             },
           });
-          
+
           console.log('[Cart] GET /api/addresses response status:', response.status);
-          
+
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.warn('[Cart] Failed to fetch addresses, status:', response.status, 'error:', errorData);
             return;
           }
-          
+
           const addresses = await response.json();
           console.log('[Cart] Addresses loaded successfully, count:', addresses.length);
-          
+
           // Auto-populate first address if available
           if (Array.isArray(addresses) && addresses.length > 0) {
             const firstAddr = addresses[0];
@@ -288,7 +295,7 @@ export default function CartPage() {
           console.error('[Cart] Error loading addresses:', error);
         }
       };
-      
+
       loadAddresses();
     }
   }, [checkoutStep]);
@@ -307,16 +314,16 @@ export default function CartPage() {
     console.log('[Cart] removeService called for id:', id, 'type:', typeof id);
     console.log('[Cart] All services:', services);
     console.log('[Cart] Services count:', services.length);
-    
+
     // Check if ID is a UUID (backend cart item) or local ID (timestamp)
     const idString = String(id);
     console.log('[Cart] idString:', idString);
     console.log('[Cart] idString length:', idString.length);
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idString);
-    
+
     console.log('[Cart] ID is UUID:', isUUID);
     console.log('[Cart] UUID regex test result:', isUUID);
-    
+
     if (isUUID) {
       // Backend cart item - DELETE from server first
       console.log('[Cart] ===== BACKEND ITEM - ATTEMPTING API DELETE =====');
@@ -324,11 +331,11 @@ export default function CartPage() {
         const accessToken = localStorage.getItem('access_token');
         console.log('[Cart] access_token exists:', !!accessToken);
         console.log('[Cart] access_token value:', accessToken ? accessToken.substring(0, 20) + '...' : 'MISSING');
-        
+
         const url = `/api/cart/items/${idString}`;
         console.log('[Cart] URL to call:', url);
         console.log('[Cart] About to fetch...');
-        
+
         const response = await fetch(url, {
           method: 'DELETE',
           headers: {
@@ -336,19 +343,19 @@ export default function CartPage() {
             'Content-Type': 'application/json',
           },
         });
-        
+
         console.log('[Cart] ===== API RESPONSE RECEIVED =====');
         console.log(`[Cart] DELETE ${url} Status:`, response.status);
         console.log('[Cart] Response OK:', response.ok);
         const data = await response.json().catch(() => response.text());
         console.log(`[Cart] DELETE response:`, data);
-        
+
         if (!response.ok) {
           console.warn('[Cart] Delete returned non-OK status:', response.status, 'Response:', data);
           console.log('[Cart] NOT removing from local state due to API failure');
           return; // Don't remove from local state if API failed
         }
-        
+
         console.log('[Cart] Item deleted successfully from backend - now removing from local state');
       } catch (error) {
         console.error('[Cart] Delete API error:', error);
@@ -359,7 +366,7 @@ export default function CartPage() {
       console.log('[Cart] ===== LOCAL ITEM - NO API DELETE =====');
       console.log('[Cart] Local item (non-UUID), deleting from local state only');
     }
-    
+
     // Only remove from local state if we reach here (success for backend items, or local items)
     console.log('[Cart] ===== REMOVING FROM LOCAL STATE =====');
     console.log('[Cart] Removing from local state, id:', id);
@@ -394,19 +401,19 @@ export default function CartPage() {
       console.log('[Cart] Step 1: Ensuring address exists...');
       const resolvedAddressId = await ensureAddress();
       console.log('[Cart] Step 1 ✓: Address resolved:', resolvedAddressId);
-      
+
       console.log('[Cart] Step 2: Ensuring provider is selected...');
       if (!providerId && providers.length > 0) {
         console.log('[Cart] Setting provider to first available:', providers[0].id);
         setProviderId(providers[0].id);
       }
       console.log('[Cart] Step 2 ✓: Provider set:', providerId);
-      
+
       if (!resolvedAddressId) {
         console.error('[Cart] No address ID resolved');
         throw new Error('Please add an address');
       }
-      
+
       console.log('[Cart] Step 3: Moving to checkout step 3 (Review Order)...');
       setCheckoutStep(3);
       console.log('========== HANDLE CONTINUE TO REVIEW SUCCESS ==========');
@@ -431,13 +438,13 @@ export default function CartPage() {
   const ensureAddress = async (): Promise<string> => {
     console.log('[Cart] ===== ensureAddress called =====');
     console.log('[Cart] Current addressId:', addressId);
-    
+
     // If address already exists, return it
     if (addressId) {
       console.log('[Cart] Address already exists, returning:', addressId);
       return addressId;
     }
-    
+
     // Check if all required fields are filled
     console.log('[Cart] Checking required fields...');
     if (!requireAddressFields()) {
@@ -546,483 +553,616 @@ export default function CartPage() {
           setRazorpayLoaded(true); // Allow payment anyway with fallback
         }}
       />
-      
+
+      <button
+        onClick={() => {
+          if (checkoutStep > 0) {
+            setCheckoutStep(prev => Math.max(0, prev - 1) as 0 | 1 | 2 | 3 | 4);
+          } else {
+            router.push('/services');
+          }
+        }}
+        className="fixed top-6 left-6 z-50 inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#25873a] transition-all"
+        aria-label="Go back"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </button>
+
       <div className="min-h-screen bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3] py-6 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-4">
-          {checkoutStep > 0 && (
-            <button
-              onClick={() => setCheckoutStep(prev => Math.max(0, prev - 1) as 0 | 1 | 2 | 3 | 4)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-[#2f3a1f] hover:bg-[#e5f0d8] hover:text-[#2f9e44] transition-colors mb-3"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </button>
-          )}
-          <h1 className="text-2xl font-semibold text-[#2f3a1f]">
-            {checkoutStep === 0 && 'Shopping Cart'}
-            {checkoutStep === 1 && 'Contact Details'}
-            {checkoutStep === 2 && 'Payment Method'}
-            {checkoutStep === 3 && 'Review & Place Order'}
-            {checkoutStep === 4 && 'Order Confirmed'}
-          </h1>
-          {checkoutStep === 0 && services.length > 0 && (
-            <p className="text-sm text-[#4f5d2f] mt-1">
-              {services.length} {services.length === 1 ? 'item' : 'items'}
-            </p>
-          )}
-        </div>
-
-        {services.length === 0 ? (
-          <div className="bg-white rounded-lg border border-[#cfd8a3] p-8 text-center">
-            <ShoppingCart className="h-12 w-12 text-[#cfd8a3] mx-auto mb-3" />
-            <h2 className="text-lg font-semibold text-[#2f3a1f] mb-1">Your cart is empty</h2>
-            <p className="text-sm text-[#4f5d2f] mb-4">Add some services to get started</p>
-            <button
-              onClick={() => router.push('/services')}
-              className="inline-flex items-center gap-2 px-5 py-2 bg-[#2f9e44] text-white text-sm rounded-lg font-semibold hover:bg-[#268a3b] transition-all"
-            >
-              Browse Services
-            </button>
+          {/* Header */}
+          <div className="mb-8 flex flex-col items-center text-center">
+            <h1 className="text-3xl md:text-4xl font-serif font-medium text-[#2f3a1f] tracking-tight">
+              {checkoutStep === 0 && 'Shopping Cart'}
+              {checkoutStep === 1 && 'Contact & Delivery'}
+              {checkoutStep === 2 && 'Payment Method'}
+              {checkoutStep === 3 && 'Review Order'}
+              {checkoutStep === 4 && 'Order Confirmed'}
+            </h1>
+            {checkoutStep === 0 && services.length > 0 && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="h-px w-8 bg-[#2f3a1f]/20"></span>
+                <p className="text-sm font-medium text-[#4f5d2f] uppercase tracking-widest">
+                  {services.length} {services.length === 1 ? 'Item' : 'Items'} in Cart
+                </p>
+                <span className="h-px w-8 bg-[#2f3a1f]/20"></span>
+              </div>
+            )}
+            {checkoutStep > 0 && (
+              <div className="mt-4 flex items-center gap-2 text-sm text-[#6c7d47]">
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full ${checkoutStep >= 1 ? 'bg-[#2f9e44] text-white' : 'bg-[#e5e5e5]'}`}>1</div>
+                <div className={`w-12 h-1 rounded-full ${checkoutStep >= 2 ? 'bg-[#2f9e44]' : 'bg-[#e5e5e5]'}`}></div>
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full ${checkoutStep >= 2 ? 'bg-[#2f9e44] text-white' : 'bg-[#e5e5e5]'}`}>2</div>
+                <div className={`w-12 h-1 rounded-full ${checkoutStep >= 3 ? 'bg-[#2f9e44]' : 'bg-[#e5e5e5]'}`}></div>
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full ${checkoutStep >= 3 ? 'bg-[#2f9e44] text-white' : 'bg-[#e5e5e5]'}`}>3</div>
+              </div>
+            )}
           </div>
-        ) : (
-          <>
-            {/* Step 0: Cart Items */}
-            {checkoutStep === 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                {/* Cart Items */}
-                <div className="lg:col-span-8">
-                  <div className="bg-white rounded-lg border border-[#cfd8a3] p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-base font-semibold text-[#2f3a1f]">Cart Items</h2>
-                      <button
-                        onClick={clearAll}
-                        className="text-sm text-red-600 hover:text-red-700 transition-colors"
-                      >
-                        Clear All
-                      </button>
-                    </div>
 
-                    <div className="space-y-3">
-                      {services.map((svc) => (
-                        <div
-                          key={svc.id}
-                          className="flex gap-3 p-3 rounded-lg border border-[#e5e5e5] hover:border-[#2f9e44] transition-all"
+          {services.length === 0 ? (
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl border border-[#cfd8a3]/50 p-12 text-center shadow-sm max-w-2xl mx-auto">
+              <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-[#f4f7e6] text-[#cfd8a3]">
+                <ShoppingCart className="h-10 w-10 text-[#8ba15e]" />
+              </div>
+              <h2 className="text-2xl font-serif font-medium text-[#2f3a1f] mb-3">Your cart is empty</h2>
+              <p className="text-[#6c7d47] mb-8 max-w-md mx-auto">Looks like you haven't added any poojas or homams yet. Explore our divine services to find peace and prosperity.</p>
+              <button
+                onClick={() => router.push('/services')}
+                className="inline-flex items-center gap-2 px-8 py-3 bg-[#2f9e44] text-white rounded-xl font-semibold hover:bg-[#25873a] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+              >
+                Browse Divine Services
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Step 0: Cart Items */}
+              {checkoutStep === 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Cart Items */}
+                  <div className="lg:col-span-8">
+                    <div className="bg-white rounded-2xl border border-[#cfd8a3]/60 shadow-sm overflow-hidden">
+                      <div className="px-6 py-4 border-b border-[#f0f4df] flex items-center justify-between bg-[#fcfdf7]">
+                        <h2 className="text-lg font-serif font-medium text-[#2f3a1f] tracking-wide">Cart Items ({services.length})</h2>
+                        <button
+                          onClick={clearAll}
+                          className="flex items-center gap-1.5 text-xs font-medium text-red-500 hover:text-red-700 transition-colors uppercase tracking-wider"
                         >
-                          <div className="flex items-start pt-1">
-                            <input
-                              type="checkbox"
-                              checked={svc.selected !== false}
-                              onChange={() => toggleSelection(svc.id)}
-                              className="h-5 w-5 rounded cursor-pointer"
-                              style={{ accentColor: '#2f9e44' }}
-                            />
-                          </div>
-                          <img
-                            src={svc.image}
-                            alt={svc.title}
-                            className="w-20 h-20 rounded-md object-cover border border-[#e5e5e5] flex-shrink-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-semibold text-[#2f3a1f] mb-1">
-                              {svc.title}
-                            </h3>
-                            {svc.description && (
-                              <p className="text-xs text-[#4f5d2f] mb-2 line-clamp-2">{svc.description}</p>
-                            )}
-                            {svc.formData && (
-                              <div className="space-y-0.5 text-xs text-[#4f5d2f] mb-2">
-                                {svc.formData.package && (
-                                  <p>Package: {svc.formData.package}</p>
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Clear All
+                        </button>
+                      </div>
+
+                      <div className="divide-y divide-[#f0f4df]">
+                        {services.map((svc) => (
+                          <div
+                            key={svc.id}
+                            className="p-6 flex gap-6 hover:bg-[#fafbf5] transition-colors group"
+                          >
+                            <div className="flex items-center pt-2">
+                              <div className="relative">
+                                <input
+                                  type="checkbox"
+                                  checked={svc.selected !== false}
+                                  onChange={() => toggleSelection(svc.id)}
+                                  className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-[#cfd8a3] checked:bg-[#2f9e44] checked:border-[#2f9e44] transition-all"
+                                />
+                                <Check className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                              </div>
+                            </div>
+
+                            <div className="relative h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl border border-[#cfd8a3]/40 shadow-sm">
+                              <img
+                                src={svc.image}
+                                alt={svc.title}
+                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            </div>
+
+                            <div className="flex flex-1 flex-col justify-between">
+                              <div>
+                                <div className="flex justify-between items-start">
+                                  <h3 className="text-lg font-serif font-medium text-[#2f3a1f] leading-snug">
+                                    {svc.title}
+                                  </h3>
+                                  <p className="text-lg font-bold text-[#2f9e44]">
+                                    ₹{getServicePrice(svc).toLocaleString()}
+                                  </p>
+                                </div>
+
+                                {svc.description && (
+                                  <p className="mt-1 line-clamp-2 text-sm text-[#6c7d47] max-w-xl">
+                                    {svc.description}
+                                  </p>
                                 )}
-                                {svc.formData.date && (
-                                  <p>Date: {svc.formData.date}</p>
-                                )}
-                                {svc.formData.flowers && (
-                                  <p>Flowers: {svc.formData.flowers}</p>
+
+                                {svc.formData && (
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    {svc.formData.package && (
+                                      <span className="inline-flex items-center rounded-full bg-[#f4f7e6] px-2.5 py-0.5 text-xs font-medium text-[#4f5d2f] border border-[#d6e0b6]">
+                                        Package: {svc.formData.package}
+                                      </span>
+                                    )}
+                                    {svc.formData.date && (
+                                      <span className="inline-flex items-center rounded-full bg-[#f4f7e6] px-2.5 py-0.5 text-xs font-medium text-[#4f5d2f] border border-[#d6e0b6]">
+                                        Date: {svc.formData.date}
+                                      </span>
+                                    )}
+                                    {svc.formData.flowers && svc.formData.flowers !== 'No' && (
+                                      <span className="inline-flex items-center rounded-full bg-[#e6f7e9] px-2.5 py-0.5 text-xs font-medium text-[#2f9e44] border border-[#b6e0c2]">
+                                        Flowers: {svc.formData.flowers}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
-                            )}
-                            <p className="text-base font-bold text-[#2f3a1f]">₹{getServicePrice(svc).toLocaleString()}</p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              console.log('[Cart] DELETE BUTTON CLICKED for svc.id:', svc.id);
-                              removeService(svc.id);
-                            }}
-                            className="self-start p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                            aria-label="Remove item"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
 
-                {/* Order Summary */}
-                <div className="lg:col-span-4">
-                  <div className="bg-white rounded-lg border border-[#cfd8a3] p-4 sticky top-24">
-                    <h2 className="text-sm font-semibold text-[#2f3a1f] mb-3">Order Summary</h2>
-                    
-                    <div className="space-y-2 mb-3 pb-3 border-b border-[#e5e5e5]">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#4f5d2f]">Subtotal ({services.length} items)</span>
-                        <span className="text-[#2f3a1f]">₹{subtotal.toLocaleString()}</span>
-                      </div>
-                      {appliedCoupon && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[#4f5d2f]">Discount</span>
-                          <span className="text-green-600">-₹{discount.toLocaleString()}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#4f5d2f]">GST (18%)</span>
-                        <span className="text-[#2f3a1f]">₹{tax.toLocaleString()}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between text-base font-bold text-[#2f3a1f] mb-4">
-                      <span>Total</span>
-                      <span>₹{total.toLocaleString()}</span>
-                    </div>
-
-                    <button
-                      onClick={() => setCheckoutStep(1)}
-                      className="w-full py-2.5 px-4 bg-[#2f9e44] text-white text-sm rounded-lg font-semibold hover:bg-[#268a3b] transition-all"
-                    >
-                      Proceed to Checkout
-                    </button>
-                    
-                    {/* Coupon Section */}
-                    {!appliedCoupon && (
-                      <button 
-                        onClick={() => setShowCouponInput(!showCouponInput)}
-                        className="text-xs text-[#2f9e44] hover:text-[#268a3b] mt-3"
-                      >
-                        {showCouponInput ? 'Hide' : 'Apply'} coupon code
-                      </button>
-                    )}
-                    
-                    {showCouponInput && (
-                      <div className="flex gap-2 mt-2">
-                        <input 
-                          type="text"
-                          placeholder="Enter code"
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value)}
-                          className="flex-1 px-2 py-1.5 rounded text-xs border border-[#cfd8a3] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                        />
-                        <button 
-                          onClick={() => {
-                            if (couponCode.trim()) {
-                              setAppliedCoupon(couponCode);
-                              setShowCouponInput(false);
-                              setCouponCode('');
-                            }
-                          }}
-                          className="px-3 py-1.5 rounded text-xs bg-[#2f9e44] text-white hover:bg-[#268a3b]"
-                        >
-                          Apply
-                        </button>
-                      </div>
-                    )}
-                    
-                    {appliedCoupon && (
-                      <div className="flex items-center justify-between bg-[#eef4cf] px-2 py-1.5 rounded mt-2">
-                        <span className="text-xs text-[#2f3a1f]">Coupon: <strong>{appliedCoupon}</strong></span>
-                        <button 
-                          onClick={() => setAppliedCoupon(null)}
-                          className="text-xs text-red-600 hover:text-red-700"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 1: Contact Details */}
-            {checkoutStep === 1 && (
-              <div className="max-w-3xl mx-auto bg-white rounded-lg border border-[#cfd8a3] p-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Full Name</label>
-                    <input 
-                      value={contactInfo.name}
-                      onChange={(e) => setContactInfo({...contactInfo, name: e.target.value})}
-                      className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" 
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Email</label>
-                    <input 
-                      type="email"
-                      value={contactInfo.email}
-                      onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
-                      className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" 
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Phone</label>
-                    <input 
-                      value={contactInfo.phone}
-                      onChange={(e) => setContactInfo({...contactInfo, phone: e.target.value})}
-                      className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]" 
-                    />
-                  </div>
-                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Address Line 1 *</label>
-                      <input
-                        value={addressForm.line1}
-                        onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })}
-                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                        placeholder="House / Flat / Street"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Address Line 2</label>
-                      <input
-                        value={addressForm.line2}
-                        onChange={(e) => setAddressForm({ ...addressForm, line2: e.target.value })}
-                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                        placeholder="Landmark / Area"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">City *</label>
-                      <input
-                        value={addressForm.city}
-                        onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
-                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">State *</label>
-                      <input
-                        value={addressForm.state}
-                        onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
-                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Postal Code *</label>
-                      <input
-                        value={addressForm.postal_code}
-                        onChange={(e) => setAddressForm({ ...addressForm, postal_code: e.target.value })}
-                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Country</label>
-                      <input
-                        value={addressForm.country}
-                        onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
-                        className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-end mt-4">
-                  <button 
-                    onClick={() => setCheckoutStep(2)} 
-                    className="px-5 py-2 rounded-lg bg-[#2f9e44] text-white text-sm font-semibold hover:bg-[#268a3b]"
-                  >
-                    Continue to Payment
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Payment Method */}
-            {checkoutStep === 2 && (
-              <div className="max-w-3xl mx-auto bg-white rounded-lg border border-[#cfd8a3] p-5">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-semibold text-[#2f3a1f] mb-2">Select Service Provider</h3>
-                    <div className="space-y-2">
-                      {loadingProviders && (
-                        <p className="text-xs text-[#4f5d2f]">Loading providers...</p>
-                      )}
-                      {!loadingProviders && providers.length === 0 && (
-                        <p className="text-xs text-red-600">No providers available.</p>
-                      )}
-                      {!loadingProviders && providers.length > 0 && (
-                        <select
-                          value={providerId || ''}
-                          onChange={(e) => setProviderId(e.target.value)}
-                          className="w-full px-3 py-2 rounded border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]"
-                        >
-                          {providers.map((prov) => (
-                            <option key={prov.id} value={prov.id}>
-                              {prov.name} {prov.verified ? '✅' : ''}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-semibold text-[#2f3a1f] mb-2">Payment Method</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {['UPI', 'Credit/Debit Card', 'Cash on Delivery'].map((method) => (
-                        <div 
-                          key={method}
-                          className="p-4 rounded-lg border-2 border-[#e5e5e5] bg-white hover:border-[#2f9e44] transition-all text-left"
-                        >
-                          <span className="text-sm font-semibold text-[#2f3a1f] block">{method}</span>
-                          <p className="text-xs text-[#4f5d2f] mt-0.5">Secure checkout</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <button 
-                      onClick={handleContinueToReview} 
-                      disabled={savingAddress || loadingProviders}
-                      className="px-5 py-2 rounded-lg bg-[#2f9e44] text-white text-sm font-semibold hover:bg-[#268a3b] disabled:opacity-50"
-                    >
-                      {savingAddress ? 'Saving address...' : 'Review Order'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Review Order */}
-            {checkoutStep === 3 && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <div className="lg:col-span-8 bg-white rounded-lg border border-[#cfd8a3] p-4 space-y-4">
-                  <div className="bg-[#f7fbe9] border border-[#e5eec4] rounded-lg p-3 text-sm text-[#2f3a1f]">
-                    <div className="flex justify-between gap-2 flex-wrap">
-                      <div>
-                        <p className="font-semibold">Contact</p>
-                        <p>{contactInfo.name}</p>
-                        <p>{contactInfo.email}</p>
-                        <p>{contactInfo.phone}</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Address</p>
-                        <p>{addressForm.line1}</p>
-                        {addressForm.line2 && <p>{addressForm.line2}</p>}
-                        <p>{addressForm.city}, {addressForm.state} {addressForm.postal_code}</p>
-                        {addressForm.country && <p>{addressForm.country}</p>}
-                      </div>
-                      <div>
-                        <p className="font-semibold">Provider</p>
-                        <p>{providers.find(p => p.id === providerId)?.name || 'Not selected'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <h2 className="text-base font-semibold text-[#2f3a1f] mb-3">Services</h2>
-                  <div className="space-y-3">
-                    {services.map((svc) => (
-                      <div key={svc.id} className="flex gap-3 p-3 rounded-lg border border-[#e5e5e5]">
-                        <img
-                          src={svc.image}
-                          alt={svc.title}
-                          className="w-16 h-16 rounded object-cover border border-[#e5e5e5]"
-                        />
-                        <div className="flex-1">
-                          <h3 className="text-sm font-semibold text-[#2f3a1f] mb-0.5">{svc.title}</h3>
-                          {svc.description && (
-                            <p className="text-xs text-[#4f5d2f] mb-1 line-clamp-1">{svc.description}</p>
-                          )}
-                          {svc.formData && (
-                            <div className="space-y-0.5 text-xs text-[#4f5d2f]">
-                              {svc.formData.package && <p>Package: {svc.formData.package}</p>}
-                              {svc.formData.flowers && <p>Flowers: {svc.formData.flowers}</p>}
+                              <div className="mt-4 flex justify-end">
+                                <button
+                                  onClick={() => removeService(svc.id)}
+                                  className="text-xs font-medium text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  Remove Item
+                                </button>
+                              </div>
                             </div>
-                          )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Order Summary */}
+                  <div className="lg:col-span-4">
+                    <div className="bg-white rounded-2xl border border-[#cfd8a3]/60 shadow-sm p-6 sticky top-24">
+                      <h2 className="text-lg font-serif font-medium text-[#2f3a1f] mb-6 tracking-wide">
+                        Order Summary
+                      </h2>
+
+                      <div className="space-y-4 mb-6">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-[#6c7d47]">Subtotal ({services.length} items)</span>
+                          <span className="font-medium text-[#2f3a1f]">₹{subtotal.toLocaleString()}</span>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-[#2f3a1f]">₹{getServicePrice(svc).toLocaleString()}</p>
+                        {appliedCoupon && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-[#6c7d47] flex items-center gap-1">
+                              Discount
+                              <span className="text-xs bg-green-100 text-green-700 px-1.5 rounded">
+                                {appliedCoupon}
+                              </span>
+                            </span>
+                            <span className="font-medium text-green-600">-₹{discount.toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-[#6c7d47]">GST (18%)</span>
+                          <span className="font-medium text-[#2f3a1f]">₹{tax.toLocaleString()}</span>
+                        </div>
+
+                        <div className="pt-4 border-t border-dashed border-[#d8e2a8] flex justify-between items-end">
+                          <span className="text-base font-serif font-medium text-[#2f3a1f]">Total Amount</span>
+                          <span className="text-2xl font-bold text-[#2f9e44] leading-none">₹{total.toLocaleString()}</span>
                         </div>
                       </div>
-                    ))}
+
+                      <button
+                        onClick={() => setCheckoutStep(1)}
+                        className="w-full group relative flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-[#2f9e44] px-6 py-4 text-white shadow-lg transition-all hover:bg-[#25873a] hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+                      >
+                        <span className="font-semibold tracking-wide">Proceed to Checkout</span>
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </button>
+
+                      {/* Coupon Section */}
+                      <div className="mt-6 pt-6 border-t border-[#f0f4df]">
+                        {!appliedCoupon ? (
+                          <>
+                            {!showCouponInput ? (
+                              <button
+                                onClick={() => setShowCouponInput(true)}
+                                className="text-sm font-medium text-[#2f9e44] hover:text-[#268a3b] hover:underline decoration-dashed underline-offset-4 flex items-center gap-2"
+                              >
+                                <span className="h-5 w-5 rounded-full bg-[#e9f5e0] flex items-center justify-center text-xs">+</span>
+                                Add Coupon Code
+                              </button>
+                            ) : (
+                              <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <input
+                                  type="text"
+                                  placeholder="Enter code"
+                                  value={couponCode}
+                                  onChange={(e) => setCouponCode(e.target.value)}
+                                  className="flex-1 px-3 py-2 text-sm rounded-lg border border-[#cfd8a3] focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none uppercase placeholder:normal-case placeholder:text-gray-400"
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (couponCode.trim()) {
+                                      setAppliedCoupon(couponCode);
+                                      setShowCouponInput(false);
+                                      setCouponCode('');
+                                    }
+                                  }}
+                                  className="px-4 py-2 rounded-lg bg-[#2f3a1f] text-white text-sm font-medium hover:bg-black transition-colors"
+                                >
+                                  Apply
+                                </button>
+                                <button
+                                  onClick={() => setShowCouponInput(false)}
+                                  className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                                >
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-between bg-[#f0fdf4] border border-[#dcfce7] px-3 py-2 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
+                                <Check className="h-3 w-3 text-green-600" />
+                              </div>
+                              <span className="text-sm text-[#2f3a1f]">Coupon <strong>{appliedCoupon}</strong> applied</span>
+                            </div>
+                            <button
+                              onClick={() => setAppliedCoupon(null)}
+                              className="text-xs font-medium text-red-500 hover:text-red-700 hover:underline"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Trust/Info Badges */}
+                    <div className="mt-6 flex items-center justify-center gap-6 text-[#6c7d47] opacity-80">
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <div className="h-2 w-2 rounded-full bg-[#2f9e44]"></div>
+                        Secure Payment
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <div className="h-2 w-2 rounded-full bg-[#2f9e44]"></div>
+                        Verified Priests
+                      </div>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div className="lg:col-span-4">
-                  <div className="bg-white rounded-lg border border-[#cfd8a3] p-4 sticky top-24">
-                    <h2 className="text-sm font-semibold text-[#2f3a1f] mb-3">Order Summary</h2>
-                    
-                    {appliedCoupon && (
-                      <div className="bg-[#eef4cf] px-2 py-1.5 rounded mb-3 text-xs">
-                        <strong>Coupon:</strong> {appliedCoupon}
+              {/* Step 1: Contact Details */}
+              {checkoutStep === 1 && (
+                <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-[#cfd8a3]/60 shadow-sm p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Full Name</label>
+                      <input
+                        value={contactInfo.name}
+                        onChange={(e) => setContactInfo({ ...contactInfo, name: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Email</label>
+                      <input
+                        type="email"
+                        value={contactInfo.email}
+                        onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Phone</label>
+                      <input
+                        value={contactInfo.phone}
+                        onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="md:col-span-2 border-t border-[#f0f4df] pt-4 mt-2">
+                        <h3 className="text-base font-serif font-medium text-[#2f3a1f] mb-4">Address Details</h3>
                       </div>
-                    )}
-
-                    <div className="space-y-2 mb-3 pb-3 border-b border-[#e5e5e5]">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#4f5d2f]">Subtotal</span>
-                        <span className="text-[#2f3a1f]">₹{subtotal.toLocaleString()}</span>
+                      <div>
+                        <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Address Line 1 *</label>
+                        <input
+                          value={addressForm.line1}
+                          onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all"
+                          placeholder="House / Flat / Street"
+                        />
                       </div>
-                      {appliedCoupon && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[#4f5d2f]">Discount</span>
-                          <span className="text-green-600">-₹{discount.toLocaleString()}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#4f5d2f]">GST (18%)</span>
-                        <span className="text-[#2f3a1f]">₹{tax.toLocaleString()}</span>
+                      <div>
+                        <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Address Line 2</label>
+                        <input
+                          value={addressForm.line2}
+                          onChange={(e) => setAddressForm({ ...addressForm, line2: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all"
+                          placeholder="Landmark / Area"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">City *</label>
+                        <input
+                          value={addressForm.city}
+                          onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">State *</label>
+                        <input
+                          value={addressForm.state}
+                          onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Postal Code *</label>
+                        <input
+                          value={addressForm.postal_code}
+                          onChange={(e) => setAddressForm({ ...addressForm, postal_code: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-[#2f3a1f] mb-1.5 block">Country</label>
+                        <input
+                          value={addressForm.country}
+                          onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-lg border border-[#cfd8a3] text-sm focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all"
+                        />
                       </div>
                     </div>
-
-                    <div className="flex justify-between text-base font-bold text-[#2f3a1f] mb-4">
-                      <span>Total</span>
-                      <span>₹{total.toLocaleString()}</span>
-                    </div>
-
+                  </div>
+                  <div className="flex justify-end mt-8 border-t border-[#f0f4df] pt-6">
                     <button
-                      onClick={handlePayment}
-                      disabled={!razorpayLoaded || processingPayment}
-                      className="w-full py-2.5 px-4 bg-[#2f9e44] text-white text-sm rounded-lg font-semibold hover:bg-[#268a3b] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => setCheckoutStep(2)}
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2f9e44] text-white font-semibold hover:bg-[#25873a] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
                     >
-                      {!razorpayLoaded ? 'Loading Payment Gateway...' : processingPayment ? 'Processing...' : 'Pay Now'}
+                      Continue to Payment
+                      <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Step 4: Order Success */}
-            {checkoutStep === 4 && (
-              <div className="max-w-xl mx-auto bg-white rounded-lg border border-[#cfd8a3] p-8 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Check className="h-8 w-8 text-green-600" />
+              {/* Step 2: Payment Method */}
+              {checkoutStep === 2 && (
+                <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-[#cfd8a3]/60 shadow-sm p-8">
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className="text-base font-serif font-medium text-[#2f3a1f] mb-4">Select Service Provider</h3>
+                      <div className="space-y-2">
+                        {loadingProviders && (
+                          <div className="flex items-center gap-2 text-sm text-[#4f5d2f]">
+                            <div className="h-4 w-4 rounded-full border-2 border-[#2f9e44] border-t-transparent animate-spin"></div>
+                            Loading available priests...
+                          </div>
+                        )}
+                        {!loadingProviders && providers.length === 0 && (
+                          <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">
+                            No providers currently available for this area.
+                          </p>
+                        )}
+                        {!loadingProviders && providers.length > 0 && (
+                          <div className="relative">
+                            <select
+                              value={providerId || ''}
+                              onChange={(e) => setProviderId(e.target.value)}
+                              className="w-full appearance-none px-4 py-3 rounded-xl border border-[#cfd8a3] text-sm bg-white focus:border-[#2f9e44] focus:ring-2 focus:ring-[#2f9e44]/20 outline-none transition-all cursor-pointer"
+                            >
+                              {providers.map((prov) => (
+                                <option key={prov.id} value={prov.id}>
+                                  {prov.name} {prov.verified ? '(Verified Priest)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-base font-serif font-medium text-[#2f3a1f] mb-4">Payment Method</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {['UPI', 'Credit/Debit Card', 'Cash on Delivery'].map((method) => (
+                          <div
+                            key={method}
+                            className="group cursor-pointer p-5 rounded-xl border border-[#cfd8a3] bg-[#fafbf5] hover:bg-white hover:border-[#2f9e44] hover:shadow-md transition-all text-left relative overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-1 relative z-10">
+                              <span className="text-sm font-semibold text-[#2f3a1f] group-hover:text-[#2f9e44] transition-colors">{method}</span>
+                              <p className="text-xs text-[#6c7d47]">Secure checkout</p>
+                            </div>
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="h-4 w-4 rounded-full bg-[#2f9e44] flex items-center justify-center">
+                                <Check className="h-2.5 w-2.5 text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-6 border-t border-[#f0f4df]">
+                      <button
+                        onClick={handleContinueToReview}
+                        disabled={savingAddress || loadingProviders}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2f9e44] text-white font-semibold hover:bg-[#25873a] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {savingAddress ? 'Saving Details...' : 'Review Order'}
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <h2 className="text-xl font-semibold text-[#2f3a1f] mb-1">Order Placed Successfully!</h2>
-                <p className="text-sm text-[#4f5d2f] mb-5">Thank you for your purchase. You will receive a confirmation email shortly.</p>
-                <div className="flex gap-3 justify-center">
-                  <button
-                    onClick={() => router.push('/profile')}
-                    className="px-5 py-2 rounded-lg border border-[#2f9e44] text-[#2f9e44] text-sm font-semibold hover:bg-[#eef4cf] transition-all"
-                  >
-                    View Orders
-                  </button>
-                  <button
-                    onClick={() => router.push('/services')}
-                    className="px-5 py-2 rounded-lg bg-[#2f9e44] text-white text-sm font-semibold hover:bg-[#268a3b] transition-all"
-                  >
-                    Continue Shopping
-                  </button>
+              )}
+
+              {/* Step 3: Review Order */}
+              {checkoutStep === 3 && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-8 space-y-6">
+                    {/* Booking Details */}
+                    <div className="bg-white rounded-2xl border border-[#cfd8a3]/60 shadow-sm p-8 space-y-6">
+                      <h2 className="text-xl font-serif font-medium text-[#2f3a1f]">Booking Details</h2>
+
+                      <div className="bg-[#f7fbe9]/50 border border-[#e5eec4] rounded-xl p-6 text-sm text-[#2f3a1f]">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="space-y-1">
+                            <p className="font-semibold text-[#6c7d47] uppercase tracking-wide text-xs mb-2">Billing Contact</p>
+                            <p className="font-medium text-base">{contactInfo.name}</p>
+                            <p className="text-[#4f5d2f]">{contactInfo.email}</p>
+                            <p className="text-[#4f5d2f]">{contactInfo.phone}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-semibold text-[#6c7d47] uppercase tracking-wide text-xs mb-2">Location</p>
+                            <p className="text-[#2f3a1f]">{addressForm.line1}</p>
+                            {addressForm.line2 && <p className="text-[#4f5d2f]">{addressForm.line2}</p>}
+                            <p className="text-[#4f5d2f]">{addressForm.city}, {addressForm.state} {addressForm.postal_code}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-semibold text-[#6c7d47] uppercase tracking-wide text-xs mb-2">Priest</p>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{providers.find(p => p.id === providerId)?.name || 'Not selected'}</span>
+                              {providers.find(p => p.id === providerId)?.verified && (
+                                <span className="bg-green-100 text-green-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium">Verified</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Order Items Review */}
+                    <div className="bg-white rounded-2xl border border-[#cfd8a3]/60 shadow-sm p-8">
+                      <h2 className="text-xl font-serif font-medium text-[#2f3a1f] mb-4">Services</h2>
+                      <div className="divide-y divide-[#f0f4df]">
+                        {services.map((svc) => (
+                          <div key={svc.id} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+                            <img
+                              src={svc.image}
+                              alt={svc.title}
+                              className="w-16 h-16 rounded-lg object-cover border border-[#cfd8a3]/40"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-semibold text-[#2f3a1f] mb-1">{svc.title}</h3>
+                              {svc.description && (
+                                <p className="text-xs text-[#6c7d47] mb-1 line-clamp-1">{svc.description}</p>
+                              )}
+                              {svc.formData && (
+                                <div className="flex gap-2 text-xs text-[#6c7d47]">
+                                  {svc.formData.package && <span className="bg-[#f4f7e6] px-1.5 py-0.5 rounded">Pkg: {svc.formData.package}</span>}
+                                  {svc.formData.flowers && svc.formData.flowers !== 'No' && <span className="bg-[#f4f7e6] px-1.5 py-0.5 rounded">Flowers: Yes</span>}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-[#2f3a1f] bg-[#eef4cf] px-2 py-1 rounded">₹{getServicePrice(svc).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Summary */}
+                  <div className="lg:col-span-4">
+                    <div className="bg-white rounded-2xl border border-[#cfd8a3]/60 shadow-sm p-6 sticky top-24">
+                      <h2 className="text-lg font-serif font-medium text-[#2f3a1f] mb-4">Payment Summary</h2>
+
+                      {appliedCoupon && (
+                        <div className="bg-[#eef4cf] px-3 py-2 rounded-lg mb-4 text-xs flex justify-between items-center text-[#2f3a1f] border border-[#d6e0b6]">
+                          <span><strong>Coupon Applied:</strong> {appliedCoupon}</span>
+                          <Check className="h-3 w-3 text-[#2f9e44]" />
+                        </div>
+                      )}
+
+                      <div className="space-y-3 mb-6 pb-6 border-b border-[#f0f4df]">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#6c7d47]">Subtotal</span>
+                          <span className="text-[#2f3a1f] font-medium">₹{subtotal.toLocaleString()}</span>
+                        </div>
+                        {appliedCoupon && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-[#6c7d47]">Discount</span>
+                            <span className="text-green-600 font-medium">-₹{discount.toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#6c7d47]">GST (18%)</span>
+                          <span className="text-[#2f3a1f] font-medium">₹{tax.toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-end mb-6">
+                        <span className="text-base font-serif font-medium text-[#2f3a1f]">Total Amount</span>
+                        <span className="text-2xl font-bold text-[#2f9e44] leading-none">₹{total.toLocaleString()}</span>
+                      </div>
+
+                      <button
+                        onClick={handlePayment}
+                        disabled={!razorpayLoaded || processingPayment}
+                        className="w-full relative flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-[#2f9e44] px-6 py-4 text-white shadow-lg transition-all hover:bg-[#25873a] hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                      >
+                        {!razorpayLoaded ? (
+                          'Loading Gateway...'
+                        ) : processingPayment ? (
+                          <>
+                            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Processing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-semibold tracking-wide">Pay Now</span>
+                            <ArrowRight className="h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+
+                      <p className="text-center text-xs text-[#6c7d47] mt-3">
+                        By clicking pay, you agree to our terms of service
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+              )}
+
+              {/* Step 4: Order Success */}
+              {checkoutStep === 4 && (
+                <div className="max-w-xl mx-auto bg-white rounded-3xl border border-[#cfd8a3]/60 shadow-sm p-10 text-center animate-in fade-in zoom-in duration-500">
+                  <div className="w-20 h-20 bg-[#f0fdf4] rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-[#dcfce7]">
+                    <Check className="h-10 w-10 text-[#2f9e44]" />
+                  </div>
+                  <h2 className="text-3xl font-serif font-medium text-[#2f3a1f] mb-2">Order Placed Successfully!</h2>
+                  <p className="text-[#6c7d47] mb-8 max-w-sm mx-auto leading-relaxed">
+                    Thank you for your booking. May the divine blessings bring peace and prosperity to your life.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button
+                      onClick={() => router.push('/profile')}
+                      className="px-6 py-3 rounded-xl border-2 border-[#cfd8a3] text-[#2f3a1f] font-semibold hover:bg-[#fcfdf7] hover:border-[#2f9e44] transition-all"
+                    >
+                      View Booking Details
+                    </button>
+                    <button
+                      onClick={() => router.push('/services')}
+                      className="px-6 py-3 rounded-xl bg-[#2f9e44] text-white font-semibold hover:bg-[#25873a] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                    >
+                      Continue Shopping
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )
+          }
+        </div >
+      </div >
     </>
   );
 }

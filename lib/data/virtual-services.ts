@@ -209,7 +209,7 @@ export const virtualServices: VirtualService[] = [
     slug: "dhanvantari-homam",
     title: "Dhanvantari Homam",
     description: "Homam for health, healing, and longevity.",
-    image: "/services/virtual/Dhanvantari Homam.jpeg",
+    image: "/services/homam/Dhanvantari Homam .png",
     priceRange: "₹15,000.00 – ₹35,000.00",
     prices: {
       economy: 15000,
@@ -245,7 +245,7 @@ export const virtualServices: VirtualService[] = [
     slug: "durga-homam",
     title: "DURGA HOMAM",
     description: "Powerful homam to invoke Goddess Durga's blessings for strength and protection.",
-    image: "/services/virtual/DURGA HOMAM.jpeg",
+    image: "/services/homam/durga homam.png",
     priceRange: "₹15,000.00 – ₹35,000.00",
     prices: {
       economy: 15000,
@@ -281,7 +281,7 @@ export const virtualServices: VirtualService[] = [
     slug: "durga-shanti-homam",
     title: "Durga Shanti Homam",
     description: "Homam for peace, harmony, and removal of planetary afflictions.",
-    image: "/services/virtual/Durga Shanti Homam.jpeg",
+    image: "/services/homam/durga shanti homam.png",
     priceRange: "₹15,000.00 – ₹35,000.00",
     prices: {
       economy: 15000,
@@ -317,7 +317,7 @@ export const virtualServices: VirtualService[] = [
     slug: "ganesh-vinayagar-chathurthi-pooja-package",
     title: "Ganesh / Vinayagar Chathurthi Pooja Package",
     description: "Complete package for Ganesh Chathurthi celebrations with puja and rituals.",
-    image: "/services/virtual/Ganesh  Vinayagar Chathurthi Pooja Package.png",
+    image: "/services/homam/ganesh vinayagar chathurthi pooja package.png",
     priceRange: "₹15,000.00 – ₹35,000.00",
     prices: {
       economy: 15000,
@@ -352,7 +352,7 @@ export const virtualServices: VirtualService[] = [
     slug: "haridra-ganapathy-homam",
     title: "Haridra Ganapathy Homam",
     description: "Turmeric-based Ganesha homam for prosperity and removal of obstacles.",
-    image: "/services/virtual/Haridra Ganapathy Homam.png",
+    image: "/services/homam/haridra ganapathy homam.png",
     priceRange: "₹15,000.00 – ₹35,000.00",
     prices: {
       economy: 15000,
@@ -696,7 +696,7 @@ export const virtualServices: VirtualService[] = [
     slug: "rudrabishekam",
     title: "Rudrabishekam",
     description: "Sacred abhishekam to Lord Shiva for blessings, health, and prosperity.",
-    image: "/services/virtual/Rudrabishekam.jpeg",
+    image: "/services/chanting/Rudrabishegam.png",
     priceRange: "₹15,000.00 – ₹35,000.00",
     prices: {
       economy: 15000,

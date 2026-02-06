@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RotateCcw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -36,6 +36,8 @@ type Homam = {
 
 import { PagesService } from "@/lib/services/pages.service";
 import { ServicesService, Service } from "@/lib/services/services.service";
+import { ServicePackagesService, ServicePackage } from "@/lib/services/service-packages.service";
+import { CartService } from "@/lib/services/cart.service";
 
 // ... previous imports
 
@@ -50,34 +52,52 @@ export default function HomamDetailPage() {
   // API Data State
   const [apiPage, setApiPage] = useState<any>(null);
   const [apiService, setApiService] = useState<Service | null>(null);
+  const [apiPackages, setApiPackages] = useState<ServicePackage[]>([]);
   const [serviceAvailability, setServiceAvailability] = useState<'loading' | 'available' | 'not-found'>('loading');
 
   // Fetch Service from API using title to match
   useEffect(() => {
     if (homam?.title) {
-      console.log("[Service Detail] Fetching service from API for:", homam.title);
+
       setServiceAvailability('loading');
-      
+
       ServicesService.list()
         .then((services) => {
-          console.log("[Service Detail] All services from API:", services);
+
           // Try to match by title (case-insensitive)
           const matchedService = services.find(
             (s) => s.name.toLowerCase().includes(homam.title.toLowerCase()) ||
-                   homam.title.toLowerCase().includes(s.name.toLowerCase())
+              homam.title.toLowerCase().includes(s.name.toLowerCase())
           );
-          
+
           if (matchedService) {
-            console.log("[Service Detail] ✅ Service found in API:", matchedService);
+
             setApiService(matchedService);
             setServiceAvailability('available');
+
+            // Fetch packages for this service
+            ServicePackagesService.list({ service_id: matchedService.id })
+              .then(packages => {
+
+                const sorted = packages.sort((a, b) => a.price - b.price);
+                setApiPackages(sorted);
+
+                // Set default package if available and current selection is not valid or just to ensure valid state
+                if (sorted.length > 0) {
+                  const hasCurrent = sorted.some(p => p.name === formData.package);
+                  if (!hasCurrent) {
+                    setFormData(prev => ({ ...prev, package: sorted[0].name }));
+                  }
+                }
+              })
+              .catch(err => console.error("Error fetching packages:", err));
+
           } else {
-            console.warn("[Service Detail] ❌ Service NOT found in API");
+
             setServiceAvailability('not-found');
           }
         })
-        .catch((error) => {
-          console.error("[Service Detail] Error fetching services:", error);
+        .catch(() => {
           setServiceAvailability('not-found');
         });
     }
@@ -86,9 +106,7 @@ export default function HomamDetailPage() {
   // Fetch from API (kept for backward compatibility)
   useEffect(() => {
     if (slug) {
-      console.log("Fetching content for:", slug);
       PagesService.getBySlug(slug).then((data) => {
-        console.log("API Response:", data);
         if (data) setApiPage(data);
       });
     }
@@ -102,16 +120,27 @@ export default function HomamDetailPage() {
   const [formData, setFormData] = useState({
     location: '',
     venue: '',
-    priestPreference: 'Tamil',
+    priestPreference: '',
     date: '',
-    package: 'Economy',
-    flowers: 'No'
+    package: '',
+    flowers: ''
   });
 
   const handleBookService = () => {
+    // Check mandatory fields
+    if (!formData.priestPreference || !formData.date || !formData.package || !formData.flowers) {
+      toast.error("Please fill the mandatory fields", {
+        description: "Priest Preference, Date, Package, and Flowers are required.",
+        duration: 3000,
+      });
+      return;
+    }
+
     // Check authentication first
     const userId = localStorage.getItem('user_id');
     const userEmail = localStorage.getItem('user_email');
+
+    // ... existing imports
 
     if (!userId || !userEmail) {
       // User not logged in - show toast with action
@@ -126,14 +155,49 @@ export default function HomamDetailPage() {
       return;
     }
 
+    // Try to add to backend cart if API service is available
+    if (apiService) {
+      const apiPkg = apiPackages.find(p => p.name === formData.package);
+      if (apiPkg) {
+        CartService.addItem({
+          service_id: apiService.id,
+          package_id: apiPkg.id,
+          quantity: 1
+        }).then(() => {
+          console.log("Added to backend cart successfully");
+        }).catch(err => {
+          console.error("Failed to add to backend cart:", err);
+          toast.error("Failed to sync with server cart, but saved locally.");
+        });
+      }
+    }
+
     // Save service details to localStorage with current timestamp as ID
     const serviceId = Date.now();
+    // Calculate price
+    let basePrice = 0;
+
+    // Try to find in API packages first
+    const apiPkg = apiPackages.find(p => p.name === formData.package);
+
+    if (apiPkg) {
+      basePrice = apiPkg.price;
+    } else {
+      // Fallback to local data
+      const selectedPkg = homam?.packages?.find(p => p.name === formData.package);
+      const priceString = selectedPkg?.price?.replace(/[^0-9]/g, '') || "0";
+      basePrice = parseInt(priceString, 10);
+    }
+
+    const flowersPrice = formData.flowers === 'Yes' ? 250 : 0;
+    const totalPrice = basePrice + flowersPrice;
+
     const serviceData = {
       id: serviceId,
       title: homam?.title,
       description: homam?.shortDescription,
       image: homam?.image,
-
+      price: totalPrice,
       formData: formData,
       addedAt: new Date().toISOString()
     };
@@ -150,6 +214,11 @@ export default function HomamDetailPage() {
       description: "Your booking has been added successfully",
       duration: 3000, // 3 seconds
     });
+
+    // Redirect to cart page
+    setTimeout(() => {
+      router.push('/cart');
+    }, 1000);
     toast.dismiss(); // clears existing toasts
 
 
@@ -157,10 +226,10 @@ export default function HomamDetailPage() {
     setFormData({
       location: '',
       venue: '',
-      priestPreference: 'Tamil',
+      priestPreference: '',
       date: '',
-      package: 'Economy',
-      flowers: 'No'
+      package: '',
+      flowers: ''
     });
   };
 
@@ -169,26 +238,7 @@ export default function HomamDetailPage() {
     <section className="w-full px-6 pt-4 pb-16">
 
       {/* API Status Indicator - Top Right */}
-      <div className="fixed top-6 right-6 z-50">
-        {serviceAvailability === 'loading' && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-300">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-            Checking API...
-          </div>
-        )}
-        {serviceAvailability === 'available' && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-700 text-xs font-semibold border border-green-300">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            ✅ Available in API
-          </div>
-        )}
-        {serviceAvailability === 'not-found' && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 text-red-700 text-xs font-semibold border border-red-300">
-            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-            ❌ Not in API
-          </div>
-        )}
-      </div>
+
 
       {/* Back Button */}
       <div className="fixed top-6 left-6 z-50">
@@ -257,7 +307,7 @@ export default function HomamDetailPage() {
           <div className="rounded-3xl border border-[#cfd8a3] bg-white p-6">
             {/* Location */}
             <div className="mb-4">
-              <label className="mb-1 block text-sm font-medium">Location *</label>
+              <label className="mb-1 block text-sm font-medium">Location</label>
               <input
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -267,7 +317,7 @@ export default function HomamDetailPage() {
 
             {/* Venue */}
             <div className="mb-4">
-              <label className="mb-1 block text-sm font-medium">Pooja Venue *</label>
+              <label className="mb-1 block text-sm font-medium">Pooja Venue</label>
               <input
                 value={formData.venue}
                 onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
@@ -304,9 +354,28 @@ export default function HomamDetailPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
-                  Select Package
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-[#2f3a1f]">
+                    Select Package *
+                  </label>
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        location: '',
+                        venue: '',
+                        priestPreference: '',
+                        date: '',
+                        package: '',
+                        flowers: ''
+                      });
+                      toast.success("Form cleared");
+                    }}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Clear
+                  </button>
+                </div>
                 <Select
                   value={formData.package}
                   onValueChange={(value) =>
@@ -318,16 +387,40 @@ export default function HomamDetailPage() {
                   </SelectTrigger>
 
                   <SelectContent className="rounded-lg border border-[#cfd8a3] bg-white">
-                    <SelectItem value="Economy">Economy</SelectItem>
-                    <SelectItem value="Standard">Standard</SelectItem>
-                    <SelectItem value="Premium">Premium</SelectItem>
+                    {apiPackages.length > 0 ? (
+                      apiPackages.map((pkg) => (
+                        <SelectItem key={pkg.id} value={pkg.name}>
+                          {pkg.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="Economy">Economy</SelectItem>
+                        <SelectItem value="Standard">Standard</SelectItem>
+                        <SelectItem value="Premium">Premium</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
 
+                {/* Dynamic Price Display */}
+                <div className="mt-2 text-lg font-semibold text-[#2f9e44]">
+                  {(() => {
+                    let price = 0;
+                    const apiPkg = apiPackages.find(p => p.name === formData.package);
+                    if (apiPkg) {
+                      price = apiPkg.price;
+                    } else {
+                      const selectedPkg = homam?.packages?.find(p => p.name === formData.package);
+                      price = parseInt(selectedPkg?.price?.replace(/[^0-9]/g, '') || "0", 10);
+                    }
+                    return `₹${price.toLocaleString()}.00`;
+                  })()}
+                </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium">Add-on: Flowers</label>
+                <label className="mb-1 block text-sm font-medium">Add-on: Flowers *</label>
                 <div className="mt-2 flex gap-4">
                   <label className="flex items-center gap-2">
                     <input

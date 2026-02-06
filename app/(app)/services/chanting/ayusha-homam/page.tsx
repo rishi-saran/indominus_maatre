@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RotateCcw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -53,13 +53,22 @@ export default function AyushaHomamPage() {
   const [formData, setFormData] = useState({
     location: '',
     venue: '',
-    priestPreference: 'Tamil',
+    priestPreference: '',
     date: '',
-    package: 'Economy',
-    flowers: 'No'
+    package: '',
+    flowers: ''
   });
 
   const handleBookService = async () => {
+    // Check mandatory fields
+    if (!formData.priestPreference || !formData.date || !formData.package || !formData.flowers) {
+      toast.error("Please fill the mandatory fields", {
+        description: "Priest Preference, Date, Package, and Flowers are required.",
+        duration: 3000,
+      });
+      return;
+    }
+
     // Check authentication first
     const userId = localStorage.getItem('user_id');
     const userEmail = localStorage.getItem('user_email');
@@ -101,11 +110,22 @@ export default function AyushaHomamPage() {
 
     // Save to localStorage for UI
     const localId = Date.now();
+    // Calculate price
+    const prices = {
+      Economy: 9999,
+      Standard: 12999,
+      Premium: 20000
+    };
+    const basePrice = prices[formData.package as keyof typeof prices] || 9999;
+    const flowersPrice = formData.flowers === 'Yes' ? 250 : 0;
+    const totalPrice = basePrice + flowersPrice;
+
     const serviceData = {
       id: localId,
       title: 'AYUSHA HOMAM',
       description: 'Ayusha Homam is performed to revere divine energies for vitality, wellness, and longevity.',
       image: '/services/chanting/ayusha-homam.png',
+      price: totalPrice,
       formData: formData,
       addedAt: new Date().toISOString()
     };
@@ -123,13 +143,14 @@ export default function AyushaHomamPage() {
     });
 
     // Clear form after adding
+    // Clear form after adding
     setFormData({
       location: '',
       venue: '',
-      priestPreference: 'Tamil',
+      priestPreference: '',
       date: '',
-      package: 'Economy',
-      flowers: 'No'
+      package: '',
+      flowers: ''
     });
 
     // Redirect to cart page
@@ -198,7 +219,7 @@ export default function AyushaHomamPage() {
           <div className="rounded-3xl border border-[#cfd8a3] bg-white p-6">
             {/* Location */}
             <div className="mb-4">
-              <label className="mb-1 block text-sm font-medium">Location *</label>
+              <label className="mb-1 block text-sm font-medium">Location</label>
               <input
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -208,7 +229,7 @@ export default function AyushaHomamPage() {
 
             {/* Venue */}
             <div className="mb-4">
-              <label className="mb-1 block text-sm font-medium">Pooja Venue *</label>
+              <label className="mb-1 block text-sm font-medium">Pooja Venue</label>
               <input
                 value={formData.venue}
                 onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
@@ -245,9 +266,28 @@ export default function AyushaHomamPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
-                  Select Package
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-[#2f3a1f]">
+                    Select Package *
+                  </label>
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        location: '',
+                        venue: '',
+                        priestPreference: '',
+                        date: '',
+                        package: '',
+                        flowers: ''
+                      });
+                      toast.success("Form cleared");
+                    }}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Clear
+                  </button>
+                </div>
                 <Select
                   value={formData.package}
                   onValueChange={(value) =>
@@ -268,7 +308,7 @@ export default function AyushaHomamPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium">Add-on: Flowers</label>
+                <label className="mb-1 block text-sm font-medium">Add-on: Flowers *</label>
                 <div className="mt-2 flex gap-4">
                   <label className="flex items-center gap-2">
                     <input
@@ -309,8 +349,8 @@ export default function AyushaHomamPage() {
               key={t}
               onClick={() => setTab(t as any)}
               className={`pb-3 ${tab === t
-                  ? "border-b-2 border-[#2f9e44] font-semibold text-[#2f9e44]"
-                  : "text-[#4f5d2f]"
+                ? "border-b-2 border-[#2f9e44] font-semibold text-[#2f9e44]"
+                : "text-[#4f5d2f]"
                 }`}
             >
               {t === "description" && "Description"}
@@ -380,8 +420,8 @@ export default function AyushaHomamPage() {
                       size={24}
                       onClick={() => setRating(star)}
                       className={`cursor-pointer transition ${star <= rating
-                          ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
-                          : "text-[#9ca67a]"                  // visible grey
+                        ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
+                        : "text-[#9ca67a]"                  // visible grey
                         }`}
                     />
                   ))}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Star } from "lucide-react";
+import { ArrowLeft, Star, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -24,21 +24,30 @@ export default function VirtualServicePage() {
 
   const [tab, setTab] = useState<"description" | "reviews" | "faq">("description");
   const [rating, setRating] = useState<number>(0);
-  
+
   const [formData, setFormData] = useState({
     location: '',
     venue: '',
-    priestPreference: 'Tamil',
+    priestPreference: '',
     date: '',
-    package: 'Economy',
-    flowers: 'No'
+    package: '',
+    flowers: ''
   });
 
   const handleBookService = () => {
+    // Check mandatory fields
+    if (!formData.priestPreference || !formData.date || !formData.package || !formData.flowers) {
+      toast.error("Please fill the mandatory fields", {
+        description: "Priest Preference, Date, Package, and Flowers are required.",
+        duration: 3000,
+      });
+      return;
+    }
+
     // Check authentication first
     const userId = localStorage.getItem('user_id');
     const userEmail = localStorage.getItem('user_email');
-    
+
     if (!userId || !userEmail) {
       // User not logged in - show toast with action
       toast.error('Please login to book services', {
@@ -53,15 +62,28 @@ export default function VirtualServicePage() {
     }
 
     const serviceId = Date.now();
+
+    if (!service) {
+      toast.error("Service information unavailable");
+      return;
+    }
+
+    // Calculate price
+    const packageKey = (formData.package.toLowerCase()) as keyof typeof service.prices;
+    const basePrice = service.prices[packageKey] || 0;
+    const flowersPrice = formData.flowers === 'Yes' ? 250 : 0;
+    const totalPrice = basePrice + flowersPrice;
+
     const serviceData = {
       id: serviceId,
       title: service?.title,
       description: service?.description,
       image: service?.image,
+      price: totalPrice,
       formData: formData,
       addedAt: new Date().toISOString()
     };
-    
+
     const existingServices = JSON.parse(localStorage.getItem('addedServices') || '[]');
     existingServices.push(serviceData);
     localStorage.setItem('addedServices', JSON.stringify(existingServices));
@@ -71,15 +93,20 @@ export default function VirtualServicePage() {
       description: "Your booking has been added successfully",
       duration: 3000,
     });
+
+    // Redirect to cart page
+    setTimeout(() => {
+      router.push('/cart');
+    }, 1000);
     toast.dismiss();
-    
+
     setFormData({
       location: '',
       venue: '',
-      priestPreference: 'Tamil',
+      priestPreference: '',
       date: '',
-      package: 'Economy',
-      flowers: 'No'
+      package: '',
+      flowers: ''
     });
   };
 
@@ -91,7 +118,7 @@ export default function VirtualServicePage() {
           <ArrowLeft className="h-5 w-5" />
         </Link>
       </div>
-     
+
       {/* Title */}
       <div className="mx-auto mt-4 mb-8 max-w-6xl text-center">
         <h1 className="text-3xl font-serif tracking-wide leading-tight text-[#2f3a1f]">
@@ -107,7 +134,7 @@ export default function VirtualServicePage() {
       {/* Main Layout */}
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 gap-8 items-start">
-          
+
           {/* Image */}
           <div className="flex justify-center">
             <div className="w-[300px] rounded-2xl border border-[#cfd8a3] bg-white p-4 shadow-sm">
@@ -135,21 +162,21 @@ export default function VirtualServicePage() {
           <div className="rounded-3xl border border-[#cfd8a3] bg-white p-6">
             {/* Location */}
             <div className="mb-4">
-              <label className="mb-1 block text-sm font-medium">Location *</label>
-              <input 
+              <label className="mb-1 block text-sm font-medium">Location</label>
+              <input
                 value={formData.location}
-                onChange={(e) => setFormData({...formData, location: e.target.value})}
-                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" 
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
               />
             </div>
 
             {/* Venue */}
             <div className="mb-4">
-              <label className="mb-1 block text-sm font-medium">Pooja Venue *</label>
-              <input 
+              <label className="mb-1 block text-sm font-medium">Pooja Venue</label>
+              <input
                 value={formData.venue}
-                onChange={(e) => setFormData({...formData, venue: e.target.value})}
-                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]" 
+                onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
               />
             </div>
 
@@ -159,7 +186,7 @@ export default function VirtualServicePage() {
                 <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
                   Priest Preference *
                 </label>
-                <Select value={formData.priestPreference} onValueChange={(value) => setFormData({...formData, priestPreference: value})}>
+                <Select value={formData.priestPreference} onValueChange={(value) => setFormData({ ...formData, priestPreference: value })}>
                   <SelectTrigger className="h-11 rounded-lg border border-[#cfd8a3] bg-white text-sm text-[#2f3a1f] focus:border-[#2f9e44] focus:ring-1 focus:ring-[#2f9e44]">
                     <SelectValue placeholder="Select Language" />
                   </SelectTrigger>
@@ -176,15 +203,34 @@ export default function VirtualServicePage() {
                 <input
                   type="date"
                   value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   className="w-full rounded-md border border-[#cfd8a3] bg-white px-3 py-2 text-sm focus:border-[#2f9e44] focus:outline-none focus:ring-1 focus:ring-[#2f9e44]"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
-                  Select Package
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-[#2f3a1f]">
+                    Select Package *
+                  </label>
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        location: '',
+                        venue: '',
+                        priestPreference: '',
+                        date: '',
+                        package: '',
+                        flowers: ''
+                      });
+                      toast.success("Form cleared");
+                    }}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Clear
+                  </button>
+                </div>
                 <Select
                   value={formData.package}
                   onValueChange={(value) => setFormData({ ...formData, package: value })}
@@ -201,31 +247,31 @@ export default function VirtualServicePage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium">Add-on: Flowers</label>
+                <label className="mb-1 block text-sm font-medium">Add-on: Flowers *</label>
                 <div className="mt-2 flex gap-4">
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      name="flowers" 
+                    <input
+                      type="radio"
+                      name="flowers"
                       checked={formData.flowers === 'Yes'}
-                      onChange={() => setFormData({...formData, flowers: 'Yes'})}
-                    /> 
+                      onChange={() => setFormData({ ...formData, flowers: 'Yes' })}
+                    />
                     Yes (+₹250)
                   </label>
                   <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      name="flowers" 
+                    <input
+                      type="radio"
+                      name="flowers"
                       checked={formData.flowers === 'No'}
-                      onChange={() => setFormData({...formData, flowers: 'No'})}
-                    /> 
+                      onChange={() => setFormData({ ...formData, flowers: 'No' })}
+                    />
                     No
                   </label>
                 </div>
               </div>
             </div>
 
-            <button 
+            <button
               onClick={handleBookService}
               className="w-full rounded-full bg-[#2f9e44] py-3 text-sm font-medium text-white hover:bg-[#256b32]">
               Book Service
@@ -245,11 +291,10 @@ export default function VirtualServicePage() {
             <button
               key={t}
               onClick={() => setTab(t as any)}
-              className={`pb-3 ${
-                tab === t
-                  ? "border-b-2 border-[#2f9e44] font-semibold text-[#2f9e44]"
-                  : "text-[#4f5d2f]"
-              }`}
+              className={`pb-3 ${tab === t
+                ? "border-b-2 border-[#2f9e44] font-semibold text-[#2f9e44]"
+                : "text-[#4f5d2f]"
+                }`}
             >
               {t === "description" && "Description"}
               {t === "reviews" && "Reviews (0)"}
@@ -317,11 +362,10 @@ export default function VirtualServicePage() {
                       key={star}
                       size={24}
                       onClick={() => setRating(star)}
-                      className={`cursor-pointer transition ${
-                        star <= rating
-                          ? "fill-[#f4c430] text-[#f4c430]"
-                          : "text-[#9ca67a]"
-                      }`}
+                      className={`cursor-pointer transition ${star <= rating
+                        ? "fill-[#f4c430] text-[#f4c430]"
+                        : "text-[#9ca67a]"
+                        }`}
                     />
                   ))}
                 </div>
