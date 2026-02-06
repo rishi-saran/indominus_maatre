@@ -9,6 +9,7 @@ import { AddressesService, type CreateAddressPayload } from '@/lib/services/addr
 import { ServiceProvidersService, type ServiceProvider } from '@/lib/services/service-providers.service';
 import { ApiService } from '@/lib/services/api.service';
 import { ServicesService, type Service } from '@/lib/services/services.service';
+import { AuthService } from '@/lib/services/auth.service';
 
 interface CartService {
   id: string | number;
@@ -62,11 +63,58 @@ export default function CartPage() {
   };
   
   const [contactInfo, setContactInfo] = useState({
-    name: 'Priya Sharma',
-    email: 'maathre@gmail.com',
-    phone: '9876543210',
-    address: '123, Green Meadows, Chennai'
+    name: '',
+    email: '',
+    phone: '',
+    address: ''
   });
+
+  // Load logged-in user's information
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      try {
+        // Get user from auth
+        const user = await AuthService.getUser();
+        
+        if (user) {
+          // Set contact info from authenticated user
+          const firstName = user.user_metadata?.first_name || '';
+          const lastName = user.user_metadata?.last_name || '';
+          const fullName = `${firstName} ${lastName}`.trim() || user.email?.split('@')[0] || 'User';
+          
+          setContactInfo({
+            name: fullName,
+            email: user.email || '',
+            phone: user.user_metadata?.phone || '',
+            address: ''
+          });
+        } else {
+          // Fallback to localStorage if Supabase auth fails
+          const storedEmail = localStorage.getItem('user_email');
+          if (storedEmail) {
+            setContactInfo(prev => ({
+              ...prev,
+              email: storedEmail,
+              name: storedEmail.split('@')[0]
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('[Cart] Failed to load user info:', error);
+        // Try localStorage as fallback
+        const storedEmail = localStorage.getItem('user_email');
+        if (storedEmail) {
+          setContactInfo(prev => ({
+            ...prev,
+            email: storedEmail,
+            name: storedEmail.split('@')[0]
+          }));
+        }
+      }
+    };
+
+    loadUserInfo();
+  }, []);
 
   const syncLocalCartToBackend = async () => {
     const stored = JSON.parse(localStorage.getItem('addedServices') || '[]');

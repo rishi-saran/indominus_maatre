@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const authHeader = getAuthHeader(request);
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/payments/`, {
+    const response = await fetch(`${API_BASE_URL}/payments/`, {
       method: "GET",
       headers: {
         Authorization: authHeader,
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json(); // { order_id }
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/payments/create-order`,
+      `${API_BASE_URL}/payments/create-order`,
       {
         method: "POST",
         headers: {

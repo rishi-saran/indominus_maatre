@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/payments/verify`,
+      `${API_BASE_URL}/payments/verify`,
       {
         method: "POST",
         headers: {
