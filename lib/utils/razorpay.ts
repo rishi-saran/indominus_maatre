@@ -80,11 +80,6 @@ export const initializeRazorpayPayment = async (
     amount: Math.round(amount * 100), // Convert to paise
     currency: 'INR',
     user_email: userInfo.email,
-    notes: {
-      customer_name: userInfo.name || '',
-      customer_email: userInfo.email || '',
-      customer_phone: userInfo.phone || '',
-    },
   };
 
   console.log('[Razorpay] Payment Payload:', JSON.stringify(paymentPayload, null, 2));

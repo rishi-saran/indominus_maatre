@@ -222,8 +222,12 @@ export default function HomamDetailPage() {
     const flowersPrice = formData.flowers === 'Yes' ? 250 : 0;
     const totalPrice = basePrice + flowersPrice;
 
+    const finalServiceId = apiService?.id || (slug === 'abdha-poorthi-ayush-homam' ? '550e8400-e29b-41d4-a716-446655440003' : undefined);
+
     const serviceData = {
       id: serviceId,
+      service_id: finalServiceId,
+      package_id: apiPkg?.id,
       title: homam?.title,
       description: homam?.shortDescription,
       image: homam?.image,

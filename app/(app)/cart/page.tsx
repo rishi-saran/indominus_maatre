@@ -10,10 +10,12 @@ import { ServiceProvidersService, type ServiceProvider } from '@/lib/services/se
 import { ApiService } from '@/lib/services/api.service';
 import { ServicesService, type Service } from '@/lib/services/services.service';
 import { AuthService } from '@/lib/services/auth.service';
+import { ServicePackagesService } from '@/lib/services/service-packages.service';
 
 interface CartService {
   id: string | number;
   service_id?: string;
+  package_id?: string;
   title: string;
   description?: string;
   image: string;
@@ -92,8 +94,9 @@ export default function CartPage() {
     let catalog: Service[] = [];
     try {
       catalog = await ServicesService.list();
+      console.log(`[Cart] Fetched catalog of ${catalog.length} services for sync`);
     } catch (error) {
-      console.warn('[Cart] Failed to fetch service catalog for sync');
+      console.error('[Cart] Failed to fetch service catalog for sync:', error);
     }
 
     const normalize = (value: string) => value.toLowerCase().trim();
@@ -102,28 +105,80 @@ export default function CartPage() {
       const directId = item.service_id || (item as any).serviceId || (item as any).apiServiceId;
       let serviceId = directId ? String(directId) : null;
 
+      console.log(`[Cart] Processing local item: "${item.title}" (Direct ID: ${serviceId})`);
+
       if (!serviceId && item.title) {
         // Manual override for specific services
         if (normalize(item.title).includes('abdha poorthi ayush homam')) {
           serviceId = '550e8400-e29b-41d4-a716-446655440003';
+          console.log('[Cart] Applied manual override for Abdha Poorthi Ayush Homam');
         } else {
-          const matched = catalog.find(
-            (svc) =>
-              normalize(svc.name).includes(normalize(item.title)) ||
-              normalize(item.title).includes(normalize(svc.name))
-          );
-          serviceId = matched?.id ? String(matched.id) : null;
+          const normalizedTitle = normalize(item.title);
+          const matched = catalog.find((svc) => {
+            const svcName = normalize(svc.name);
+            return svcName.includes(normalizedTitle) || normalizedTitle.includes(svcName);
+          });
+
+          if (matched) {
+            serviceId = String(matched.id);
+            console.log(`[Cart] Matched "${item.title}" to backend service: "${matched.name}" (${serviceId})`);
+          } else {
+            console.warn(`[Cart] NO MATCH FOUND for "${item.title}" in catalog.`);
+            // Optional: Log similar names to help debug
+            const similar = catalog.filter(svc => normalize(svc.name).includes(normalizedTitle.substring(0, 5)));
+            if (similar.length > 0) {
+              console.log('[Cart] Did you mean one of these?', similar.map(s => s.name));
+            }
+          }
         }
       }
 
-      if (!serviceId || existingServiceIds.has(serviceId)) continue;
+      if (!serviceId) {
+        console.warn(`[Cart] Skipping item "${item.title}" - No Service ID resolved`);
+        continue;
+      }
+
+      if (existingServiceIds.has(serviceId)) {
+        console.log(`[Cart] Item "${item.title}" already exists in backend cart (ID: ${serviceId})`);
+        continue;
+      }
+
+      // Fetch package ID if applicable
+      let packageId: string | undefined = item.package_id;
+      if (!packageId && item.formData?.package) {
+        try {
+          const packages = await ServicePackagesService.list({ service_id: serviceId });
+          const matchedPkg = packages.find(p => p.name.toLowerCase() === item.formData?.package?.toLowerCase());
+          if (matchedPkg) {
+            packageId = matchedPkg.id;
+            console.log(`[Cart] Resolved package "${item.formData.package}" to ID: ${packageId}`);
+          } else {
+            console.warn(`[Cart] Could not find backend package matching "${item.formData.package}" for service ${serviceId}`);
+
+            // Fallback for Abdha Poorthi Ayush Homam if standard lookup fails
+            if (serviceId === '550e8400-e29b-41d4-a716-446655440003' && packages.length > 0) {
+              console.log('[Cart] Applying fallback package for Abdha Poorthi Ayush Homam (using first available)');
+              packageId = packages[0].id; // Fallback to first package to ensure sync succeeds
+            }
+          }
+        } catch (pkgError) {
+          console.error('[Cart] Error fetching packages for service:', pkgError);
+        }
+      }
 
       try {
+        console.log(`[Cart] Adding item to backend: "${item.title}" (ID: ${serviceId}, Pkg: ${packageId})`);
         const price = getServicePrice(item);
         await ApiService.post<any>('/api/cart/items', undefined, {
-          params: { service_id: serviceId, quantity: 1, price },
+          params: {
+            service_id: serviceId,
+            quantity: 1,
+            price,
+            ...(packageId && { package_id: packageId })
+          },
         });
         existingServiceIds.add(serviceId);
+        console.log(`[Cart] Successfully synced "${item.title}"`);
       } catch (error) {
         console.warn('[Cart] Failed to sync cart item to backend', error);
       }
@@ -506,6 +561,19 @@ export default function CartPage() {
 
       // Wait for backend cart to settle
       await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verify cart has items before creating order
+      try {
+        const cartverification = await ApiService.get<any>('/api/cart');
+        console.log('[Cart] Post-sync verification items:', cartverification?.cart_items?.length);
+
+        if (!cartverification?.cart_items || cartverification.cart_items.length === 0) {
+          throw new Error("Unable to sync your cart with the server. Please check your connection or refresh the page.");
+        }
+      } catch (verifyError) {
+        console.error('[Cart] Cart verification failed:', verifyError);
+        throw verifyError;
+      }
 
       const resolvedAddressId = await ensureAddress();
       const resolvedProviderId = ensureProvider();
