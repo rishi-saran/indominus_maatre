@@ -155,10 +155,11 @@ export default function CartPage() {
           } else {
             console.warn(`[Cart] Could not find backend package matching "${item.formData.package}" for service ${serviceId}`);
 
-            // Fallback for Abdha Poorthi Ayush Homam if standard lookup fails
-            if (serviceId === '550e8400-e29b-41d4-a716-446655440003' && packages.length > 0) {
-              console.log('[Cart] Applying fallback package for Abdha Poorthi Ayush Homam (using first available)');
-              packageId = packages[0].id; // Fallback to first package to ensure sync succeeds
+            // Generic fallback: If user selected a package but we can't match it by name (e.g. spelling diff),
+            // safely default to the first available package for this service to ensure the item gets added to cart.
+            if (packages.length > 0) {
+              console.warn(`[Cart] Package name mismatch for "${item.title}". Defaulting to first available package: ${packages[0].name}`);
+              packageId = packages[0].id;
             }
           }
         } catch (pkgError) {
