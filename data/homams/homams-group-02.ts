@@ -282,7 +282,7 @@ export const homamsGroup02 = {
   },
   "dhanvantari-homam": {
     title: "DHANVANTARI HOMAM",
-    image: "/services/virtual/Dhanvantari Homam.jpeg",
+    image: "/services/homam/Dhanvantari Homam .png",
     priceRange: "₹15,000.00 – ₹35,000.00",
 
     shortDescription:
@@ -442,7 +442,7 @@ export const homamsGroup02 = {
   },
   "durga-homam": {
     title: "DURGA HOMAM",
-    image: "/services/virtual/DURGA HOMAM.jpeg",
+    image: "/services/homam/durga homam.png",
     priceRange: "₹15,000.00 – ₹35,000.00",
 
     shortDescription:
@@ -495,7 +495,7 @@ export const homamsGroup02 = {
   },
   "durga-shanti-homam": {
     title: "DURGA SHANTI HOMAM",
-    image: "/services/virtual/Durga Shanti Homam.jpeg",
+    image: "/services/homam/durga shanti homam.png",
     priceRange: "₹15,000.00 – ₹35,000.00",
 
     shortDescription:

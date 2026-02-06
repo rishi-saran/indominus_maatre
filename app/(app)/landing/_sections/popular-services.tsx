@@ -11,29 +11,29 @@ const services = [
     id: 1,
     title: "Rudrabhishekam",
     description: "Holy abhishekam to Lord Shiva",
-    image: "/popular/Abhishekam.png",
+    image: "/services/chanting/rudrabishegam.png",
     href: "/services/homam/rudrabhishekam",
   },
   {
     id: 2,
     title: "Engagement",
     description: "Blessings for your engagement ceremony",
-    image: "/popular/Engagement.png",
+    image: "/services/homam/engagement.png",
     href: "/services/homam/engagement",
   },
   {
     id: 3,
     title: "Ganapathi Homam",
     description: "Seek Lord Ganesha's blessings",
-    image: "/popular/Ganapathi Homom.png",
+    image: "/services/homam/Ganapathi Homam.png",
     href: "/services/homam/ganapathi-homam",
   },
   {
     id: 4,
-    title: "Namakarana",
-    description: "Baby naming ceremony with divine blessings",
-    image: "/popular/Namakarana.png",
-    href: "/services/homam/namakarana",
+    title: "Marriage (Vivaham)",
+    description: "Sacred union of two souls with divine blessings",
+    image: "/services/homam/marriage.png",
+    href: "/services/homam/marriage-vivaham",
   },
 ];
 
@@ -81,30 +81,29 @@ export function PopularServicesSection() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.05 }}
             >
-              <div 
-                onClick={() => handleServiceClick(service.href)}
-                className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf] flex flex-col p-6 cursor-pointer"
-              >
-                {/* Image */}
-                <div className="mb-5 h-40 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
-                  <img
-                    src={service.image}
-                    alt={service.title}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
+              <Link href={service.href} className="block h-full">
+                <div className="group h-full rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf] flex flex-col p-0 cursor-pointer overflow-hidden">
+                  {/* Edge-to-edge Image Container */}
+                  <div className="aspect-square w-full overflow-hidden bg-[#f4f7e6] relative border-b border-[#cfd8a3]/30">
+                    <img
+                      src={service.image}
+                      alt={service.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
 
-                {/* Title + Description */}
-                <div className="flex-1">
-                  <h2 className="mb-2 text-xl font-semibold text-[#2f3a1f]">
-                    {service.title}
-                  </h2>
+                  {/* Title + Description */}
+                  <div className="flex-1 p-5">
+                    <h2 className="mb-2 text-lg font-semibold text-[#2f3a1f] line-clamp-1 text-center">
+                      {service.title}
+                    </h2>
 
-                  <p className="text-sm leading-relaxed text-[#4f5d2f]">
-                    {service.description}
-                  </p>
+                    <p className="text-sm leading-relaxed text-[#4f5d2f] line-clamp-2 text-center">
+                      {service.description}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </Link>
             </motion.div>
           ))}
         </div>

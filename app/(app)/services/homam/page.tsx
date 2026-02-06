@@ -44,37 +44,37 @@ export default function HomamPage() {
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 
           {pageItems.map((service, index) => (
-            <Link key={`${service.title}-${index}`} href={service.href}>
+            <Link key={`${service.title}-${index}`} href={service.href} className="block h-full">
               <HoverCard>
                 <Card className="group h-full cursor-pointer rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf]">
-                  <CardContent className="flex h-full flex-col p-4">
+                  <CardContent className="flex h-full flex-col p-0">
 
-                    {/* Fixed image */}
-                    <div className="mb-4 h-44 overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
+                    {/* Edge-to-edge Image Container */}
+                    <div className="aspect-square w-full overflow-hidden rounded-t-2xl bg-[#f4f7e6] relative border-b border-[#cfd8a3]/30">
                       <Image
                         src={service.image}
                         alt={service.title}
-                        width={240}
-                        height={240}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         unoptimized
                       />
                     </div>
 
-
-                    {/* Fixed-height title */}
-                    <h2 className="mt-auto min-h-[3rem] flex items-center justify-center text-center text-sm font-semibold leading-snug text-[#2f3a1f] line-clamp-2">
-                      {service.title}
-                    </h2>
+                    {/* Title Section - Fixed Height */}
+                    <div className="flex h-20 items-center justify-center px-4">
+                      <h2 className="text-center text-sm font-semibold leading-snug text-[#2f3a1f] line-clamp-2">
+                        {service.title}
+                      </h2>
+                    </div>
 
                   </CardContent>
-
                 </Card>
               </HoverCard>
             </Link>
 
           ))}
-        </div>
+        </div >
 
         <div className="mx-auto mt-8 max-w-5xl text-center">
           <p className="text-sm text-[#4f5d2f]">
@@ -133,7 +133,7 @@ export default function HomamPage() {
           ))}
         </div>
 
-      </section>
+      </section >
     </>
   );
 }

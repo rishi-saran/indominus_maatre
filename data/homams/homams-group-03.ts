@@ -1,7 +1,7 @@
 export const homamsGroup03 = {
   "ganesh-vinyagar-chathurthi-pooja": {
     title: "GANESH / VINAYAGAR CHATHURTHI POOJA PACKAGE",
-    image: "/services/virtual/Ganesh  Vinayagar Chathurthi Pooja Package.png",
+    image: "/services/homam/ganesh vinayagar chathurthi pooja package.png",
     priceRange: "₹700.00",
 
     shortDescription:
@@ -48,7 +48,7 @@ export const homamsGroup03 = {
 
   "haridra-ganapathy-homam": {
     title: "Haridra Ganapathy Homam",
-    image: "/services/virtual/Haridra Ganapathy Homam.png",
+    image: "/services/homam/haridra ganapathy homam.png",
 
     priceRange: "₹15,000 – ₹35,000",
 
@@ -336,7 +336,7 @@ export const homamsGroup03 = {
 },
 "housewarming": {
   title: "Housewarming / Grihapravesham",
-  image: "/images/homams/grihapravesham.jpg",
+  image: "/services/homam/housewarming.png",
 
   priceRange: "₹15,000 – ₹35,000",
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Star } from "lucide-react";
+import { ArrowLeft, Star, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -22,13 +22,22 @@ export default function RudrabishekamPage() {
   const [formData, setFormData] = useState({
     location: "",
     venue: "",
-    priestPreference: "Tamil",
+    priestPreference: "",
     date: "",
-    package: "Economy",
-    flowers: "No",
+    package: "",
+    flowers: "",
   });
 
   const handleBookService = () => {
+    // Check mandatory fields
+    if (!formData.priestPreference || !formData.date || !formData.package || !formData.flowers) {
+      toast.error("Please fill the mandatory fields", {
+        description: "Priest Preference, Date, Package, and Flowers are required.",
+        duration: 3000,
+      });
+      return;
+    }
+
     // Check authentication first
     const userId = localStorage.getItem('user_id');
     const userEmail = localStorage.getItem('user_email');
@@ -46,12 +55,23 @@ export default function RudrabishekamPage() {
       return;
     }
 
+    // Calculate price
+    const prices = {
+      Economy: 9999,
+      Standard: 12999,
+      Premium: 20000
+    };
+    const basePrice = prices[formData.package as keyof typeof prices] || 9999;
+    const flowersPrice = formData.flowers === 'Yes' ? 250 : 0;
+    const totalPrice = basePrice + flowersPrice;
+
     const serviceData = {
       id: Date.now(),
       title: "RUDRABISHEKAM",
       description:
         "Rudrabishekam is a sacred ritual dedicated to Lord Shiva for purification, peace, and spiritual growth.",
-      image: "/services/homam/rudrabishekam.png",
+      image: "/services/chanting/rudrabishegam.png",
+      price: totalPrice,
       formData,
       addedAt: new Date().toISOString(),
     };
@@ -66,6 +86,11 @@ export default function RudrabishekamPage() {
       description: "Your booking has been added successfully",
       duration: 3000,
     });
+
+    // Redirect to cart page
+    setTimeout(() => {
+      router.push('/cart');
+    }, 1000);
   };
 
   return (
@@ -124,7 +149,7 @@ export default function RudrabishekamPage() {
         <div className="rounded-3xl border border-[#cfd8a3] bg-white p-6">
           {/* Location */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium">Location *</label>
+            <label className="mb-1 block text-sm font-medium">Location</label>
             <input
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -134,7 +159,7 @@ export default function RudrabishekamPage() {
 
           {/* Venue */}
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium">Pooja Venue *</label>
+            <label className="mb-1 block text-sm font-medium">Pooja Venue</label>
             <input
               value={formData.venue}
               onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
@@ -171,9 +196,28 @@ export default function RudrabishekamPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#2f3a1f]">
-                Select Package
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-[#2f3a1f]">
+                  Select Package *
+                </label>
+                <button
+                  onClick={() => {
+                    setFormData({
+                      location: '',
+                      venue: '',
+                      priestPreference: '',
+                      date: '',
+                      package: '',
+                      flowers: ''
+                    });
+                    toast.success("Form cleared");
+                  }}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Clear
+                </button>
+              </div>
               <Select
                 value={formData.package}
                 onValueChange={(value) =>
@@ -194,7 +238,7 @@ export default function RudrabishekamPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">Add-on: Flowers</label>
+              <label className="mb-1 block text-sm font-medium">Add-on: Flowers *</label>
               <div className="mt-2 flex gap-4">
                 <label className="flex items-center gap-2">
                   <input
@@ -203,7 +247,7 @@ export default function RudrabishekamPage() {
                     checked={formData.flowers === 'Yes'}
                     onChange={() => setFormData({ ...formData, flowers: 'Yes' })}
                   />
-                  Yes (+₹250)
+                  Yes
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -234,8 +278,8 @@ export default function RudrabishekamPage() {
               key={t}
               onClick={() => setTab(t as any)}
               className={`pb-3 ${tab === t
-                  ? "border-b-2 border-[#2f9e44] font-semibold text-[#2f9e44]"
-                  : "text-[#4f5d2f]"
+                ? "border-b-2 border-[#2f9e44] font-semibold text-[#2f9e44]"
+                : "text-[#4f5d2f]"
                 }`}
             >
               {t === "description" && "Description"}
@@ -373,8 +417,8 @@ export default function RudrabishekamPage() {
                       size={24}
                       onClick={() => setRating(star)}
                       className={`cursor-pointer transition ${star <= rating
-                          ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
-                          : "text-[#9ca67a]"                  // visible grey
+                        ? "fill-[#f4c430] text-[#f4c430]"   // GOLD
+                        : "text-[#9ca67a]"                  // visible grey
                         }`}
                     />
                   ))}

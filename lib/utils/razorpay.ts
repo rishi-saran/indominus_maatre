@@ -42,7 +42,7 @@ export const initializeRazorpayPayment = async (
     console.error('No valid Supabase session found');
     throw new Error('Please login to continue');
   }
-  
+
   console.log('✓ Valid Supabase session found, token exists');
   console.log('Token preview:', accessToken.substring(0, 20) + '...');
 
@@ -50,7 +50,7 @@ export const initializeRazorpayPayment = async (
   console.log('📝 Creating order in database...');
   const createOrderResponse = await fetch('/api/orders', {
     method: 'POST',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`
     },
@@ -74,25 +74,31 @@ export const initializeRazorpayPayment = async (
 
   // Step 2: Create Razorpay payment order using database order ID
   console.log('💳 Creating Razorpay payment order...');
-  
+
+  const paymentPayload = {
+    order_id: databaseOrderId,
+    amount: Math.round(amount * 100), // Convert to paise
+    currency: 'INR',
+    user_email: userInfo.email,
+    notes: {
+      customer_name: userInfo.name || '',
+      customer_email: userInfo.email || '',
+      customer_phone: userInfo.phone || '',
+    },
+  };
+
+  console.log('[Razorpay] Payment Payload:', JSON.stringify(paymentPayload, null, 2));
+
   const response = await fetch('/api/payments', {
     method: 'POST',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`
     },
-    body: JSON.stringify({
-      order_id: databaseOrderId,
-      amount: Math.round(amount * 100), // Convert to paise
-      currency: 'INR',
-      user_email: userInfo.email,
-      notes: {
-        customer_name: userInfo.name,
-        customer_email: userInfo.email,
-        customer_phone: userInfo.phone,
-      },
-    }),
+    body: JSON.stringify(paymentPayload),
   });
+
+  console.log('[Razorpay] Create Order Response Status:', response.status);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
@@ -139,7 +145,7 @@ export const verifyRazorpayPayment = async (
 
   const verifyResponse = await fetch('/api/payments/verify', {
     method: 'POST',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`
     },

@@ -34,62 +34,65 @@ export default function ChantingPage() {
     <>
       <ViewCartButton redirectTo="/cart" />
       <section className="w-full px-6 pt-4 pb-12">
-      {/* Page Title */}
-      <div className="mx-auto mb-10 max-w-5xl text-center">
-        <div className="mx-auto mb-3 h-px w-24 bg-[#cfd8a3]" />
-        <h1 className="text-3xl font-serif tracking-wide text-[#2f3a1f]">
-          CHANTING
-        </h1>
-        <div className="mx-auto mt-3 h-px w-24 bg-[#cfd8a3]" />
-      </div>
+        {/* Page Title */}
+        <div className="mx-auto mb-10 max-w-5xl text-center">
+          <div className="mx-auto mb-3 h-px w-24 bg-[#cfd8a3]" />
+          <h1 className="text-3xl font-serif tracking-wide text-[#2f3a1f]">
+            CHANTING
+          </h1>
+          <div className="mx-auto mt-3 h-px w-24 bg-[#cfd8a3]" />
+        </div>
 
-      {/* Cards */}
-      <div className="mx-auto grid max-w-2xl grid-cols-1 gap-8 sm:grid-cols-2">
-        {chantingServices.map((service) => (
-          <Link key={service.title} href={service.href}>
-            <Card className="group aspect-square cursor-pointer rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf]">
-              <CardContent className="flex h-full flex-col p-4">
-                
-                {/* Image */}
-                <div className="mb-4 flex flex-1 items-center justify-center overflow-hidden rounded-xl border border-[#cfd8a3] bg-[#eef4cf]">
-                  <Image
-                    src={service.image}
-                    alt={service.title}
-                    width={260}
-                    height={160}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    unoptimized
-                  />
-                </div>
+        {/* Cards */}
+        <div className="mx-auto grid max-w-2xl grid-cols-1 gap-8 sm:grid-cols-2">
+          {chantingServices.map((service) => (
+            <Link key={service.title} href={service.href} className="block h-full">
+              <HoverCard>
+                <Card className="group h-full cursor-pointer rounded-2xl border border-[#cfd8a3] bg-white ring-1 ring-[#e3ebbd] transition-all hover:-translate-y-1 hover:shadow-lg hover:border-[#2f9e44] hover:ring-[#2f9e44] hover:bg-[#eef4cf]">
+                  <CardContent className="flex h-full flex-col p-0">
 
-                {/* Title */}
-                <h2 className="mt-auto text-center text-lg font-semibold text-[#2f3a1f]">
-                  {service.title}
-                </h2>
+                    {/* Edge-to-edge Image Container */}
+                    <div className="aspect-square w-full overflow-hidden rounded-t-2xl bg-[#f4f7e6] relative border-b border-[#cfd8a3]/30">
+                      <Image
+                        src={service.image}
+                        alt={service.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        unoptimized
+                      />
+                    </div>
 
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+                    {/* Title Section - Fixed Height */}
+                    <div className="flex h-20 items-center justify-center px-4">
+                      <h2 className="text-center text-sm font-semibold leading-snug text-[#2f3a1f] line-clamp-2">
+                        {service.title}
+                      </h2>
+                    </div>
+
+                  </CardContent>
+                </Card>
+              </HoverCard>
+            </Link>
+          ))}
+        </div>
 
 
-      {/* Category Switch */}
-      <div className="mx-auto mt-14 flex max-w-5xl flex-wrap justify-center gap-4">
-        {categories.map((cat) => (
-          <Link
-            key={cat.name}
-            href={cat.href}
-            className={`rounded-full px-6 py-2 text-sm font-medium transition ${
-             cat.active
-  ? "bg-[#2f9e44] text-white shadow-sm"
+        {/* Category Switch */}
+        <div className="mx-auto mt-14 flex max-w-5xl flex-wrap justify-center gap-4">
+          {categories.map((cat) => (
+            <Link
+              key={cat.name}
+              href={cat.href}
+              className={`rounded-full px-6 py-2 text-sm font-medium transition ${cat.active
+                  ? "bg-[#2f9e44] text-white shadow-sm"
 
-                : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
-            }`}
-          >
-            {cat.name}
-          </Link>
-        ))}
-      </div>
-    </section>    </>  );
+                  : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
+                }`}
+            >
+              {cat.name}
+            </Link>
+          ))}
+        </div>
+      </section>    </>);
 }
