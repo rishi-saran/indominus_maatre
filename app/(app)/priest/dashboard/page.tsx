@@ -285,14 +285,18 @@ export default function PriestDashboard() {
       const videoClient = createVideoClient(user.id, token);
       setClient(videoClient);
 
-      const callId = `priest_${user.id}`;
+      // Use unique call ID to avoid issues with old cached call settings
+      const timestamp = Date.now();
+      const callId = `priest_${user.id}_${timestamp}`;
       const livestreamCall = videoClient.call("livestream", callId);
 
-      await livestreamCall.getOrCreate({
-        data: { settings_override: { backstage: { enabled: false } } },
-      });
+      // Create/get the call - backstage is enabled at call type level in Stream dashboard
+      await livestreamCall.getOrCreate();
 
+      // Join the call first
       await livestreamCall.join({ create: true });
+      
+      // Then go live (transition from backstage to broadcasting)
       await livestreamCall.goLive();
 
       setCall(livestreamCall);
@@ -321,7 +325,13 @@ export default function PriestDashboard() {
     if (!call) return;
 
     try {
-      await call.endCall();
+      // Use stopLive() to end broadcasting but keep call alive for future streams
+      // This is better than endCall() which permanently ends the call
+      await call.stopLive();
+      
+      // Leave the call (disconnect)
+      await call.leave();
+      
       setCall(null);
       setClient(null);
       setPriestId(null);

@@ -16,6 +16,21 @@ import DonationBox from "./DonationBox";
 // Theme color
 const PRIMARY_GREEN = "#5cb85c";
 
+// Extract priest ID from call ID
+// Call ID format: priest_<userId>_<timestamp> or priest_<userId>
+function extractPriestId(callId: string): string {
+  // Remove "priest_" prefix
+  const withoutPrefix = callId.replace("priest_", "");
+  // Split by underscore to handle timestamp suffix
+  const parts = withoutPrefix.split("_");
+  // If there's a timestamp (13 digits at the end), remove it
+  if (parts.length > 1 && parts[parts.length - 1].length === 13) {
+    parts.pop(); // Remove timestamp
+  }
+  // Rejoin in case UUID contains underscores (it doesn't, but safe)
+  return parts.join("_");
+}
+
 // Live Badge Component
 const LiveBadge = () => (
   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 border border-red-200 shadow-sm">
@@ -99,13 +114,24 @@ export default function LiveViewerPage() {
         setClient(videoClient);
 
         const livestreamCall = videoClient.call("livestream", callId);
+        
+        // Try to join the call directly
+        // The call may have ended_at from a previous session, but a new session could be active
         await livestreamCall.join();
 
         setCall(livestreamCall);
         setLoading(false);
       } catch (err: any) {
         console.error("Error joining stream:", err);
-        setError(err.message || "Failed to join stream");
+        
+        // Handle specific error for ended calls
+        if (err.message?.includes("JoinEndedCall") || err.message?.includes("ended")) {
+          setError("This stream has ended. The priest is no longer broadcasting.");
+        } else if (err.message?.includes("not found")) {
+          setError("This stream does not exist or has been removed.");
+        } else {
+          setError(err.message || "Failed to join stream");
+        }
         setLoading(false);
       }
     }
@@ -362,7 +388,7 @@ export default function LiveViewerPage() {
                 {user && (
                   <DonationBox
                     callId={callId}
-                    priestId={callId.replace("priest_", "")}
+                    priestId={extractPriestId(callId)}
                     customerId={user.id}
                   />
                 )}

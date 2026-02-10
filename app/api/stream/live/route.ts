@@ -12,21 +12,73 @@ export async function GET() {
       return NextResponse.json({ streams: [] }, { status: 500 });
     }
 
-    // ✅ Correct server-side Stream client
     const client = new StreamClient(apiKey, apiSecret);
 
-    // ✅ Query active livestreams (NO user, NO token)
+    // Query ALL livestreams (no ended_at filter for debugging)
     const { calls } = await client.video.queryCalls({
       filter_conditions: {
         type: "livestream",
-        ended_at: { $exists: false },
       },
+      sort: [{ field: "created_at", direction: -1 }],
+      limit: 25,
     });
 
-    // ✅ Correct call ID extraction
-    const streams = calls.map((c) => c.call.id);
+    console.log("Found calls:", calls.length);
+    calls.forEach((c) => {
+      console.log("Call:", c.call.id);
+      console.log("  - ended_at:", c.call.ended_at);
+      console.log("  - backstage:", c.call.settings?.backstage);
+      console.log("  - session:", c.call.session ? JSON.stringify({
+        participants: c.call.session.participants?.length ?? 0,
+        live_started_at: c.call.session.live_started_at,
+        live_ended_at: c.call.session.live_ended_at,
+      }) : "null");
+    });
 
-    return NextResponse.json({ streams });
+    // Filter to only include calls that are truly live:
+    // - Call has NOT ended
+    // - Has an active session with participants
+    // - Is currently live (live_started_at exists, live_ended_at doesn't)
+    const activeStreams = calls
+      .filter((c) => {
+        // Call must not be ended
+        if (c.call.ended_at) {
+          console.log("Skipping", c.call.id, "- call ended");
+          return false;
+        }
+        
+        const session = c.call.session;
+        
+        // If no session, call hasn't been joined yet
+        if (!session) {
+          console.log("Skipping", c.call.id, "- no session");
+          return false;
+        }
+        
+        // Check if there are participants in the call (someone is streaming)
+        const participantCount = session.participants?.length ?? 0;
+        if (participantCount === 0) {
+          console.log("Skipping", c.call.id, "- no participants");
+          return false;
+        }
+        
+        // Check if stream is currently live (goLive was called, stopLive was not)
+        if (!session.live_started_at) {
+          console.log("Skipping", c.call.id, "- not live (in backstage)");
+          return false;
+        }
+        
+        if (session.live_ended_at) {
+          console.log("Skipping", c.call.id, "- live ended");
+          return false;
+        }
+        
+        console.log("Including", c.call.id, "- LIVE with", participantCount, "participants");
+        return true;
+      })
+      .map((c) => c.call.id);
+
+    return NextResponse.json({ streams: activeStreams });
   } catch (error) {
     console.error("Live streams error:", error);
     return NextResponse.json({ streams: [] });
