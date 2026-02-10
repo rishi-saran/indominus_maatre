@@ -13,10 +13,10 @@ export async function GET(
     request: NextRequest,
     props: { params: Promise<{ slug: string }> }
 ) {
+    const params = await props.params;
+    const slug = params.slug;
+    
     try {
-        const params = await props.params;
-        const slug = params.slug;
-
         // Construct backend URL: {API_BASE}/pages/{slug}
         // Note: API_BASE_URL from env already includes '/api/v1'
         const url = `${API_BASE_URL}/pages/${slug}`;
