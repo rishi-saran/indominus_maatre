@@ -1,96 +1,183 @@
 "use client";
 
-import { Video, Check, X, Eye } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import React, { useState } from "react";
+import { Video, Check, X, Eye, Power, Wifi, Users, Clock } from "lucide-react";
+import { toast } from "sonner";
 
-// Mock Data
-const streamRequests = [
-    { id: "STR001", priest: "Pandit Ravi", title: "Special Ganapati Homam Live", proposed_time: "Today, 4:00 PM", status: "Pending" },
-    { id: "STR002", priest: "Swami Iyer", title: "Vedayana Chant Session", proposed_time: "Tomorrow, 6:00 AM", status: "Pending" },
+type Request = {
+    id: string;
+    priest: string;
+    title: string;
+    proposed_time: string;
+};
+
+type Active = {
+    id: string;
+    priest: string;
+    title: string;
+    viewers: number;
+    duration?: string;
+    price?: number;
+};
+
+const initialRequests: Request[] = [
+    { id: "STR001", priest: "Pandit Ravi", title: "Special Ganapati Homam Live", proposed_time: "Today, 4:00 PM" },
+    { id: "STR002", priest: "Swami Iyer", title: "Vedayana Chant Session", proposed_time: "Tomorrow, 6:00 AM" },
 ];
 
-const activeStreams = [
-    { id: "STR003", priest: "Acharya Mishra", title: "Rudrabhishek", viewers: 124, duration: "00:45:12" },
+const initialActive: Active[] = [
+    { id: "STR003", priest: "Acharya Mishra", title: "Rudrabhishek Live", viewers: 124, duration: "00:45:12", price: 124 },
 ];
 
 export default function LiveStreamsPage() {
+    const [requests, setRequests] = useState<Request[]>(initialRequests);
+    const [active, setActive] = useState<Active[]>(initialActive);
+    const [watching, setWatching] = useState<Active | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activity, setActivity] = useState<string[]>([]);
+
+    function approveRequest(id: string) {
+        const req = requests.find((r) => r.id === id);
+        if (!req) return;
+        setRequests((prev) => prev.filter((r) => r.id !== id));
+        const newActive: Active = {
+            id: `A-${id}`,
+            priest: req.priest,
+            title: req.title,
+            viewers: Math.floor(Math.random() * 100) + 20,
+            duration: "00:00:00",
+            price: Math.floor(Math.random() * 200) + 50,
+        };
+        setActive((prev) => [newActive, ...prev]);
+        setActivity((a) => [`Approved ${req.title} by ${req.priest}`, ...a]);
+        toast.success("Request approved and moved to Active Streams");
+    }
+
+    function rejectRequest(id: string) {
+        const req = requests.find((r) => r.id === id);
+        setRequests((prev) => prev.filter((r) => r.id !== id));
+        if (req) setActivity((a) => [`Rejected ${req.title} by ${req.priest}`, ...a]);
+        toast.error("Request rejected");
+    }
+
+    function watchStream(s: Active) {
+        setWatching(s);
+        setIsModalOpen(true);
+        toast("Opening player (dummy)");
+    }
+
+    function endStream(id: string) {
+        const s = active.find((x) => x.id === id);
+        setActive((prev) => prev.filter((x) => x.id !== id));
+        if (watching?.id === id) {
+            setIsModalOpen(false);
+            setWatching(null);
+        }
+        if (s) setActivity((a) => [`Ended ${s.title}`, ...a]);
+        toast.success("Stream ended");
+    }
+
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Live Stream Management</h1>
-                <p className="text-gray-600 mt-1">Approve requests and monitor live sessions</p>
+                <h1 className="text-3xl font-extrabold text-[#1b5e20]">Live Stream Management</h1>
+                <p className="text-sm text-[#2b6b2b]/80 mt-1">Approve requests and monitor live sessions.</p>
             </div>
 
             {/* Active Streams */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card className="col-span-full">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <span className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                            </span>
-                            Active Streams Now
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {activeStreams.map((stream) => (
-                                <div key={stream.id} className="group relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-gray-800">
-                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 group-hover:bg-gray-900/30 transition-all">
-                                        <Video className="w-12 h-12 text-white/50 group-hover:text-white transition-colors" />
+            <div>
+                <h3 className="text-lg font-semibold text-[#2b6b2b] flex items-center gap-2"> 
+                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Active Streams Now
+                </h3>
+
+                <div className="mt-4">
+                    {active.length === 0 ? (
+                        <div className="bg-white rounded-3xl p-6 shadow text-center">No active streams</div>
+                    ) : (
+                        <div className="flex flex-wrap items-start gap-8">
+                            {active.map((s) => (
+                                <div key={s.id} className="bg-neutral-800 rounded-[18px] p-6 shadow-xl w-full sm:w-[45%] lg:w-[460px] flex-shrink-0 relative text-white h-48 flex flex-col justify-between">
+                                    <div className="absolute top-4 left-4">
+                                        <span className="bg-red-600 px-3 py-1 rounded-full text-xs font-bold">LIVE</span>
                                     </div>
-                                    <div className="absolute top-3 left-3 flex gap-2">
-                                        <span className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded flex items-center gap-1">
-                                            LIVE
-                                        </span>
-                                        <span className="px-2 py-1 bg-black/60 text-white text-xs rounded flex items-center gap-1">
-                                            <Eye className="w-3 h-3" /> {stream.viewers}
-                                        </span>
+                                    <div className="absolute top-4 right-4">
+                                        <span className="bg-black/60 px-3 py-1 rounded-full text-xs flex items-center gap-2"><Eye className="w-3 h-3" /> {s.viewers}</span>
                                     </div>
-                                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                                        <p className="text-white font-medium text-sm truncate">{stream.title}</p>
-                                        <p className="text-gray-300 text-xs">{stream.priest}</p>
+                                    <div className="text-xl font-semibold">{s.title}</div>
+                                    <div className="text-sm text-neutral-300">{s.priest}</div>
+                                    <div className="flex items-center gap-3 mt-4">
+                                        <button onClick={() => watchStream(s)} className="bg-neutral-700 hover:bg-neutral-600 text-white px-5 py-2 rounded-full"> <Eye className="inline w-4 h-4 mr-2"/> Watch</button>
+                                        <button onClick={() => endStream(s.id)} className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-full"> <Power className="inline w-4 h-4 mr-2"/> End Stream</button>
+                                        <div className="ml-auto bg-[#fff8d0] text-[#2b2b00] px-3 py-1 rounded-full font-bold">₹{s.price}</div>
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-3 text-sm text-neutral-400">
+                                        <Users className="w-4 h-4" /> <span>{s.viewers} viewers</span>
+                                        <Clock className="w-4 h-4 ml-4" /> <span>Live • {Math.floor(Math.random() * 40) + 1} mins</span>
                                     </div>
                                 </div>
                             ))}
-                            <div className="aspect-video flex items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                <p className="text-gray-400 text-sm">No other active streams</p>
-                            </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    )}
+                </div>
             </div>
 
-            {/* Requests */}
-            <h2 className="text-xl font-semibold text-gray-900 mt-8">Stream Requests</h2>
-            <div className="grid grid-cols-1 gap-4">
-                {streamRequests.map((req) => (
-                    <Card key={req.id}>
-                        <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Stream Requests */}
+            <div>
+                <h3 className="text-lg font-semibold text-[#2b6b2b] mt-6">Stream Requests</h3>
+                <div className="mt-4 space-y-4">
+                    {requests.length === 0 && <div className="text-sm text-gray-500">No pending requests.</div>}
+                    {requests.map((r) => (
+                        <div key={r.id} className="bg-white rounded-[18px] px-4 py-3 flex items-center justify-between border border-[#f4efe8] shadow-sm">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                                    <Video className="w-6 h-6" />
+                                <div className="w-14 h-14 rounded-xl bg-[#f6fff5] flex items-center justify-center text-[#1b8a3e]">
+                                    <Wifi className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900">{req.title}</h3>
-                                    <p className="text-sm text-gray-600">
-                                        Requested by <span className="font-medium text-gray-900">{req.priest}</span> • {req.proposed_time}
-                                    </p>
+                                    <div className="font-semibold text-[#1b5e20]">{r.title}</div>
+                                    <div className="text-xs text-gray-400">Requested by <span className="font-medium text-gray-800">{r.priest}</span></div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button className="flex items-center gap-2 px-4 py-2 bg-[#5cb85c] text-white rounded-lg font-medium hover:bg-[#4cae4c] transition-colors shadow-sm">
+                                <div className="text-xs text-gray-400 mr-2">{r.proposed_time}</div>
+                                <button onClick={() => approveRequest(r.id)} className="inline-flex items-center gap-2 bg-[#1b8a3e] hover:bg-[#187737] text-white px-4 py-2 rounded-full font-semibold">
                                     <Check className="w-4 h-4" /> Approve
                                 </button>
-                                <button className="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 bg-red-50 rounded-lg font-medium hover:bg-red-100 transition-colors">
+                                <button onClick={() => rejectRequest(r.id)} className="inline-flex items-center gap-2 border border-[#f5d1d1] text-[#b91c1c] px-3 py-2 rounded-full font-semibold bg-white/90">
                                     <X className="w-4 h-4" /> Reject
                                 </button>
                             </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                        </div>
+                    ))}
+                </div>
             </div>
+
+
+
+            {/* Watch Modal */}
+            {isModalOpen && watching && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
+                    <div className="bg-white rounded-3xl w-full max-w-3xl p-6 relative">
+                        <button className="absolute right-4 top-4 p-2 text-gray-600" onClick={() => {setIsModalOpen(false); setWatching(null);}}>Close</button>
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="w-12 h-12 rounded-lg bg-neutral-900 flex items-center justify-center text-white font-bold">LIVE</div>
+                            <div>
+                                <div className="font-semibold text-lg">{watching.title}</div>
+                                <div className="text-sm text-gray-500">Hosted by {watching.priest}</div>
+                            </div>
+                        </div>
+                        <div className="aspect-video bg-black rounded-md flex items-center justify-center text-white">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold">Video Player (dummy)</div>
+                                <div className="text-sm text-gray-300 mt-2">This is a placeholder for the live stream player.</div>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2">
+                            <button className="bg-[#1b8a3e] text-white px-4 py-2 rounded-lg" onClick={() => toast.success("Pinned to featured (dummy)")}>Feature</button>
+                            <button className="bg-red-600 text-white px-4 py-2 rounded-lg" onClick={() => {endStream(watching.id); setIsModalOpen(false); setWatching(null);}}>End Stream</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
