@@ -96,23 +96,19 @@ export default function LiveStreamsPage() {
                     ) : (
                         <div className="flex flex-wrap items-start gap-8">
                             {active.map((s) => (
-                                <div key={s.id} className="bg-neutral-800 rounded-[18px] p-6 shadow-xl w-full sm:w-[45%] lg:w-[460px] flex-shrink-0 relative text-white h-48 flex flex-col justify-between">
+                                <div key={s.id} className="bg-white rounded-[18px] border border-[#e6e6e6] p-6 w-full sm:w-[45%] lg:w-[460px] flex-shrink-0 relative text-gray-900 h-48 flex flex-col justify-between shadow-sm">
                                     <div className="absolute top-4 left-4">
-                                        <span className="bg-red-600 px-3 py-1 rounded-full text-xs font-bold">LIVE</span>
+                                        <span className="bg-red-600 px-3 py-1 rounded-full text-xs font-bold text-white">LIVE</span>
                                     </div>
                                     <div className="absolute top-4 right-4">
-                                        <span className="bg-black/60 px-3 py-1 rounded-full text-xs flex items-center gap-2"><Eye className="w-3 h-3" /> {s.viewers}</span>
+                                        <span className="bg-black/80 px-3 py-1 rounded-full text-xs flex items-center gap-2 text-white"><Eye className="w-3 h-3" /> {s.viewers}</span>
                                     </div>
-                                    <div className="text-xl font-semibold">{s.title}</div>
-                                    <div className="text-sm text-neutral-300">{s.priest}</div>
-                                    <div className="flex items-center gap-3 mt-4">
-                                        <button onClick={() => watchStream(s)} className="bg-neutral-700 hover:bg-neutral-600 text-white px-5 py-2 rounded-full"> <Eye className="inline w-4 h-4 mr-2"/> Watch</button>
-                                        <button onClick={() => endStream(s.id)} className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-full"> <Power className="inline w-4 h-4 mr-2"/> End Stream</button>
-                                        <div className="ml-auto bg-[#fff8d0] text-[#2b2b00] px-3 py-1 rounded-full font-bold">₹{s.price}</div>
-                                    </div>
-                                    <div className="flex items-center gap-3 mt-3 text-sm text-neutral-400">
-                                        <Users className="w-4 h-4" /> <span>{s.viewers} viewers</span>
-                                        <Clock className="w-4 h-4 ml-4" /> <span>Live • {Math.floor(Math.random() * 40) + 1} mins</span>
+                                    <div className="text-lg font-semibold">{s.title}</div>
+                                    <div className="text-sm text-gray-500 mt-1">{s.priest}</div>
+                                    <div className="flex items-center gap-4 mt-4">
+                                        <button onClick={() => watchStream(s)} className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-6 py-2 rounded-full inline-flex items-center gap-2 font-semibold"> <Eye className="w-4 h-4"/> Watch</button>
+                                        <button onClick={() => endStream(s.id)} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full inline-flex items-center gap-2 font-semibold"> <Power className="w-4 h-4"/> End Stream</button>
+                                        <div className="ml-auto bg-[#fff5d7] text-[#2b2b00] px-3 py-1 rounded-full font-bold">₹{s.price}</div>
                                     </div>
                                 </div>
                             ))}
