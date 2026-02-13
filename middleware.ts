@@ -6,8 +6,11 @@ export function middleware(request: NextRequest) {
   // Routes that require authentication
   const protectedRoutes = ['/profile', '/cart'];
   
+  // Root path is also protected (Coming Soon page requires login)
+  const isRootPath = pathname === '/';
+  
   // Check if current path is a protected route
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const isProtectedRoute = isRootPath || protectedRoutes.some(route => pathname.startsWith(route));
   
   if (isProtectedRoute) {
     const userIdCookie = request.cookies.get('user_id')?.value;
@@ -32,6 +35,7 @@ export function middleware(request: NextRequest) {
 // Configure which routes to run middleware on
 export const config = {
   matcher: [
+    '/',
     '/profile',
     '/profile/:path*',
     '/cart',

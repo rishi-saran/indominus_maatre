@@ -40,8 +40,8 @@ export default function LoginPage() {
         document.cookie = `user_id=${userId}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         document.cookie = `user_email=${encodeURIComponent(userEmail)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         
-        // Login successful, redirect to landing
-        router.push('/landing');
+        // Login successful, redirect to home (Coming Soon)
+        router.push('/');
       } else {
         setError('Login failed. Please try again.');
       }
