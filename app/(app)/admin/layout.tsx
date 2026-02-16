@@ -1,25 +1,43 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { fetchUserRole } from '@/lib/supabase/getUserRole';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { fetchUserRole } from "@/lib/supabase/getUserRole";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminPagesLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchUserRole()
-            .then((role) => {
-                if (role !== 'admin') {
-                    router.replace('/landing');
+        async function checkAdmin() {
+            try {
+                const role = await fetchUserRole();
+
+                if (role !== "admin") {
+                    router.replace("/landing");
+                    return;
                 }
-            })
-            .catch(() => router.replace('/login'))
-            .finally(() => setLoading(false));
+
+                setLoading(false);
+            } catch {
+                router.replace("/login");
+            }
+        }
+
+        checkAdmin();
     }, [router]);
 
-    if (loading) return null;
+    if (loading) {
+        return (
+            <div className="p-10 text-center text-gray-500">
+                Checking admin access…
+            </div>
+        );
+    }
 
     return <>{children}</>;
 }
