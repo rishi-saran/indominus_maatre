@@ -60,11 +60,11 @@ const revenueData = [
 ];
 
 const userDemographics = [
-  { name: "Customers", value: 3400, icon: UserCheck, color: "#16a34a", bgColor: "bg-green-50", textColor: "text-green-700", borderColor: "border-green-100" },
+  { name: "Customers", value: 3400, icon: UserCheck, color: "#1a5d1a", bgColor: "bg-green-50", textColor: "text-[#1a5d1a]", borderColor: "border-green-100" },
   { name: "Priests", value: 250, icon: UserPlus, color: "#ca8a04", bgColor: "bg-amber-50", textColor: "text-amber-700", borderColor: "border-amber-100" },
 ];
 
-const COLORS = ["#16a34a", "#ca8a04"];
+const COLORS = ["#1a5d1a", "#ca8a04"];
 
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -140,24 +140,24 @@ export default function ReportsPage() {
                <div>
                    <h3 className="text-xl font-bold text-gray-900">Revenue Growth</h3>
                    <p className="text-gray-500 text-sm font-medium flex items-center gap-1.5 mt-1.5">
-                       <span className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-bold">
+                       <span className="flex items-center gap-1 bg-green-100 text-[#1a5d1a] px-2 py-0.5 rounded-full text-xs font-bold">
                          <TrendingUp className="h-3 w-3" /> +12%
                        </span>
                        <span className="text-gray-400">vs last month</span>
                    </p>
                </div>
                <div className="p-3 bg-green-100/80 rounded-2xl border border-green-200/50">
-                    <BarChart3 className="h-6 w-6 text-green-700" />
+                    <BarChart3 className="h-6 w-6 text-[#1a5d1a]" />
                </div>
            </div>
            
            <div className="flex gap-4 mb-6 relative z-10">
              <div className="bg-white/70 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-green-100">
-               <p className="text-green-600/70 text-[10px] font-bold uppercase tracking-wider">Total Revenue</p>
+               <p className="text-[#1a5d1a] text-[10px] font-bold uppercase tracking-wider">Total Revenue</p>
                <p className="text-gray-900 text-xl font-black">₹3.29L</p>
              </div>
              <div className="bg-white/70 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-green-100">
-               <p className="text-green-600/70 text-[10px] font-bold uppercase tracking-wider">Avg. Monthly</p>
+               <p className="text-[#1a5d1a] text-[10px] font-bold uppercase tracking-wider">Avg. Monthly</p>
                <p className="text-gray-900 text-xl font-black">₹54.8k</p>
              </div>
            </div>
@@ -167,15 +167,15 @@ export default function ReportsPage() {
               <AreaChart data={revenueData}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#16a34a" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#16a34a" stopOpacity={0.02}/>
+                    <stop offset="5%" stopColor="#1a5d1a" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#1a5d1a" stopOpacity={0.02}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} tickFormatter={(value) => `₹${value/1000}k`} />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#16a34a', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                <Area type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" dot={{ stroke: '#16a34a', strokeWidth: 2, fill: '#fff', r: 4 }} activeDot={{ r: 6, strokeWidth: 0, fill: '#16a34a' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#1a5d1a', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                <Area type="monotone" dataKey="revenue" stroke="#1a5d1a" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" dot={{ stroke: '#1a5d1a', strokeWidth: 2, fill: '#fff', r: 4 }} activeDot={{ r: 6, strokeWidth: 0, fill: '#1a5d1a' }} />
               </AreaChart>
             </ResponsiveContainer>
            </div>
@@ -292,8 +292,8 @@ export default function ReportsPage() {
                  onClick={() => setShowCalendar(!showCalendar)}
                  className={`p-3 rounded-2xl transition-all duration-200 cursor-pointer ${
                    showCalendar 
-                     ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' 
-                     : 'bg-green-50 text-green-600 hover:bg-green-100 border border-green-100'
+                     ? 'bg-[#1a5d1a] text-white shadow-lg shadow-green-800/20' 
+                     : 'bg-green-50 text-[#1a5d1a] hover:bg-green-100 border border-green-100'
                  }`}
                >
                  <Calendar className="h-5 w-5" />
@@ -333,7 +333,7 @@ export default function ReportsPage() {
                              !hasData 
                                ? 'text-gray-300 cursor-not-allowed' 
                                : isSelected 
-                                 ? 'bg-green-600 text-white shadow-md shadow-green-600/20 scale-105' 
+                                 ? 'bg-[#1a5d1a] text-white shadow-md shadow-green-800/20 scale-105' 
                                  : 'text-gray-600 hover:bg-gray-100 border border-gray-100'
                            }`}
                          >
@@ -347,7 +347,7 @@ export default function ReportsPage() {
                    <div className="flex gap-2 pt-3 border-t border-gray-100">
                      <button 
                        onClick={selectAllMonths}
-                       className="flex-1 text-[11px] font-bold text-green-700 bg-green-50 py-2 rounded-lg hover:bg-green-100 transition-colors border border-green-100"
+                       className="flex-1 text-[11px] font-bold text-[#1a5d1a] bg-green-50 py-2 rounded-lg hover:bg-green-100 transition-colors border border-green-100"
                      >
                        Select All
                      </button>
@@ -359,7 +359,7 @@ export default function ReportsPage() {
                      </button>
                      <button 
                        onClick={() => setShowCalendar(false)}
-                       className="flex-1 text-[11px] font-bold text-white bg-gray-900 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                       className="flex-1 text-[11px] font-bold text-white bg-[#1a5d1a] py-2 rounded-lg hover:bg-green-900 transition-colors"
                      >
                        Apply
                      </button>
@@ -391,7 +391,7 @@ export default function ReportsPage() {
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
                 <Tooltip cursor={{ fill: '#f9fafb', radius: 12 }} content={<CustomTooltip />} />
                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                <Bar name="Confirmed" dataKey="confirmed" fill="#16a34a" radius={[6, 6, 6, 6]} barSize={32} />
+                <Bar name="Confirmed" dataKey="confirmed" fill="#1a5d1a" radius={[6, 6, 6, 6]} barSize={32} />
                 <Bar name="Cancelled" dataKey="cancelled" fill="#ef4444" radius={[6, 6, 6, 6]} barSize={32} />
               </BarChart>
             </ResponsiveContainer>

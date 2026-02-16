@@ -143,7 +143,7 @@ export default function SettingsPage() {
             <div className="pt-2">
                 <button 
                     onClick={handleSaveConfig}
-                    className="w-full bg-gray-900 text-white font-bold py-2.5 rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-gray-900/10 text-sm"
+                    className="w-full bg-[#1a5d1a] text-white font-bold py-2.5 rounded-xl hover:bg-green-900 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-800/20 text-sm"
                 >
                     <Save className="h-4 w-4" />
                     Save Changes
@@ -224,12 +224,12 @@ export default function SettingsPage() {
                 </div>
              </div>
              <button 
-                onClick={() => setIsInviteModalOpen(true)}
-                className="flex items-center gap-2 bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20"
-             >
-                <Plus className="h-4 w-4" />
-                Invite New Admin
-             </button>
+                     onClick={() => setIsInviteModalOpen(true)}
+                     className="flex items-center gap-2 bg-[#1a5d1a] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-green-900 transition-all shadow-lg shadow-green-800/20"
+                 >
+                     <Plus className="h-4 w-4" />
+                     Invite New Admin
+                 </button>
          </div>
          
          <div className="overflow-x-auto">
@@ -298,7 +298,7 @@ export default function SettingsPage() {
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
               <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
                   <div className="bg-purple-50 p-6 rounded-t-3xl border-b border-purple-100 flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-purple-900">Invite New Admin</h3>
+                      <h3 className="text-lg font-bold" style={{ color: '#1a5d1a' }}>Invite New Admin</h3>
                       <button onClick={() => setIsInviteModalOpen(false)} className="p-1 hover:bg-purple-100 rounded-full transition-colors">
                           <X className="h-5 w-5 text-purple-400" />
                       </button>
@@ -345,7 +345,7 @@ export default function SettingsPage() {
                           </select>
                       </div>
                       <div className="pt-4">
-                          <button type="submit" className="w-full bg-purple-600 text-white font-bold py-3.5 rounded-xl hover:bg-purple-700 transition-colors shadow-lg shadow-purple-600/20">
+                          <button type="submit" className="w-full bg-[#1a5d1a] text-white font-bold py-3.5 rounded-xl hover:bg-green-900 transition-colors shadow-lg shadow-green-800/20">
                               Send Invitation
                           </button>
                       </div>

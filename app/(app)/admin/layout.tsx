@@ -87,14 +87,14 @@ export default function AdminLayout({
                 <div className="h-24 px-8 flex items-center justify-between">
                     <Link href="/admin/dashboard" className="flex items-center gap-3 group">
                         <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-[#5cb85c] to-[#a3e635] rounded-xl blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
-                            <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#5cb85c] to-[#4cae4c] flex items-center justify-center text-white shadow-xl ring-2 ring-white/60 group-hover:scale-105 transition-transform duration-300">
-                                <Sparkles className="w-6 h-6 fill-white" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-[#fffbe6] to-[#eaf5b5] rounded-xl blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>
+                            <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#fffbe6] to-[#eaf5b5] flex items-center justify-center text-[#1a5d1a] shadow-xl ring-2 ring-white/60 group-hover:scale-105 transition-transform duration-300">
+                                <span className="font-extrabold text-2xl">M</span>
                             </div>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-2xl font-black text-gray-900 tracking-tight group-hover:bg-gradient-to-r group-hover:from-[#2e7d32] group-hover:to-[#5cb85c] group-hover:bg-clip-text group-hover:text-transparent transition-all">Maathre</span>
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 ml-0.5">Admin Suite</span>
+                            <span className="text-3xl font-extrabold italic tracking-tight text-transparent bg-clip-text" style={{ background: 'linear-gradient(90deg, #43a047 0%, #bdbd2c 40%, #ffc107 70%, #ff9800 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontStyle: 'italic', fontWeight: 800 }}>Maathre</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1a5d1a] ml-0.5">Admin Suite</span>
                         </div>
                     </Link>
                     <button
@@ -148,22 +148,22 @@ export default function AdminLayout({
 
                 {/* Footer */}
                 <div className="p-6 mt-auto">
-                    <div className="relative group overflow-hidden bg-gray-900/90 backdrop-blur-xl rounded-3xl p-1 shadow-2xl border border-white/10">
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#5cb85c]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="relative group overflow-hidden bg-white/90 backdrop-blur-xl rounded-3xl p-1 shadow-2xl border border-[#eaf5b5]">
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#eaf5b5]/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div className="relative p-4 flex items-center gap-3.5">
                             <div className="relative">
-                                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#5cb85c] to-[#a3e635] blur opacity-30 group-hover:opacity-60 transition-all duration-500"></div>
-                                <div className="relative w-10 h-10 rounded-full bg-gray-800 borderborder-white/10 flex items-center justify-center text-sm font-bold text-white shadow-inner">
+                                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#eaf5b5] to-[#fffbe6] blur opacity-30 group-hover:opacity-60 transition-all duration-500"></div>
+                                <div className="relative w-10 h-10 rounded-full bg-white border border-[#eaf5b5] flex items-center justify-center text-sm font-bold text-[#1a5d1a] shadow-inner">
                                     AU
                                 </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-white truncate group-hover:text-[#a3e635] transition-colors">Admin User</p>
-                                <p className="text-[10px] uppercase font-medium tracking-wider text-gray-400 truncate">Super Admin</p>
+                                <p className="text-sm font-bold text-[#1a5d1a] truncate group-hover:text-[#5cb85c] transition-colors">Admin User</p>
+                                <p className="text-[10px] uppercase font-medium tracking-wider text-[#5cb85c] truncate">Super Admin</p>
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-200"
+                                className="p-2 text-[#1a5d1a] hover:text-white hover:bg-[#5cb85c] rounded-full transition-all duration-200 border border-[#eaf5b5] bg-white"
                                 title="Sign Out"
                             >
                                 <LogOut className="h-4 w-4" />

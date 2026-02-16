@@ -352,7 +352,7 @@ export default function FinancePage() {
             <h4 className="text-gray-900 font-bold mb-1.5 relative z-10">Platform Commission Rule</h4>
             <p className="text-gray-500 text-sm mb-5 relative z-10">Current platform fee is set to <span className="font-bold text-emerald-700">{commissionRate}%</span> for all service bookings.</p>
             <div className="flex items-center gap-3 relative z-10">
-                <div className="bg-white/70 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-emerald-200/50 shadow-sm">
+                <div className="bg-white/70 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-[#1a5d1a]/30 shadow-sm">
                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Current Rate</span>
                     {isEditingRate ? (
                       <div className="flex items-center gap-1 mt-0.5">
@@ -363,7 +363,7 @@ export default function FinancePage() {
                           value={tempRate}
                           onChange={(e) => setTempRate(Number(e.target.value))}
                           autoFocus
-                          className="w-14 text-2xl font-black text-emerald-700 bg-white border border-emerald-300 rounded-md px-2 py-0.5 outline-none focus:ring-2 focus:ring-emerald-400"
+                          className="w-14 text-2xl font-black text-[#1a5d1a] bg-white border border-[#1a5d1a]/40 rounded-md px-2 py-0.5 outline-none focus:ring-2 focus:ring-[#1a5d1a]/40"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               setCommissionRate(tempRate);
@@ -375,15 +375,15 @@ export default function FinancePage() {
                             }
                           }}
                         />
-                        <span className="text-2xl font-black text-emerald-700">%</span>
+                        <span className="text-2xl font-black text-[#1a5d1a]">%</span>
                       </div>
                     ) : (
                       <div
-                        className="text-2xl font-black text-emerald-700 cursor-pointer flex items-center gap-1.5 group/rate mt-0.5"
+                        className="text-2xl font-black text-[#1a5d1a] cursor-pointer flex items-center gap-1.5 group/rate mt-0.5"
                         onClick={() => { setTempRate(commissionRate); setIsEditingRate(true); }}
                       >
                         {commissionRate}%
-                        <Pencil className="h-3 w-3 text-emerald-400 opacity-0 group-hover/rate:opacity-100 transition-opacity" />
+                        <Pencil className="h-3 w-3 text-[#1a5d1a]/60 opacity-0 group-hover/rate:opacity-100 transition-opacity" />
                       </div>
                     )}
                 </div>
@@ -398,7 +398,7 @@ export default function FinancePage() {
                       setIsEditingRate(true);
                     }
                   }}
-                  className="text-xs font-bold bg-emerald-600 text-white px-4 py-2.5 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/15 cursor-pointer"
+                  className="text-xs font-bold bg-[#1a5d1a] text-white px-4 py-2.5 rounded-xl hover:bg-green-900 transition-all shadow-lg shadow-green-800/15 cursor-pointer"
                 >
                   {isEditingRate ? 'Save' : 'Update Rules'}
                 </button>
@@ -472,7 +472,7 @@ export default function FinancePage() {
 
       {/* Tabs & Content */}
       <div className="flex flex-col space-y-6">
-         <div className="flex items-center gap-2 bg-gray-100/60 p-1.5 rounded-2xl w-fit">
+         <div className="flex items-center gap-4">
           {[
             { key: "incoming", label: "Incoming Payments" },
             { key: "payouts", label: "Priest Payouts" },
@@ -482,11 +482,12 @@ export default function FinancePage() {
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
               className={cn(
-                "px-5 py-2 text-sm font-bold rounded-xl transition-all duration-300 cursor-pointer",
+                "px-6 py-2 text-sm font-bold rounded-full border transition-all duration-300 cursor-pointer",
                 activeTab === tab.key 
-                  ? "bg-white text-gray-900 shadow-sm" 
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-[#1a5d1a] text-white border-[#1a5d1a] shadow-md" 
+                  : "bg-white text-[#1a5d1a] border-[#1a5d1a] hover:bg-[#1a5d1a]/10"
               )}
+              style={{ boxShadow: activeTab === tab.key ? '0 2px 12px 0 #1a5d1a22' : undefined }}
             >
               {tab.label}
             </button>

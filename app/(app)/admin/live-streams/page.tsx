@@ -25,11 +25,19 @@ const initialRequests: Request[] = [
     { id: "STR002", priest: "Swami Iyer", title: "Vedayana Chant Session", proposed_time: "Tomorrow, 6:00 AM" },
 ];
 
+
 const initialActive: Active[] = [
-    { id: "STR003", priest: "Acharya Mishra", title: "Rudrabhishek Live", viewers: 124, duration: "00:45:12", price: 124 },
+    {
+        id: "A-STR001-0",
+        priest: "Pandit Ravi",
+        title: "Special Ganapati Homam Live",
+        viewers: 102,
+        duration: "00:00:00",
+        price: 63,
+    },
 ];
 
-export default function LiveStreamsPage() {
+function LiveStreamsPage() {
     const [requests, setRequests] = useState<Request[]>(initialRequests);
     const [active, setActive] = useState<Active[]>(initialActive);
     const [watching, setWatching] = useState<Active | null>(null);
@@ -40,8 +48,10 @@ export default function LiveStreamsPage() {
         const req = requests.find((r) => r.id === id);
         if (!req) return;
         setRequests((prev) => prev.filter((r) => r.id !== id));
+        // Ensure unique id for each active stream
+        const uniqueId = `A-${id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const newActive: Active = {
-            id: `A-${id}`,
+            id: uniqueId,
             priest: req.priest,
             title: req.title,
             viewers: Math.floor(Math.random() * 100) + 20,
@@ -96,18 +106,18 @@ export default function LiveStreamsPage() {
                     ) : (
                         <div className="flex flex-wrap items-start gap-8">
                             {active.map((s) => (
-                                <div key={s.id} className="bg-white rounded-[18px] border border-[#e6e6e6] p-6 w-full sm:w-[45%] lg:w-[460px] flex-shrink-0 relative text-gray-900 h-48 flex flex-col justify-between shadow-sm">
-                                    <div className="absolute top-4 left-4">
-                                        <span className="bg-red-600 px-3 py-1 rounded-full text-xs font-bold text-white">LIVE</span>
+                                <div key={s.id} className="bg-white rounded-2xl border border-[#e6e6e6] p-0 w-full sm:w-[45%] lg:w-[460px] flex-shrink-0 shadow flex flex-col items-stretch justify-between">
+                                    <div className="flex flex-col items-stretch p-6 pb-4">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="bg-red-600 px-3 py-1 rounded-full text-xs font-bold text-white">LIVE</span>
+                                            <span className="bg-black/80 px-3 py-1 rounded-full text-xs flex items-center gap-2 text-white"><Eye className="w-3 h-3" /> {s.viewers}</span>
+                                        </div>
+                                        <div className="text-lg font-bold text-gray-900 mb-1">{s.title}</div>
+                                        <div className="text-sm text-gray-500 mb-2">{s.priest}</div>
                                     </div>
-                                    <div className="absolute top-4 right-4">
-                                        <span className="bg-black/80 px-3 py-1 rounded-full text-xs flex items-center gap-2 text-white"><Eye className="w-3 h-3" /> {s.viewers}</span>
-                                    </div>
-                                    <div className="text-lg font-semibold">{s.title}</div>
-                                    <div className="text-sm text-gray-500 mt-1">{s.priest}</div>
-                                    <div className="flex items-center gap-4 mt-4">
-                                        <button onClick={() => watchStream(s)} className="bg-gray-200 hover:bg-gray-300 text-gray-900 px-6 py-2 rounded-full inline-flex items-center gap-2 font-semibold"> <Eye className="w-4 h-4"/> Watch</button>
-                                        <button onClick={() => endStream(s.id)} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full inline-flex items-center gap-2 font-semibold"> <Power className="w-4 h-4"/> End Stream</button>
+                                    <div className="flex items-center gap-3 px-6 pb-4">
+                                        <button onClick={() => watchStream(s)} className="bg-blue-200 hover:bg-blue-300 text-blue-900 px-6 py-2 rounded-full inline-flex items-center gap-2 font-semibold"> <Eye className="w-4 h-4"/> Watch</button>
+                                        <button onClick={() => endStream(s.id)} className="bg-red-200 hover:bg-red-300 text-red-900 px-6 py-2 rounded-full inline-flex items-center gap-2 font-semibold"> <Power className="w-4 h-4"/> End Stream</button>
                                         <div className="ml-auto bg-[#fff5d7] text-[#2b2b00] px-3 py-1 rounded-full font-bold">₹{s.price}</div>
                                     </div>
                                 </div>
@@ -135,7 +145,7 @@ export default function LiveStreamsPage() {
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="text-xs text-gray-400 mr-2">{r.proposed_time}</div>
-                                <button onClick={() => approveRequest(r.id)} className="inline-flex items-center gap-2 bg-[#1b8a3e] hover:bg-[#187737] text-white px-4 py-2 rounded-full font-semibold">
+                                <button onClick={() => approveRequest(r.id)} className="inline-flex items-center gap-2 bg-[#1a5d1a] hover:bg-[#174d17] text-white px-4 py-2 rounded-full font-semibold">
                                     <Check className="w-4 h-4" /> Approve
                                 </button>
                                 <button onClick={() => rejectRequest(r.id)} className="inline-flex items-center gap-2 border border-[#f5d1d1] text-[#b91c1c] px-3 py-2 rounded-full font-semibold bg-white/90">
@@ -177,3 +187,5 @@ export default function LiveStreamsPage() {
         </div>
     );
 }
+
+export default LiveStreamsPage;
