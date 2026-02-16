@@ -17,34 +17,42 @@ export default function EditPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    /* Load page + init quill */
     useEffect(() => {
         let mounted = true;
 
-        async function init() {
+        async function loadPage() {
             try {
+                // 1️⃣ Fetch page
                 const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/pages/${slug}`
+                    `${process.env.NEXT_PUBLIC_API_URL}/pages/${slug}`,
+                    { cache: "no-store" }
                 );
+
                 if (!res.ok) throw new Error("Failed to load page");
 
                 const page = await res.json();
+
+                if (!mounted) return;
 
                 setTitle(page.title);
                 setType(page.type);
                 setPublished(page.published);
 
+                // 2️⃣ Init Quill
                 const { default: Quill } = await import("quill");
 
-                if (!mounted || !editorRef.current) return;
+                if (!editorRef.current || !mounted) return;
 
                 quillRef.current = new Quill(editorRef.current, {
                     theme: "snow",
                 });
 
-                quillRef.current.setContents(
-                    page.content.sections[0].delta
-                );
+                // 3️⃣ Set content AFTER init
+                const section = page.content?.sections?.[0];
+                if (section?.delta) {
+                    quillRef.current.setContents(section.delta);
+                }
+
             } catch (e: any) {
                 setError(e.message);
             } finally {
@@ -52,7 +60,7 @@ export default function EditPage() {
             }
         }
 
-        init();
+        loadPage();
         return () => {
             mounted = false;
         };
@@ -66,34 +74,28 @@ export default function EditPage() {
 
         try {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/pages/${slug}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/pages/${slug}`,
                 {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+                    },
                     body: JSON.stringify({
                         title,
                         type,
                         published,
-                        content: {
-                            sections: [
-                                {
-                                    key: "main",
-                                    title,
-                                    delta: quillRef.current.getContents(),
-                                },
-                            ],
-                        },
+                        content: quillRef.current.getContents(),
                     }),
                 }
             );
 
             if (!res.ok) {
                 const d = await res.json();
-                throw new Error(d.detail);
+                throw new Error(d.detail || "Update failed");
             }
 
-            router.push("/dashboard/admin/pages");
+            router.push("/admin/pages");
         } catch (e: any) {
             setError(e.message);
         } finally {

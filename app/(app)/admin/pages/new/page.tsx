@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import "quill/dist/quill.snow.css";
+import { supabase } from "@/lib/supabase/client";
 
-export default function NewAdminPage() {
-    const router = useRouter();
+export default function AdminCreatePage() {
     const editorRef = useRef<HTMLDivElement | null>(null);
     const quillRef = useRef<any>(null);
 
@@ -13,25 +12,25 @@ export default function NewAdminPage() {
     const [title, setTitle] = useState("");
     const [type, setType] = useState("general");
     const [published, setPublished] = useState(false);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
-
-    // Init Quill (client-only)
+    const router = useRouter();
 
     useEffect(() => {
         let mounted = true;
 
         async function initQuill() {
-            const { default: Quill } = await import("quill");
+            if (!editorRef.current || quillRef.current) return;
 
-            if (!mounted || !editorRef.current) return;
+            const Quill = (await import("quill")).default;
+            await import("quill/dist/quill.snow.css");
+
+            if (!mounted) return;
 
             quillRef.current = new Quill(editorRef.current, {
                 theme: "snow",
                 modules: {
                     toolbar: [
-                        [{ header: [1, 2, 3, false] }],
+                        [{ header: [1, 2, false] }],
                         ["bold", "italic", "underline"],
                         [{ list: "ordered" }, { list: "bullet" }],
                         ["link"],
@@ -42,121 +41,97 @@ export default function NewAdminPage() {
         }
 
         initQuill();
-
         return () => {
             mounted = false;
-            quillRef.current = null;
         };
     }, []);
 
-    // submit
     async function handleSubmit() {
-        if (!slug || !title) {
-            setError("Slug and title are required");
+        if (!slug || !title || !quillRef.current) {
+            setError("All fields required");
             return;
         }
 
-        if (!quillRef.current) {
-            setError("Editor not ready");
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+            setError("Not authenticated");
             return;
         }
 
-        setLoading(true);
-        setError("");
+        const content = quillRef.current.getContents();
 
-        try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/pages`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        slug,
-                        title,
-                        type,
-                        published,
-                        content: {
-                            sections: [
-                                {
-                                    key: "main",
-                                    title,
-                                    delta: quillRef.current.getContents(),
-                                },
-                            ],
-                        },
-                    }),
-                }
-            );
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.detail || "Failed to create page");
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/pages`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                    slug,
+                    title,
+                    type,
+                    content,
+                    published,
+                }),
             }
+        );
 
-            router.push("/dashboard/admin/pages");
-        } catch (err: any) {
-            setError(err.message ?? "Something went wrong");
-        } finally {
-            setLoading(false);
+        if (!res.ok) {
+            setError("Failed to create page");
+            return;
         }
+
+        router.push(`/pages/${slug}`);
     }
+
 
     return (
         <div className="max-w-4xl mx-auto p-8">
-            <h1 className="text-2xl font-semibold mb-6">Create Page</h1>
+            <h1 className="text-2xl font-bold mb-4">Create Page</h1>
 
-            {error && (
-                <div className="mb-4 rounded bg-red-100 p-3 text-red-700">
-                    {error}
-                </div>
-            )}
+            {error && <div className="text-red-600 mb-3">{error}</div>}
 
-            <div className="space-y-4">
+            <input
+                className="border p-2 w-full mb-2"
+                placeholder="slug"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+            />
+
+            <input
+                className="border p-2 w-full mb-2"
+                placeholder="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+            />
+
+            <input
+                className="border p-2 w-full mb-2"
+                placeholder="type"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+            />
+
+            <label className="flex items-center gap-2 mb-4">
                 <input
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    placeholder="slug (about-us)"
-                    className="w-full border p-2 rounded"
+                    type="checkbox"
+                    checked={published}
+                    onChange={(e) => setPublished(e.target.checked)}
                 />
+                Published
+            </label>
 
-                <input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="title"
-                    className="w-full border p-2 rounded"
-                />
+            <div ref={editorRef} className="bg-white mb-4" />
 
-                <input
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    placeholder="type (general, service)"
-                    className="w-full border p-2 rounded"
-                />
-
-                <label className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        checked={published}
-                        onChange={(e) => setPublished(e.target.checked)}
-                    />
-                    Published
-                </label>
-
-                <div className="border rounded">
-                    <div ref={editorRef} />
-                </div>
-
-                <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50"
-                >
-                    {loading ? "Creating…" : "Create Page"}
-                </button>
-            </div>
+            <button
+                onClick={handleSubmit}
+                className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+                Save Page
+            </button>
         </div>
     );
 }

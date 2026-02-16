@@ -14,7 +14,7 @@ export default function AdminPagesList() {
     const [pages, setPages] = useState<PageItem[]>([]);
 
     useEffect(() => {
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/pages`)
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/pages`)
             .then((r) => r.json())
             .then((d) => setPages(d.items || []));
     }, []);
@@ -24,7 +24,7 @@ export default function AdminPagesList() {
             <div className="flex justify-between mb-6">
                 <h1 className="text-2xl font-semibold">Pages</h1>
                 <button
-                    onClick={() => router.push("/dashboard/admin/pages/new")}
+                    onClick={() => router.push("/admin/pages/new")}
                     className="bg-blue-600 text-white px-4 py-2 rounded"
                 >
                     New Page
@@ -43,7 +43,7 @@ export default function AdminPagesList() {
                         </div>
                         <button
                             onClick={() =>
-                                router.push(`/dashboard/admin/pages/${p.slug}`)
+                                router.push(`/admin/pages/${p.slug}`)
                             }
                             className="text-blue-600"
                         >
