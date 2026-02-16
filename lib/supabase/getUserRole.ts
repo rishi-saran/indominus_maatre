@@ -1,7 +1,6 @@
 import { supabase } from "./client";
 
 export async function fetchUserRole() {
-    // Get authenticated user
     const {
         data: { user },
         error: authError,
@@ -22,5 +21,5 @@ export async function fetchUserRole() {
         throw error;
     }
 
-    return data.role; // e.g. 'admin' | 'customer'
+    return data.role;
 }
