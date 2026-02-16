@@ -1,10 +1,17 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function AdminPages() {
-    const [pages, setPages] = useState<any[]>([]);
+interface PageItem {
+    slug: string;
+    title: string;
+    type: string;
+}
+
+export default function AdminPagesList() {
+    const router = useRouter();
+    const [pages, setPages] = useState<PageItem[]>([]);
 
     useEffect(() => {
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/pages`)
@@ -13,27 +20,35 @@ export default function AdminPages() {
     }, []);
 
     return (
-        <div className="p-6 max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto p-6">
             <div className="flex justify-between mb-6">
-                <h1 className="text-2xl font-bold">Pages</h1>
-                <Link
-                    href="/dashboard/admin/pages/new"
-                    className="bg-green-600 text-white px-4 py-2 rounded"
+                <h1 className="text-2xl font-semibold">Pages</h1>
+                <button
+                    onClick={() => router.push("/dashboard/admin/pages/new")}
+                    className="bg-blue-600 text-white px-4 py-2 rounded"
                 >
-                    + New Page
-                </Link>
+                    New Page
+                </button>
             </div>
 
             <ul className="space-y-3">
                 {pages.map((p) => (
-                    <li key={p.slug} className="border p-3 rounded flex justify-between">
-                        <span>{p.title}</span>
-                        <Link
-                            href={`/dashboard/admin/pages/${p.slug}/edit`}
+                    <li
+                        key={p.slug}
+                        className="border p-3 rounded flex justify-between"
+                    >
+                        <div>
+                            <p className="font-medium">{p.title}</p>
+                            <p className="text-sm text-gray-500">{p.slug}</p>
+                        </div>
+                        <button
+                            onClick={() =>
+                                router.push(`/dashboard/admin/pages/${p.slug}`)
+                            }
                             className="text-blue-600"
                         >
                             Edit
-                        </Link>
+                        </button>
                     </li>
                 ))}
             </ul>
