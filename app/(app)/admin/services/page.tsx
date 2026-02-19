@@ -86,33 +86,116 @@ export default function ServicesPage() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [packageTiers, setPackageTiers] = useState<string[]>(['Economy', 'Standard', 'Premium']);
 
+    const [servicesData, setServicesData] = useState(homams);
+    const [statusFilter, setStatusFilter] = useState("All");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [editForm, setEditForm] = useState<any>(null);
+
     useEffect(() => {
-        if (selectedService?.packages && selectedService.packages.length > 0) {
-            setPackageTiers(selectedService.packages.map((p: any) => p.name));
-        } else {
-            setPackageTiers(['Economy', 'Standard', 'Premium']);
+        if (selectedService) {
+            // Ensure we have a deep copy for editing
+            setEditForm(JSON.parse(JSON.stringify(selectedService)));
+
+            // Sync tiers
+            if (selectedService.packages && selectedService.packages.length > 0) {
+                setPackageTiers(selectedService.packages.map((p: any) => p.name));
+            } else {
+                setPackageTiers(['Economy', 'Standard', 'Premium']);
+            }
         }
     }, [selectedService]);
 
-    const sortedPackageEntries = Object.entries(homams).sort(([slugA, a], [slugB, b]) => {
-        const serviceA = a as any;
-        const serviceB = b as any;
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, statusFilter, selectedFilter, searchQuery]);
 
-        const getPrice = (s: any) => {
-            if (!s.priceRange) return 0;
-            const match = s.priceRange.match(/[\d,]+/); // Extracts "15,000"
-            return match ? parseInt(match[0].replace(/,/g, ''), 10) : 0;
-        };
+    const handleSavePackageConfig = () => {
+        if (!editForm) return;
 
-        if (selectedFilter === "az") return serviceA.title.localeCompare(serviceB.title);
-        if (selectedFilter === "za") return serviceB.title.localeCompare(serviceA.title);
-        if (selectedFilter === "price_low") return getPrice(serviceA) - getPrice(serviceB);
-        if (selectedFilter === "price_high") return getPrice(serviceB) - getPrice(serviceA);
+        // Validation
+        if (!editForm.title?.trim()) {
+            const toaster = document.getElementById("toaster");
+            if (toaster) {
+                toaster.innerText = "Please enter a package name";
+                toaster.classList.remove("hidden");
+                toaster.style.animation = 'none';
+                toaster.offsetHeight;
+                toaster.style.animation = '';
+                setTimeout(() => toaster.classList.add("hidden"), 3000);
+            }
+            return;
+        }
 
-        return 0;
-    });
+        // Identify Key (Slug)
+        let slug = editForm.slug;
+
+        // If still no slug, try to generate from title
+        if (!slug && editForm.title) {
+            slug = editForm.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        }
+
+        // Fallback random slug
+        if (!slug) slug = `pkg-${Date.now()}`;
+
+        // Update State
+        setServicesData((prev: any) => ({
+            ...prev,
+            [slug]: {
+                ...editForm,
+                slug,
+                // Ensure array for packages if undefined
+                packages: editForm.packages || []
+            }
+        }));
+
+        // Show Toaster
+        const toaster = document.getElementById("toaster");
+        if (toaster) {
+            const isNew = !editForm.slug || !(servicesData as any)[editForm.slug];
+            toaster.innerText = isNew ? "Package created successfully" : "Package updated successfully";
+            toaster.classList.remove("hidden");
+            toaster.style.animation = 'none';
+            toaster.offsetHeight; /* trigger reflow */
+            toaster.style.animation = '';
+            setTimeout(() => toaster.classList.add("hidden"), 3000);
+        }
+
+        setIsConfigModalOpen(false);
+        setSelectedService(null);
+        setEditForm(null);
+    };
+
+    const sortedPackageEntries = Object.entries(servicesData)
+        .filter(([slug, s]: [string, any]) => {
+            // Status Filter
+            if (statusFilter !== "All") {
+                const status = s.status || "Active"; // Default to Active
+                if (status !== statusFilter) return false;
+            }
+            return true;
+        })
+        .sort(([slugA, a], [slugB, b]) => {
+            const serviceA = a as any;
+            const serviceB = b as any;
+
+            const getPrice = (s: any) => {
+                if (!s.priceRange) return 0;
+                const match = s.priceRange.match(/[\d,]+/); // Extracts "15,000"
+                return match ? parseInt(match[0].replace(/,/g, ''), 10) : 0;
+            };
+
+            if (selectedFilter === "az") return serviceA.title.localeCompare(serviceB.title);
+            if (selectedFilter === "za") return serviceB.title.localeCompare(serviceA.title);
+            if (selectedFilter === "price_low") return getPrice(serviceA) - getPrice(serviceB);
+            if (selectedFilter === "price_high") return getPrice(serviceB) - getPrice(serviceA);
+
+            // Newest / Default
+            return 0;
+        });
 
     const currentPackages = sortedPackageEntries.slice((currentPackagePage - 1) * 10, currentPackagePage * 10);
+    const totalPackagePages = Math.ceil(sortedPackageEntries.length / 10);
 
     const filterOptions = [
         { id: "trending", label: "Trending" },
@@ -125,9 +208,69 @@ export default function ServicesPage() {
     ];
 
     const itemsPerPage = 16;
-    const totalPages = Math.ceil(homamServices.length / itemsPerPage);
 
-    const currentServices = homamServices.slice(
+    // Process Services Data with Status and Logic
+    const processedServices = homamServices.map((service, index) => {
+        // Deterministic stats logic (same as used in rendering previously)
+        const globalIndex = index;
+        const activeBookings = (globalIndex * 7 + 3) % 12;
+        const totalBookings = (globalIndex * 123 + 45) % 500;
+        const isTrending = activeBookings > 8;
+        const status = globalIndex % 10 === 0 ? "Draft" : "Active";
+        const lastBooked = ["Rajesh K.", "Priya M.", "Amit B.", "Suresh R.", "Unknown"][globalIndex % 5];
+
+        // Look up detailed info
+        const slug = service.href.split('/').pop() || "";
+        const detailedService = (homams as any)[slug] || {};
+        const priceRange = detailedService.priceRange || "";
+        const description = detailedService.shortDescription || "";
+
+        // Extract price for sorting if available
+        let price = 0;
+        if (priceRange) {
+            const match = priceRange.match(/[\d,]+/);
+            if (match) price = parseInt(match[0].replace(/,/g, ''), 10);
+        }
+
+        return {
+            ...service,
+            activeBookings,
+            totalBookings,
+            isTrending,
+            status,
+            lastBooked,
+            price,
+            priceRange,
+            description
+        };
+    });
+
+    // Filter and Sort Services
+    const filteredServices = processedServices.filter(service => {
+        // Status Filter
+        if (statusFilter !== "All" && service.status !== statusFilter) return false;
+
+        // Search Filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            return service.title.toLowerCase().includes(query) ||
+                (service.description && service.description.toLowerCase().includes(query));
+        }
+
+        return true;
+    }).sort((a, b) => {
+        if (selectedFilter === "az") return a.title.localeCompare(b.title);
+        if (selectedFilter === "za") return b.title.localeCompare(a.title);
+        if (selectedFilter === "price_low") return a.price - b.price;
+        if (selectedFilter === "price_high") return b.price - a.price;
+        if (selectedFilter === "trending") return b.activeBookings - a.activeBookings; // Higher active bookings first
+        if (selectedFilter === "popular") return b.totalBookings - a.totalBookings; // Higher total bookings first
+        // Newest / Default (mock logic using index for stability)
+        return 0;
+    });
+
+    const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
+    const displayedServices = filteredServices.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
@@ -177,6 +320,8 @@ export default function ServicesPage() {
                                 </div>
                                 <input
                                     type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
                                     className="block w-full pl-12 pr-4 py-4 bg-transparent text-gray-900 placeholder-gray-400 font-medium focus:outline-none text-base"
                                     placeholder="Search services..."
                                 />
@@ -204,6 +349,25 @@ export default function ServicesPage() {
                                         <>
                                             <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)}></div>
                                             <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-20 transform origin-top-right animate-in fade-in zoom-in-95 duration-200">
+
+                                                {/* Status Filter Section */}
+                                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-2 mb-1">Filter By Status</div>
+                                                <div className="flex gap-1 px-2 mb-3">
+                                                    {["All", "Active", "Draft"].map(status => (
+                                                        <button
+                                                            key={status}
+                                                            onClick={() => setStatusFilter(status)}
+                                                            className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors ${statusFilter === status
+                                                                ? 'bg-gray-900 text-white border-gray-900'
+                                                                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                                                        >
+                                                            {status}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                <div className="h-px bg-gray-100 my-2"></div>
+
                                                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-2 mb-1">Sort Services By</div>
                                                 {filterOptions.map((option) => (
                                                     <button
@@ -229,129 +393,129 @@ export default function ServicesPage() {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {currentServices.map((service, index) => {
-                                // Generate deterministic mock stats based on service index (preserving consistency across pages)
-                                const globalIndex = homamServices.indexOf(service);
-                                const activeBookings = (globalIndex * 7 + 3) % 12;
-                                const totalBookings = (globalIndex * 123 + 45) % 500;
-                                const isTrending = activeBookings > 8;
-                                const status = globalIndex % 10 === 0 ? "Draft" : "Active";
-                                const lastBooked = ["Rajesh K.", "Priya M.", "Amit B.", "Suresh R.", "Unknown"][globalIndex % 5];
-
-                                return (
-                                    <div key={`${service.title}-${globalIndex}`} className="group relative bg-white rounded-3xl border border-gray-100/50 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col overflow-visible">
-                                        {/* Floating Badge */}
-                                        <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
-                                            {isTrending && (
-                                                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white text-orange-600 shadow-md transform group-hover:scale-110 transition-transform">
-                                                    <TrendingUp className="w-3 h-3" /> Trending
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Image Area */}
-                                        <div className="relative aspect-square w-full overflow-hidden rounded-t-3xl">
-                                            <div className="absolute inset-0 bg-gray-100 animate-pulse -z-10" />
-                                            <Image
-                                                src={service.image}
-                                                alt={service.title}
-                                                fill
-                                                className={`w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110 ${status === 'Draft' ? 'grayscale opacity-70' : ''}`}
-                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                                unoptimized
-                                            />
-                                            {/* Status Indicator (Bottom Left of Image) */}
-                                            <div className="absolute bottom-3 left-3">
-                                                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm border ${status === 'Active'
-                                                    ? 'bg-white/95 text-green-700 border-green-100/50'
-                                                    : 'bg-white/95 text-gray-500 border-gray-200/50'
-                                                    }`}>
-                                                    <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${status === 'Active' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
-                                                    {status}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="p-5 pt-4 flex-1 flex flex-col">
-                                            <div className="flex justify-between items-start gap-4 mb-4">
-                                                <h3 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-[#1a5d1a] transition-colors line-clamp-2">
-                                                    {service.title}
-                                                </h3>
-                                                <button className="text-gray-300 hover:text-gray-900 transition-colors p-1 hover:bg-gray-50 rounded-full shrink-0">
-                                                    <MoreVertical className="w-5 h-5" />
-                                                </button>
+                            {displayedServices.length > 0 ? (
+                                displayedServices.map((service, index) => {
+                                    return (
+                                        <div key={`${service.title}-${index}`} className="group relative bg-white rounded-3xl border border-gray-100/50 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col overflow-visible">
+                                            {/* Floating Badge */}
+                                            <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+                                                {service.isTrending && (
+                                                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white text-orange-600 shadow-md transform group-hover:scale-110 transition-transform">
+                                                        <TrendingUp className="w-3 h-3" /> Trending
+                                                    </span>
+                                                )}
                                             </div>
 
-                                            {/* Stats Row */}
-                                            <div className="flex items-center gap-6 mb-5 px-1">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Active</span>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Activity className="w-4 h-4 text-[#1a5d1a]" />
-                                                        <span className="text-base font-bold text-gray-900">{activeBookings}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="w-px h-8 bg-gray-100"></div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Total</span>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Users className="w-4 h-4 text-gray-400" />
-                                                        <span className="text-base font-bold text-gray-900">{totalBookings}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Footer Info */}
-                                            <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50/50">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border border-white shadow-sm flex items-center justify-center text-[10px] font-bold text-gray-500">
-                                                        {lastBooked.charAt(0)}
-                                                    </div>
-                                                    <span className="text-xs font-medium text-gray-500">
-                                                        Booked by <span className="text-gray-900 font-semibold">{lastBooked}</span>
+                                            {/* Image Area */}
+                                            <div className="relative aspect-square w-full overflow-hidden rounded-t-3xl">
+                                                <div className="absolute inset-0 bg-gray-100 animate-pulse -z-10" />
+                                                <Image
+                                                    src={service.image}
+                                                    alt={service.title}
+                                                    fill
+                                                    className={`w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110 ${service.status === 'Draft' ? 'grayscale opacity-70' : ''}`}
+                                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                                    unoptimized
+                                                />
+                                                {/* Status Indicator (Bottom Left of Image) */}
+                                                <div className="absolute bottom-3 left-3">
+                                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm border ${service.status === 'Active'
+                                                        ? 'bg-white/95 text-green-700 border-green-100/50'
+                                                        : 'bg-white/95 text-gray-500 border-gray-200/50'
+                                                        }`}>
+                                                        <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${service.status === 'Active' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                                                        {service.status}
                                                     </span>
                                                 </div>
                                             </div>
+
+                                            {/* Content */}
+                                            <div className="p-5 pt-4 flex-1 flex flex-col">
+                                                <div className="flex justify-between items-start gap-4 mb-4">
+                                                    <h3 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-[#1a5d1a] transition-colors line-clamp-2">
+                                                        {service.title}
+                                                    </h3>
+                                                    <button className="text-gray-300 hover:text-gray-900 transition-colors p-1 hover:bg-gray-50 rounded-full shrink-0">
+                                                        <MoreVertical className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+
+                                                {/* Stats Row */}
+                                                <div className="flex items-center gap-6 mb-5 px-1">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Active</span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Activity className="w-4 h-4 text-[#1a5d1a]" />
+                                                            <span className="text-base font-bold text-gray-900">{service.activeBookings}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-px h-8 bg-gray-100"></div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Total</span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Users className="w-4 h-4 text-gray-400" />
+                                                            <span className="text-base font-bold text-gray-900">{service.totalBookings}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Footer Info */}
+                                                <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50/50">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border border-white shadow-sm flex items-center justify-center text-[10px] font-bold text-gray-500">
+                                                            {service.lastBooked.charAt(0)}
+                                                        </div>
+                                                        <span className="text-xs font-medium text-gray-500">
+                                                            Booked by <span className="text-gray-900 font-semibold">{service.lastBooked}</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            ) : (
+                                <div className="col-span-full py-12 text-center text-gray-500 font-medium">
+                                    No services found matching your criteria.
+                                </div>
+                            )}
                         </div>
 
                         {/* Pagination Controls */}
-                        <div className="mx-auto mt-8 flex items-center justify-center gap-3 pb-8">
-                            <button
-                                onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className="flex items-center justify-center rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronLeft className="h-5 w-5" />
-                            </button>
+                        {totalPages > 1 && (
+                            <div className="mx-auto mt-8 flex items-center justify-center gap-3 pb-8">
+                                <button
+                                    onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="flex items-center justify-center rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <ChevronLeft className="h-5 w-5" />
+                                </button>
 
-                            <div className="flex gap-2">
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`rounded-full px-4 py-2 text-sm font-bold transition ${currentPage === page
-                                            ? "bg-[#1a5d1a] text-white shadow-lg shadow-green-900/20"
-                                            : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                                            }`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
+                                <div className="flex gap-2">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`rounded-full px-4 py-2 text-sm font-bold transition ${currentPage === page
+                                                ? "bg-[#1a5d1a] text-white shadow-lg shadow-green-900/20"
+                                                : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="flex items-center justify-center rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <ChevronRight className="h-5 w-5" />
+                                </button>
                             </div>
-
-                            <button
-                                onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className="flex items-center justify-center rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronRight className="h-5 w-5" />
-                            </button>
-                        </div>
+                        )}
                     </div>
                 )}
 
@@ -546,7 +710,27 @@ export default function ServicesPage() {
                                     </button>
 
                                     {isFilterOpen && (
-                                        <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-[60] animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-[60] animate-in fade-in zoom-in-95 duration-200">
+                                            {/* Status Filter */}
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-2 mb-1">Filter By Status</div>
+                                            <div className="flex gap-1 px-2 mb-3">
+                                                {["All", "Active", "Draft"].map(status => (
+                                                    <button
+                                                        key={status}
+                                                        onClick={() => setStatusFilter(status)}
+                                                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors ${statusFilter === status
+                                                            ? 'bg-gray-900 text-white border-gray-900'
+                                                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                                                    >
+                                                        {status}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <div className="h-px bg-gray-100 my-2"></div>
+
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-2 mb-1">Sort Services By</div>
+
                                             {filterOptions.map((option) => (
                                                 <button
                                                     key={option.id}
@@ -568,116 +752,129 @@ export default function ServicesPage() {
                                 <button
                                     onClick={() => {
                                         setSelectedService(null);
+                                        setEditForm({
+                                            title: '',
+                                            description: '',
+                                            status: 'Active',
+                                            flowerAddon: 'Disabled',
+                                            packages: []
+                                        });
+                                        setPackageTiers(['Economy', 'Standard', 'Premium']);
                                         setIsConfigModalOpen(true);
                                     }}
                                     className="flex items-center gap-2 px-5 py-3.5 bg-[#1a5d1a] text-white text-sm font-bold rounded-[2rem] transition-all hover:scale-105 active:scale-95 shadow-lg shadow-green-900/10 hover:bg-[#144414]"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Add Special Package</span>
+                                    <span className="hidden sm:inline">Add Package</span>
                                 </button>
                             </div>
                         </div>
 
                         {/* Packages List */}
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            {currentPackages.map(([slug, service]) => (
-                                <div key={slug} className="group bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-300">
-                                    {/* Service Header */}
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-gray-100 pb-6">
-                                        <div className="flex items-center gap-5">
-                                            <div className="relative w-16 h-16 rounded-2xl overflow-hidden shadow-md">
-                                                <Image
-                                                    src={service.image || "/services/homam.png"}
-                                                    alt={service.title}
-                                                    fill
-                                                    className="object-cover"
-                                                />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl md:text-2xl font-black text-gray-900 leading-tight group-hover:text-[#1a5d1a] transition-colors">
-                                                    {service.title}
-                                                </h3>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Service ID: {slug.toUpperCase().slice(0, 8)}</span>
-                                                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                                                    <span className="flex items-center gap-1 text-xs font-bold text-[#1a5d1a] bg-[#1a5d1a]/5 px-2 py-0.5 rounded-full">
-                                                        <Activity className="w-3 h-3" /> Active
-                                                    </span>
+                            {currentPackages.map(([slug, s]) => {
+                                const service = s as any;
+                                return (
+                                    <div key={slug} className="group bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-300">
+                                        {/* Service Header */}
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-gray-100 pb-6">
+                                            <div className="flex items-center gap-5">
+                                                <div className="relative w-16 h-16 rounded-2xl overflow-hidden shadow-md">
+                                                    <Image
+                                                        src={service.image || "/services/homam.png"}
+                                                        alt={service.title}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-xl md:text-2xl font-black text-gray-900 leading-tight group-hover:text-[#1a5d1a] transition-colors">
+                                                        {service.title}
+                                                    </h3>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Service ID: {slug.toUpperCase().slice(0, 8)}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                                                        <span className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${service.status === 'Draft' ? 'text-gray-500 bg-gray-100' : 'text-[#1a5d1a] bg-[#1a5d1a]/5'}`}>
+                                                            <Activity className="w-3 h-3" /> {service.status || "Active"}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            {/* Addons / Flowers Badge */}
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-pink-50 text-pink-700 rounded-xl text-xs font-bold border border-pink-100">
-                                                <Sparkles className="w-3.5 h-3.5" />
-                                                Addons: Flowers Configured
+                                            <div className="flex items-center gap-3">
+                                                {/* Addons / Flowers Badge */}
+                                                {service.flowerAddon && service.flowerAddon !== 'Disabled' && (
+                                                    <div className="flex items-center gap-2 px-4 py-2 bg-pink-50 text-pink-700 rounded-xl text-xs font-bold border border-pink-100">
+                                                        <Sparkles className="w-3.5 h-3.5" />
+                                                        Addons: Flowers Configured
+                                                    </div>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedService({ ...service, slug });
+                                                        setIsConfigModalOpen(true);
+                                                    }}
+                                                    className="text-sm font-bold text-gray-500 hover:text-[#1a5d1a] px-4 py-2 hover:bg-gray-50 rounded-xl transition-all"
+                                                >
+                                                    Edit Configuration
+                                                </button>
                                             </div>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedService({ ...service, slug });
-                                                    setIsConfigModalOpen(true);
-                                                }}
-                                                className="text-sm font-bold text-gray-500 hover:text-[#1a5d1a] px-4 py-2 hover:bg-gray-50 rounded-xl transition-all"
-                                            >
-                                                Edit Configuration
-                                            </button>
                                         </div>
+
+                                        {/* Packages Cards */}
+                                        {(service as any).packages && (service as any).packages.length > 0 ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                {(service as any).packages.map((pkg: any, idx: number) => (
+                                                    <div key={idx} className={`relative p-5 rounded-2xl border transition-all duration-300 ${pkg.name === 'Standard'
+                                                        ? 'bg-[#1a5d1a]/[0.02] border-[#1a5d1a]/20 outline outline-2 outline-[#1a5d1a]/10 z-10 scale-[1.02] shadow-lg'
+                                                        : 'bg-gray-50/50 border-gray-200 hover:border-gray-300 hover:bg-white'
+                                                        }`}>
+                                                        {pkg.name === 'Standard' && (
+                                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#1a5d1a] text-white text-[9px] font-bold uppercase tracking-wider rounded-full shadow-sm">
+                                                                Recommended
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <h4 className="font-black text-lg text-gray-800">{pkg.name}</h4>
+                                                            <Package className={`w-5 h-5 ${pkg.name === 'Premium' ? 'text-amber-500' : 'text-gray-300'}`} />
+                                                        </div>
+
+                                                        <div className="text-2xl font-black text-[#5cb85c] mb-4">
+                                                            {pkg.price}
+                                                        </div>
+
+                                                        <div className="space-y-2 mb-4">
+                                                            <div className="flex items-start gap-2 text-xs text-gray-600 font-medium">
+                                                                <Users className="w-3.5 h-3.5 mt-0.5 text-gray-400 shrink-0" />
+                                                                {pkg.priests}
+                                                            </div>
+                                                            <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">
+                                                                {pkg.description}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center flex flex-col items-center justify-center">
+                                                <div className="p-3 bg-gray-100 rounded-full mb-3">
+                                                    <Layers className="w-6 h-6 text-gray-400" />
+                                                </div>
+                                                <p className="text-gray-500 font-medium mb-2">No packages configured yet</p>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedService({ ...service, slug });
+                                                        setIsConfigModalOpen(true);
+                                                    }}
+                                                    className="text-sm text-[#1a5d1a] font-bold bg-white border border-gray-200 px-4 py-2 rounded-lg hover:border-[#1a5d1a] transition-colors"
+                                                >
+                                                    Create Packages
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-
-                                    {/* Packages Cards */}
-                                    {(service as any).packages && (service as any).packages.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            {(service as any).packages.map((pkg: any, idx: number) => (
-                                                <div key={idx} className={`relative p-5 rounded-2xl border transition-all duration-300 ${pkg.name === 'Standard'
-                                                    ? 'bg-[#1a5d1a]/[0.02] border-[#1a5d1a]/20 outline outline-2 outline-[#1a5d1a]/10 z-10 scale-[1.02] shadow-lg'
-                                                    : 'bg-gray-50/50 border-gray-200 hover:border-gray-300 hover:bg-white'
-                                                    }`}>
-                                                    {pkg.name === 'Standard' && (
-                                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#1a5d1a] text-white text-[9px] font-bold uppercase tracking-wider rounded-full shadow-sm">
-                                                            Recommended
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <h4 className="font-black text-lg text-gray-800">{pkg.name}</h4>
-                                                        <Package className={`w-5 h-5 ${pkg.name === 'Premium' ? 'text-amber-500' : 'text-gray-300'}`} />
-                                                    </div>
-
-                                                    <div className="text-2xl font-black text-[#5cb85c] mb-4">
-                                                        {pkg.price}
-                                                    </div>
-
-                                                    <div className="space-y-2 mb-4">
-                                                        <div className="flex items-start gap-2 text-xs text-gray-600 font-medium">
-                                                            <Users className="w-3.5 h-3.5 mt-0.5 text-gray-400 shrink-0" />
-                                                            {pkg.priests}
-                                                        </div>
-                                                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">
-                                                            {pkg.description}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center flex flex-col items-center justify-center">
-                                            <div className="p-3 bg-gray-100 rounded-full mb-3">
-                                                <Layers className="w-6 h-6 text-gray-400" />
-                                            </div>
-                                            <p className="text-gray-500 font-medium mb-2">No packages configured yet</p>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedService({ ...service, slug });
-                                                    setIsConfigModalOpen(true);
-                                                }}
-                                                className="text-sm text-[#1a5d1a] font-bold bg-white border border-gray-200 px-4 py-2 rounded-lg hover:border-[#1a5d1a] transition-colors"
-                                            >
-                                                Create Packages
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* Package Pagination */}
@@ -691,7 +888,7 @@ export default function ServicesPage() {
                             </button>
 
                             <div className="flex gap-2">
-                                {Array.from({ length: Math.ceil(Object.keys(homams).length / 10) }, (_, i) => i + 1).map((page) => (
+                                {Array.from({ length: totalPackagePages || 1 }, (_, i) => i + 1).map((page) => (
                                     <button
                                         key={page}
                                         onClick={() => setCurrentPackagePage(page)}
@@ -706,8 +903,8 @@ export default function ServicesPage() {
                             </div>
 
                             <button
-                                onClick={() => currentPackagePage < Math.ceil(Object.keys(homams).length / 10) && setCurrentPackagePage(currentPackagePage + 1)}
-                                disabled={currentPackagePage === Math.ceil(Object.keys(homams).length / 10)}
+                                onClick={() => currentPackagePage < totalPackagePages && setCurrentPackagePage(currentPackagePage + 1)}
+                                disabled={currentPackagePage === totalPackagePages}
                                 className="flex items-center justify-center rounded-full border border-gray-200 bg-white p-2 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <ChevronRight className="h-5 w-5" />
@@ -763,23 +960,59 @@ export default function ServicesPage() {
                                 <div className="p-8 max-h-[70vh] overflow-y-auto">
                                     <div className="grid gap-6">
                                         <div className="space-y-4 p-4 border rounded-xl bg-gray-50/30">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <ScrollText className="w-4 h-4 text-gray-500" />
+                                                <h4 className="font-bold text-gray-700">Basic Details</h4>
+                                            </div>
+                                            <div className="grid gap-4">
+                                                <div>
+                                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Package Name</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="e.g. Navagraha Homam"
+                                                        className="w-full p-2 rounded-lg border border-gray-200 bg-white text-sm font-medium focus:outline-none focus:border-[#1a5d1a]"
+                                                        value={editForm?.title || ""}
+                                                        onChange={(e) => setEditForm({ ...(editForm || {}), title: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Short Description</label>
+                                                    <textarea
+                                                        placeholder="Brief summary used in cards..."
+                                                        className="w-full p-2 rounded-lg border border-gray-200 bg-white text-sm font-medium focus:outline-none focus:border-[#1a5d1a] min-h-[60px]"
+                                                        value={editForm?.shortDescription || ""}
+                                                        onChange={(e) => setEditForm({ ...(editForm || {}), shortDescription: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 p-4 border rounded-xl bg-gray-50/30">
                                             <h4 className="font-bold text-gray-700 flex items-center gap-2">
                                                 <Package className="w-4 h-4" /> Global Settings
                                             </h4>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Flower Addon</label>
-                                                    <select className="w-full p-2 rounded-lg border border-gray-200 bg-white text-sm font-medium focus:outline-none focus:border-[#1a5d1a]">
-                                                        <option>Enabled (₹500 - ₹2000)</option>
-                                                        <option>Disabled</option>
+                                                    <select
+                                                        className="w-full p-2 rounded-lg border border-gray-200 bg-white text-sm font-medium focus:outline-none focus:border-[#1a5d1a]"
+                                                        value={editForm?.flowerAddon || "Disabled"}
+                                                        onChange={(e) => setEditForm({ ...(editForm || {}), flowerAddon: e.target.value })}
+                                                    >
+                                                        <option value="Enabled">Enabled (₹500 - ₹2000)</option>
+                                                        <option value="Disabled">Disabled</option>
                                                     </select>
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Status</label>
-                                                    <select className="w-full p-2 rounded-lg border border-gray-200 bg-white text-sm font-medium focus:outline-none focus:border-[#1a5d1a]">
-                                                        <option>Active</option>
-                                                        <option>Draft</option>
-                                                        <option>Archived</option>
+                                                    <select
+                                                        className="w-full p-2 rounded-lg border border-gray-200 bg-white text-sm font-medium focus:outline-none focus:border-[#1a5d1a]"
+                                                        value={editForm?.status || "Active"}
+                                                        onChange={(e) => setEditForm({ ...(editForm || {}), status: e.target.value })}
+                                                    >
+                                                        <option value="Active">Active</option>
+                                                        <option value="Draft">Draft</option>
+                                                        <option value="Archived">Archived</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -795,7 +1028,7 @@ export default function ServicesPage() {
                                                     }}
                                                     className="text-xs font-bold text-[#1a5d1a] hover:underline"
                                                 >
-                                                    + Add Special Package
+                                                    + Add Tier
                                                 </button>
                                             </div>
 
@@ -806,8 +1039,38 @@ export default function ServicesPage() {
                                                         <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-full uppercase">Configured</span>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-4">
-                                                        <input type="text" placeholder="Price (e.g. ₹15,000)" className="w-full p-2 bg-gray-50 rounded-lg text-sm" defaultValue={selectedService.packages?.find((p: any) => p.name === tier)?.price} />
-                                                        <input type="text" placeholder="Priests (e.g. 2 Vadhyar)" className="w-full p-2 bg-gray-50 rounded-lg text-sm" defaultValue={selectedService.packages?.find((p: any) => p.name === tier)?.priests} />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Price (e.g. ₹15,000)"
+                                                            className="w-full p-2 bg-gray-50 rounded-lg text-sm"
+                                                            value={editForm?.packages?.find((p: any) => p.name === tier)?.price || ""}
+                                                            onChange={(e) => {
+                                                                const newPackages = editForm?.packages ? [...editForm.packages] : [];
+                                                                const idx = newPackages.findIndex((p: any) => p.name === tier);
+                                                                if (idx >= 0) {
+                                                                    newPackages[idx] = { ...newPackages[idx], price: e.target.value };
+                                                                } else {
+                                                                    newPackages.push({ name: tier, price: e.target.value, priests: "" });
+                                                                }
+                                                                setEditForm({ ...(editForm || {}), packages: newPackages });
+                                                            }}
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Priests (e.g. 2 Vadhyar)"
+                                                            className="w-full p-2 bg-gray-50 rounded-lg text-sm"
+                                                            value={editForm?.packages?.find((p: any) => p.name === tier)?.priests || ""}
+                                                            onChange={(e) => {
+                                                                const newPackages = editForm?.packages ? [...editForm.packages] : [];
+                                                                const idx = newPackages.findIndex((p: any) => p.name === tier);
+                                                                if (idx >= 0) {
+                                                                    newPackages[idx] = { ...newPackages[idx], priests: e.target.value };
+                                                                } else {
+                                                                    newPackages.push({ name: tier, price: "", priests: e.target.value });
+                                                                }
+                                                                setEditForm({ ...(editForm || {}), packages: newPackages });
+                                                            }}
+                                                        />
                                                     </div>
                                                 </div>
                                             ))}
@@ -823,10 +1086,7 @@ export default function ServicesPage() {
                                         Cancel
                                     </button>
                                     <button
-                                        onClick={() => {
-                                            setIsConfigModalOpen(false);
-                                            alert('Configuration saved! (Note: This is a demo backend)');
-                                        }}
+                                        onClick={handleSavePackageConfig}
                                         className="px-6 py-2.5 rounded-xl font-bold text-white bg-[#1a5d1a] shadow-lg shadow-green-900/20 hover:bg-[#144414] transition-all transform active:scale-95"
                                     >
                                         Save Changes
@@ -837,6 +1097,10 @@ export default function ServicesPage() {
                     </div>
                 </div>
             )}
+            {/* Simple Toaster Notification */}
+            <div id="toaster" className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl z-[100] hidden animate-in slide-in-from-bottom-5 duration-300 font-medium">
+                Notification
+            </div>
         </div>
     );
 }

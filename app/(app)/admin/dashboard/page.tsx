@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -64,52 +65,58 @@ export default function AdminDashboard() {
         {
             id: 1,
             title: "Ganapati Homam Request",
+            serviceName: "Ganapati Homam",
+            userName: "Rahul Sharma",
+            requestDate: "2 mins ago",
             subtitle: "Requested by Rahul Sharma • 2 mins ago",
             status: "Pending",
             thumbnailColor: "bg-orange-100",
             thumbnailIcon: Sparkles,
             iconColor: "text-orange-600",
-            isEnabled: false
+            description: "A request for Ganapati Homam execution at the earliest convenience."
         },
         {
             id: 2,
             title: "Commission Payout Batch",
+            serviceName: "Commission Payout",
+            userName: "Admin System",
+            requestDate: "1 hour ago",
             subtitle: "45 payments pending approval • ₹1.2L Total",
             status: "Action Required",
             thumbnailColor: "bg-emerald-100",
             thumbnailIcon: Wallet,
             iconColor: "text-emerald-600",
-            isEnabled: false
+            description: "Batch processing for 45 pending commission payouts."
         },
         {
             id: 3,
             title: "Live Stream: Morning Aarti",
+            serviceName: "Morning Aarti",
+            userName: "Pandit Ravi",
+            requestDate: "Live Now",
             subtitle: "Started by Pandit Ravi • 145 Viewers",
             status: "Live",
             thumbnailColor: "bg-rose-100",
             thumbnailIcon: Video,
             iconColor: "text-rose-600",
-            isEnabled: true
+            description: "Live stream of the Morning Aarti session."
         },
         {
             id: 4,
             title: "New Priest Registration",
+            serviceName: "Registration",
+            userName: "Acharya Mishra",
+            requestDate: "1 day ago",
             subtitle: "Acharya Mishra • Verification Pending",
             status: "Review",
             thumbnailColor: "bg-blue-100",
             thumbnailIcon: Users,
             iconColor: "text-blue-600",
-            isEnabled: false
+            description: "New priest registration verification required."
         }
     ]);
 
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-
-    const toggleActivity = (id: number) => {
-        setActivities(activities.map(a =>
-            a.id === id ? { ...a, isEnabled: !a.isEnabled } : a
-        ));
-    };
 
     const toggleMenu = (id: number, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -142,6 +149,14 @@ export default function AdminDashboard() {
         setSelectedActivity(null);
     };
 
+    const handleActionRequired = () => {
+        if (selectedActivity) {
+            const updated = { ...selectedActivity, status: "Action Required" };
+            setActivities(activities.map(a => a.id === selectedActivity.id ? updated : a));
+            setSelectedActivity(updated);
+        }
+    };
+
     return (
         <div className="font-sans space-y-10">
             {/* Header / Top Bar */}
@@ -161,9 +176,11 @@ export default function AdminDashboard() {
                     <p className="text-gray-500 text-lg leading-relaxed mb-8 group-hover:text-gray-700 transition-colors">
                         Ready to manage your spiritual services today? You have <span className="font-bold text-gray-900">4 pending requests</span> waiting for review.
                     </p>
-                    <button className="bg-[#1a5d1a] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#144414] transition-all shadow-lg hover:shadow-green-900/20 active:scale-95 flex items-center gap-2">
-                        View Requests <ArrowUpRight className="w-4 h-4" />
-                    </button>
+                    <Link href="/admin/bookings">
+                        <button className="bg-[#1a5d1a] text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#144414] transition-all shadow-lg hover:shadow-green-900/20 active:scale-95 flex items-center gap-2">
+                            View Requests <ArrowUpRight className="w-4 h-4" />
+                        </button>
+                    </Link>
                 </div>
 
                 {/* Decorative Illustration (Simulated with Shapes & Icons) */}
@@ -230,9 +247,13 @@ export default function AdminDashboard() {
                     <button className="text-xs font-bold text-violet-600 hover:text-violet-700">View All</button>
                 </div>
 
-                <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100">
                     {activities.map((activity, i) => (
-                        <div key={activity.id} className={`p-6 flex items-center justify-between transition-colors hover:bg-gray-50 cursor-pointer ${i !== activities.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                        <div
+                            key={activity.id}
+                            onClick={() => handleViewDetails(activity)}
+                            className={`p-6 flex items-center justify-between transition-colors hover:bg-gray-50 cursor-pointer ${i === 0 ? 'rounded-t-[2rem]' : ''} ${i === activities.length - 1 ? 'rounded-b-[2rem]' : 'border-b border-gray-100'}`}
+                        >
                             <div className="flex items-center gap-6">
                                 <div className={`w-16 h-16 rounded-2xl ${activity.thumbnailColor} flex items-center justify-center shrink-0`}>
                                     <activity.thumbnailIcon className={`w-8 h-8 ${activity.iconColor}`} />
@@ -248,22 +269,11 @@ export default function AdminDashboard() {
                                     ${activity.status === 'Pending' ? 'bg-orange-100 text-orange-700' :
                                         activity.status === 'Action Required' ? 'bg-red-100 text-red-700' :
                                             activity.status === 'Live' ? 'bg-rose-100 text-rose-700 animate-pulse' :
-                                                'bg-gray-100 text-gray-700'
+                                                activity.status === 'Completed' ? 'bg-blue-50 text-blue-700' :
+                                                    'bg-gray-100 text-gray-700'
                                     }`}>
                                     {activity.status}
                                 </span>
-
-                                {/* Functional Toggle Switch */}
-                                {/* Functional Toggle Switch */}
-                                <div
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleActivity(activity.id);
-                                    }}
-                                    className={`w-12 h-7 rounded-full relative transition-colors duration-300 cursor-pointer ${activity.isEnabled ? 'bg-[#1a5d1a]' : 'bg-gray-200'}`}
-                                >
-                                    <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${activity.isEnabled ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                                </div>
 
                                 {/* Functional Menu */}
                                 <div className="relative">
@@ -293,7 +303,8 @@ export default function AdminDashboard() {
                                                 </button>
                                                 <div className="h-px bg-gray-100 my-1"></div>
                                                 <button
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         const newActivities = activities.filter(a => a.id !== activity.id);
                                                         setActivities(newActivities);
                                                         setOpenMenuId(null);
@@ -331,12 +342,13 @@ export default function AdminDashboard() {
                                         <selectedActivity.thumbnailIcon className={`w-8 h-8 ${selectedActivity.iconColor}`} />
                                     </div>
                                     <div>
-                                        <h4 className="text-lg font-bold text-gray-900">{selectedActivity.title}</h4>
+                                        <h4 className="text-lg font-bold text-gray-900">{selectedActivity.serviceName}</h4>
                                         <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider mt-1
                                             ${selectedActivity.status === 'Pending' ? 'bg-orange-100 text-orange-700' :
                                                 selectedActivity.status === 'Action Required' ? 'bg-red-100 text-red-700' :
                                                     selectedActivity.status === 'Live' ? 'bg-rose-100 text-rose-700' :
-                                                        'bg-gray-100 text-gray-700'
+                                                        selectedActivity.status === 'Completed' ? 'bg-blue-50 text-blue-700' :
+                                                            'bg-gray-100 text-gray-700'
                                             }`}>
                                             {selectedActivity.status}
                                         </span>
@@ -345,12 +357,24 @@ export default function AdminDashboard() {
 
                                 <div className="space-y-4 bg-gray-50 p-4 rounded-2xl">
                                     <div>
-                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Description</p>
-                                        <p className="text-sm font-medium text-gray-700">{selectedActivity.subtitle}</p>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">User Name</p>
+                                        <p className="text-sm font-medium text-gray-900">{selectedActivity.userName}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Activity ID</p>
-                                        <p className="text-sm font-medium text-gray-700">#{selectedActivity.id}</p>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Service Name</p>
+                                        <p className="text-sm font-medium text-gray-900">{selectedActivity.serviceName}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Request Date</p>
+                                        <p className="text-sm font-medium text-gray-900">{selectedActivity.requestDate}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Description</p>
+                                        <p className="text-sm font-medium text-gray-700">{selectedActivity.description}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Status</p>
+                                        <p className="text-sm font-medium text-gray-700">{selectedActivity.status}</p>
                                     </div>
                                 </div>
 
@@ -358,8 +382,11 @@ export default function AdminDashboard() {
                                     <button onClick={() => setIsDetailModalOpen(false)} className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
                                         Close
                                     </button>
-                                    <button className="flex-1 py-3 text-sm font-bold text-white bg-[#1a5d1a] hover:bg-[#144414] rounded-xl transition-colors shadow-lg shadow-green-900/10">
-                                        Take Action
+                                    <button
+                                        onClick={handleActionRequired}
+                                        className="flex-1 py-3 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors shadow-lg shadow-amber-900/10"
+                                    >
+                                        Mark as Action Required
                                     </button>
                                 </div>
                             </div>
@@ -403,7 +430,7 @@ export default function AdminDashboard() {
                                             <>
                                                 <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
                                                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-1">
-                                                    {["Pending", "Action Required", "Live", "Review"].map((option) => (
+                                                    {["Pending", "Action Required", "Live", "Review", "Completed"].map((option) => (
                                                         <button
                                                             key={option}
                                                             type="button"

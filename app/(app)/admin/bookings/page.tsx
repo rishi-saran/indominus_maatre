@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Calendar,
     CheckCircle,
@@ -17,14 +17,16 @@ import {
     Sparkles,
     X,
     ChevronDown,
-    Check
+    Check,
+    Eye,
+    ThumbsUp,
+    Ban
 } from "lucide-react";
 import { homamServices } from "@/data/homams";
 import { virtualServices } from "@/lib/data/virtual-services";
-import { span } from "framer-motion/m";
 
 // Mock Data
-const bookings = [
+const initialBookings = [
     {
         id: "BK001",
         customer: "Rahul Sharma",
@@ -35,7 +37,8 @@ const bookings = [
         amount: "₹5,000",
         status: "Confirmed",
         location: "Mumbai, Bandra West",
-        avatarColor: "bg-blue-100 text-blue-600"
+        avatarColor: "bg-blue-100 text-blue-600",
+        notes: "Please bring flowers."
     },
     {
         id: "BK002",
@@ -47,7 +50,8 @@ const bookings = [
         amount: "₹3,500",
         status: "Pending",
         location: "Pune, Kothrud",
-        avatarColor: "bg-pink-100 text-pink-600"
+        avatarColor: "bg-pink-100 text-pink-600",
+        notes: "No specific requirements."
     },
     {
         id: "BK003",
@@ -59,7 +63,8 @@ const bookings = [
         amount: "₹12,000",
         status: "Confirmed",
         location: "Chennai, T Nagar",
-        avatarColor: "bg-purple-100 text-purple-600"
+        avatarColor: "bg-purple-100 text-purple-600",
+        notes: "Family of 4."
     },
     {
         id: "BK004",
@@ -71,7 +76,8 @@ const bookings = [
         amount: "₹4,500",
         status: "Completed",
         location: "Delhi, Dwaraka",
-        avatarColor: "bg-orange-100 text-orange-600"
+        avatarColor: "bg-orange-100 text-orange-600",
+        notes: "Succesfully completed."
     },
     {
         id: "BK005",
@@ -81,13 +87,14 @@ const bookings = [
         time: "8:00 AM",
         priest: "Unassigned",
         amount: "₹6,000",
-        status: "Requested",
+        status: "Pending",
         location: "Bangalore, Indiranagar",
-        avatarColor: "bg-green-100 text-green-600"
+        avatarColor: "bg-green-100 text-green-600",
+        notes: "Preferred language: Hindi"
     },
 ];
 
-const filterOptions = ["All", "Confirmed", "Pending", "Completed", "Requested", "Cancelled"];
+const statusOptions = ["All", "Confirmed", "Pending", "Completed", "Cancelled"];
 const sortOptions = ["Newest", "Oldest", "Amount: High to Low", "Amount: Low to High"];
 
 const stats = [
@@ -98,14 +105,25 @@ const stats = [
 ];
 
 export default function BookingsPage() {
-    const [bookingsList, setBookingsList] = useState(bookings);
-    const [filter, setFilter] = useState("All");
+    const [bookingsList, setBookingsList] = useState(initialBookings);
+    const [statusFilter, setStatusFilter] = useState("All");
+    const [serviceFilter, setServiceFilter] = useState("All");
     const [sort, setSort] = useState("Newest");
+
+    // Modal States
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState<any>(null);
+
+    // Filter/Dropdown UI States
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isSortOpen, setIsSortOpen] = useState(false);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [dateFilter, setDateFilter] = useState("");
+    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+    // Toaster State
+    const [toast, setToast] = useState({ message: "", visible: false });
 
     // Form State
     const [newBooking, setNewBooking] = useState({
@@ -117,22 +135,60 @@ export default function BookingsPage() {
         amount: ""
     });
 
+    const showToaster = (message: string) => {
+        setToast({ message, visible: true });
+        setTimeout(() => setToast({ message: "", visible: false }), 3000);
+    };
+
     const handleCreateBooking = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Simple Validation
+        if (!newBooking.customer || !newBooking.service || !newBooking.date || !newBooking.time || !newBooking.amount) {
+            showToaster("Please fill in all required fields.");
+            return;
+        }
+
         const booking = {
             id: `BK00${bookingsList.length + 1}`,
             ...newBooking,
             priest: "Unassigned",
-            status: "Requested",
-            avatarColor: "bg-blue-100 text-blue-600"
+            status: "Pending",
+            avatarColor: "bg-blue-100 text-blue-600",
+            notes: "New booking created via admin panel."
         };
+
         setBookingsList([booking, ...bookingsList]);
         setIsCreateModalOpen(false);
         setNewBooking({ customer: "", service: "", date: "", time: "", location: "", amount: "" });
+        showToaster("Booking created successfully");
     };
 
+    const handleStatusChange = (id: string, newStatus: string) => {
+        setBookingsList(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b));
+        setOpenDropdownId(null);
+
+        let message = `Booking marked as ${newStatus}`;
+        if (newStatus === "Confirmed") message = "Booking confirmed and approved request successfully";
+        if (newStatus === "Cancelled") message = "Booking cancelled";
+
+        showToaster(message);
+    };
+
+    // Close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => setOpenDropdownId(null);
+        if (openDropdownId) {
+            document.addEventListener('click', handleClickOutside);
+        }
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [openDropdownId]);
+
+    // Unique Services for Filter
+    const uniqueServices = Array.from(new Set(bookingsList.map(b => b.service)));
+
     return (
-        <div className="space-y-8 font-sans">
+        <div className="space-y-8 font-sans relative min-h-screen pb-20">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
@@ -188,24 +244,58 @@ export default function BookingsPage() {
                             onClick={() => { setIsFilterOpen(!isFilterOpen); setIsSortOpen(false); }}
                             className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-full font-bold text-sm hover:bg-gray-200 transition-colors"
                         >
-                            <Filter className="w-4 h-4" /> Filter: {filter} <ChevronDown className={`w-3 h-3 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+                            <Filter className="w-4 h-4" /> Filters <ChevronDown className={`w-3 h-3 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isFilterOpen && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
-                                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-20 animate-in fade-in zoom-in-95 duration-200">
-                                    {filterOptions.map(option => (
-                                        <button
-                                            key={option}
-                                            onClick={() => { setFilter(option); setIsFilterOpen(false); }}
-                                            className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-colors flex justify-between items-center ${filter === option ? 'bg-[#1a5d1a]/10 text-[#1a5d1a]' : 'text-gray-600 hover:bg-gray-50'
-                                                }`}
-                                        >
-                                            {option}
-                                            {filter === option && <Check className="w-3 h-3" />}
-                                        </button>
-                                    ))}
+                                <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-20 animate-in fade-in zoom-in-95 duration-200 overflow-y-auto max-h-[80vh]">
+
+                                    {/* Status Filter */}
+                                    <div className="mb-4">
+                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Status</h4>
+                                        <div className="space-y-1">
+                                            {statusOptions.map(option => (
+                                                <button
+                                                    key={option}
+                                                    onClick={() => { setStatusFilter(option); }}
+                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex justify-between items-center ${statusFilter === option ? 'bg-[#1a5d1a]/10 text-[#1a5d1a]' : 'text-gray-600 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    {option}
+                                                    {statusFilter === option && <Check className="w-3 h-3" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="h-px bg-gray-100 mb-4"></div>
+
+                                    {/* Service Filter */}
+                                    <div>
+                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Service Type</h4>
+                                        <div className="space-y-1">
+                                            <button
+                                                onClick={() => setServiceFilter("All")}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex justify-between items-center ${serviceFilter === "All" ? 'bg-[#1a5d1a]/10 text-[#1a5d1a]' : 'text-gray-600 hover:bg-gray-50'}`}
+                                            >
+                                                All Services
+                                                {serviceFilter === "All" && <Check className="w-3 h-3" />}
+                                            </button>
+                                            {uniqueServices.map(service => (
+                                                <button
+                                                    key={service}
+                                                    onClick={() => setServiceFilter(service)}
+                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors flex justify-between items-center ${serviceFilter === service ? 'bg-[#1a5d1a]/10 text-[#1a5d1a]' : 'text-gray-600 hover:bg-gray-50'}`}
+                                                >
+                                                    {service}
+                                                    {serviceFilter === service && <Check className="w-3 h-3" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
                                 </div>
                             </>
                         )}
@@ -277,8 +367,9 @@ export default function BookingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {bookingsList
                     .filter(b => {
-                        const statusMatch = filter === "All" || b.status === filter;
-                        // Mock date parsing (assuming "Feb 11, 2024" format)
+                        const statusMatch = statusFilter === "All" || b.status === statusFilter;
+                        const serviceMatch = serviceFilter === "All" || b.service === serviceFilter;
+
                         const bookingDate = new Date(b.date);
                         const filterDateObj = dateFilter ? new Date(dateFilter) : null;
 
@@ -288,7 +379,7 @@ export default function BookingsPage() {
                             bookingDate.getFullYear() === filterDateObj.getFullYear()
                         );
 
-                        return statusMatch && dateMatch;
+                        return statusMatch && serviceMatch && dateMatch;
                     })
                     .sort((a, b) => {
                         if (sort === "Newest") return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -298,14 +389,15 @@ export default function BookingsPage() {
                         return 0;
                     })
                     .map((booking) => (
-                        <div key={booking.id} className="group bg-white rounded-[2.5rem] p-6 border border-gray-100 hover:border-gray-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 cursor-pointer relative overflow-hidden">
+                        <div key={booking.id} className="group bg-white rounded-[2.5rem] p-6 border border-gray-100 hover:border-gray-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden flex flex-col h-full">
 
                             {/* Status Badge */}
-                            <div className="absolute top-6 right-6">
+                            <div className="absolute top-6 right-6 z-10">
                                 <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${booking.status === 'Confirmed' ? 'bg-green-50 text-green-700 border-green-100' :
                                     booking.status === 'Pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
                                         booking.status === 'Completed' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                            'bg-gray-50 text-gray-600 border-gray-100'
+                                            booking.status === 'Cancelled' ? 'bg-red-50 text-red-700 border-red-100' :
+                                                'bg-gray-50 text-gray-600 border-gray-100'
                                     }`}>
                                     {booking.status}
                                 </span>
@@ -320,19 +412,19 @@ export default function BookingsPage() {
 
                             {/* Customer & Service Info */}
                             <div className="flex items-start gap-4 mb-6">
-                                <div className={`w-14 h-14 rounded-2xl ${booking.avatarColor} flex items-center justify-center text-xl font-black shadow-sm group-hover:scale-105 transition-transform`}>
+                                <div className={`w-14 h-14 rounded-2xl ${booking.avatarColor} flex items-center justify-center text-xl font-black shadow-sm group-hover:scale-105 transition-transform shrink-0`}>
                                     {booking.customer.charAt(0)}
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-black text-gray-900 leading-tight mb-1">{booking.service}</h3>
-                                    <div className="flex items-center gap-1.5 text-sm font-bold text-gray-500">
-                                        <User className="w-3.5 h-3.5" /> {booking.customer}
+                                <div className="min-w-0">
+                                    <h3 className="text-lg font-black text-gray-900 leading-tight mb-1 truncate">{booking.service}</h3>
+                                    <div className="flex items-center gap-1.5 text-sm font-bold text-gray-500 truncate">
+                                        <User className="w-3.5 h-3.5 shrink-0" /> {booking.customer}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Details Grid */}
-                            <div className="grid grid-cols-2 gap-y-4 gap-x-2 py-5 border-y border-dashed border-gray-100 mb-6">
+                            <div className="grid grid-cols-2 gap-y-4 gap-x-2 py-5 border-y border-dashed border-gray-100 mb-6 flex-1">
                                 <div>
                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Date & Time</p>
                                     <div className="flex items-center gap-1.5 text-sm font-bold text-gray-800">
@@ -346,7 +438,7 @@ export default function BookingsPage() {
                                     <div className="text-sm font-bold text-gray-800 truncate">
                                         {booking.priest}
                                     </div>
-                                    {booking.priest === "Unassigned" && (
+                                    {booking.priest === "Unassigned" && booking.status !== "Cancelled" && (
                                         <button className="text-[10px] font-bold text-[#5cb85c] hover:underline">
                                             + Assign Priest
                                         </button>
@@ -354,26 +446,79 @@ export default function BookingsPage() {
                                 </div>
                             </div>
 
-                            {/* Footer */}
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 text-gray-500 text-xs font-bold">
-                                    <MapPin className="w-3.5 h-3.5" />
-                                    <span className="truncate max-w-[120px]">{booking.location}</span>
+                            {/* Footer Location & Amount */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-1.5 text-gray-500 text-xs font-bold min-w-0">
+                                    <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="truncate">{booking.location}</span>
                                 </div>
-                                <div className="flex items-center gap-1 bg-gray-50 px-3 py-1.5 rounded-xl">
+                                <div className="flex items-center gap-1 bg-gray-50 px-3 py-1.5 rounded-xl shrink-0">
                                     <Banknote className="w-4 h-4 text-gray-400" />
                                     <span className="font-black text-gray-900">{booking.amount}</span>
                                 </div>
                             </div>
 
-                            {/* Hover Actions Overlay (Desktop) */}
-                            <div className="absolute inset-x-0 bottom-0 p-4 bg-white/90 backdrop-blur-sm translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex gap-2">
-                                <button className="flex-1 bg-[#1a5d1a] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#144414] transition-colors shadow-lg shadow-green-900/10">
-                                    View Details
+                            {/* Action Buttons (Always Visible) */}
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => { setSelectedBooking(booking); setIsViewModalOpen(true); }}
+                                    className="flex-1 bg-[#1a5d1a] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#144414] transition-colors shadow-lg shadow-green-900/10 flex items-center justify-center gap-2"
+                                >
+                                    <Eye className="w-4 h-4" /> View Details
                                 </button>
-                                <button className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl transition-colors">
-                                    <MoreHorizontal className="w-5 h-5" />
-                                </button>
+
+                                <div className="relative">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenDropdownId(openDropdownId === booking.id ? null : booking.id);
+                                        }}
+                                        className={`p-3 rounded-xl transition-colors ${openDropdownId === booking.id ? 'bg-gray-200 text-gray-900' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                                    >
+                                        <MoreHorizontal className="w-5 h-5" />
+                                    </button>
+
+                                    {openDropdownId === booking.id && (
+                                        <div className="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-20 animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="fixed inset-0 z-10" onClick={() => setOpenDropdownId(null)}></div>
+                                            <div className="relative z-20 space-y-1">
+                                                <button
+                                                    onClick={() => { setSelectedBooking(booking); setIsViewModalOpen(true); setOpenDropdownId(null); }}
+                                                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5" /> View Details
+                                                </button>
+
+                                                {booking.status === "Pending" && (
+                                                    <button
+                                                        onClick={() => handleStatusChange(booking.id, "Confirmed")}
+                                                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-emerald-600 hover:bg-emerald-50 flex items-center gap-2"
+                                                    >
+                                                        <ThumbsUp className="w-3.5 h-3.5" /> Confirm Request
+                                                    </button>
+                                                )}
+
+                                                {booking.status !== "Completed" && booking.status !== "Cancelled" && (
+                                                    <button
+                                                        onClick={() => handleStatusChange(booking.id, "Completed")}
+                                                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                                                    >
+                                                        <CheckCircle className="w-3.5 h-3.5" /> Mark Completed
+                                                    </button>
+                                                )}
+
+                                                {booking.status !== "Cancelled" && (
+                                                    <button
+                                                        onClick={() => handleStatusChange(booking.id, "Cancelled")}
+                                                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                    >
+                                                        <Ban className="w-3.5 h-3.5" /> Cancel Booking
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -382,8 +527,8 @@ export default function BookingsPage() {
             {/* Create Booking Modal */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)}></div>
-                    <div className="relative bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsCreateModalOpen(false)}></div>
+                    <div className="relative bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="p-8">
                             <div className="flex justify-between items-center mb-8">
                                 <div>
@@ -400,7 +545,7 @@ export default function BookingsPage() {
 
                             <form onSubmit={handleCreateBooking} className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Customer Name</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Customer Name *</label>
                                     <input
                                         type="text"
                                         required
@@ -412,7 +557,7 @@ export default function BookingsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Service</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Service *</label>
                                     <div className="relative">
                                         <select
                                             required
@@ -434,7 +579,7 @@ export default function BookingsPage() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Date</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Date *</label>
                                         <input
                                             type="text"
                                             required
@@ -445,7 +590,7 @@ export default function BookingsPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Time</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Time *</label>
                                         <input
                                             type="text"
                                             required
@@ -461,7 +606,6 @@ export default function BookingsPage() {
                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Location</label>
                                     <input
                                         type="text"
-                                        required
                                         className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5d1a]/20 transition-all"
                                         placeholder="e.g. Mumbai, Bandra West"
                                         value={newBooking.location}
@@ -470,7 +614,7 @@ export default function BookingsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Amount</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider pl-1">Amount *</label>
                                     <input
                                         type="text"
                                         required
@@ -483,13 +627,122 @@ export default function BookingsPage() {
 
                                 <button
                                     type="submit"
-                                    className="w-full bg-[#1a5d1a] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-green-900/20 hover:shadow-2xl hover:shadow-green-900/30 hover:-translate-y-0.5 transition-all mt-4"
+                                    className="w-full bg-[#1a5d1a] text-white py-4 rounded-2xl font-bold text-lg shadow-xl shadow-green-900/20 hover:shadow-2xl hover:shadow-green-900/30 hover:-translate-y-0.5 transition-all mt-4 active:scale-95"
                                 >
                                     Create Booking
                                 </button>
                             </form>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* View Details Modal */}
+            {isViewModalOpen && selectedBooking && (
+                <div className="fixed inset-0 z-[65] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsViewModalOpen(false)}></div>
+                    <div className="relative bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h2 className="text-xl font-black text-gray-900">Booking Details</h2>
+                                <p className="text-sm font-medium text-gray-500">#{selectedBooking.id}</p>
+                            </div>
+                            <button
+                                onClick={() => setIsViewModalOpen(false)}
+                                className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-6 overflow-y-auto">
+                            {/* Header Info */}
+                            <div className="flex items-center gap-4">
+                                <div className={`w-16 h-16 rounded-3xl ${selectedBooking.avatarColor} flex items-center justify-center text-2xl font-black`}>
+                                    {selectedBooking.customer.charAt(0)}
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-gray-900 leading-tight">{selectedBooking.customer}</h3>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={`px-2 py-1 rounded-lg text-xs font-bold border ${selectedBooking.status === 'Confirmed' ? 'bg-green-50 text-green-700 border-green-100' :
+                                            selectedBooking.status === 'Pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
+                                                selectedBooking.status === 'Completed' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                    selectedBooking.status === 'Cancelled' ? 'bg-red-50 text-red-700 border-red-100' :
+                                                        'bg-gray-50 text-gray-600 border-gray-100'
+                                            }`}>
+                                            {selectedBooking.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Service</p>
+                                    <p className="text-lg font-black text-gray-900">{selectedBooking.service}</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Date</p>
+                                        <div className="flex items-center gap-2 font-bold text-gray-900">
+                                            <CalendarDays className="w-4 h-4 text-gray-400" /> {selectedBooking.date}
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Time</p>
+                                        <div className="flex items-center gap-2 font-bold text-gray-900">
+                                            <Clock className="w-4 h-4 text-gray-400" /> {selectedBooking.time}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Location</p>
+                                    <div className="flex items-center gap-2 font-bold text-gray-900">
+                                        <MapPin className="w-4 h-4 text-gray-400" /> {selectedBooking.location || "N/A"}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Priest</p>
+                                        <div className="flex items-center gap-2 font-bold text-gray-900">
+                                            <User className="w-4 h-4 text-gray-400" /> {selectedBooking.priest}
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Amount</p>
+                                        <div className="flex items-center gap-2 font-bold text-gray-900">
+                                            <Banknote className="w-4 h-4 text-gray-400" /> {selectedBooking.amount}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Notes</p>
+                                    <p className="text-sm font-medium text-gray-600 leading-relaxed">{selectedBooking.notes || "No additional notes provided."}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex gap-3">
+                            <button
+                                onClick={() => setIsViewModalOpen(false)}
+                                className="w-full py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toaster */}
+            {toast.visible && (
+                <div className="fixed bottom-8 right-8 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl font-bold text-sm z-[100] animate-in slide-in-from-bottom-5 fade-in duration-300 flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    {toast.message}
                 </div>
             )}
         </div>
