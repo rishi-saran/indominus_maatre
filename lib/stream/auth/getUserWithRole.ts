@@ -7,17 +7,13 @@ export async function getUserWithRole() {
 
   if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  const role = user.user_metadata?.role as "priest" | "customer" | undefined;
 
-  if (!profile) return null;
+  if (!role) return null;
 
   return {
     id: user.id,
     email: user.email,
-    role: profile.role as "priest" | "customer",
+    role,
   };
 }
