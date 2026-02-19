@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import "quill/dist/quill.snow.css";
-
+import { supabase } from "@/lib/supabase/client";
 export default function EditPage() {
     const { slug } = useParams<{ slug: string }>();
     const router = useRouter();
@@ -73,13 +73,17 @@ export default function EditPage() {
         setError("");
 
         try {
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
+            
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/pages/${slug}`,
                 {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+                        Authorization: `Bearer ${session?.access_token}`,
                     },
                     body: JSON.stringify({
                         title,
