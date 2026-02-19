@@ -186,7 +186,7 @@ export default function CartPage() {
     }
   };
 
-  const getServicePrice = (svc: CartService) => {
+  const getServicePriceBreakdown = (svc: CartService) => {
     const pkg = (svc.formData?.package || 'Economy') as 'Economy' | 'Standard' | 'Premium';
     const titleKey = (svc.title || '').toLowerCase();
 
@@ -205,14 +205,31 @@ export default function CartPage() {
     };
 
     const priceMap = specialPrices[titleKey] || defaultPrices;
-    let finalPrice = svc.price ?? priceMap[pkg] ?? defaultPrices.Economy;
 
-    // Fallback: Add flowers cost if not already included (if svc.price was missing)
-    if (!svc.price && svc.formData?.flowers === 'Yes') {
-      finalPrice += 250;
+    // Determine Base Price
+    // If svc.price is set (from backend), it typically includes flowers. We reverse that logic for display.
+    // If svc.price is NOT set (local), we use the map.
+    let basePrice = 0;
+    const hasFlowers = svc.formData?.flowers === 'Yes';
+    const flowerCost = hasFlowers ? 250 : 0;
+
+    if (svc.price) {
+      // Backend price includes flowers if they were selected
+      basePrice = hasFlowers ? svc.price - 250 : svc.price;
+    } else {
+      // Local lookup
+      basePrice = priceMap[pkg] ?? defaultPrices.Economy;
     }
 
-    return finalPrice;
+    return {
+      base: basePrice,
+      flowers: flowerCost,
+      total: basePrice + flowerCost
+    };
+  };
+
+  const getServicePrice = (svc: CartService) => {
+    return getServicePriceBreakdown(svc).total;
   };
 
   useEffect(() => {
@@ -450,13 +467,23 @@ export default function CartPage() {
   const calculateSubtotal = () => {
     return services
       .filter((svc) => svc.selected !== false)
-      .reduce((sum, svc) => sum + getServicePrice(svc), 0);
+      .reduce((sum, svc) => sum + getServicePriceBreakdown(svc).base, 0);
+  };
+
+  const calculateFlowersTotal = () => {
+    return services
+      .filter((svc) => svc.selected !== false)
+      .reduce((sum, svc) => sum + getServicePriceBreakdown(svc).flowers, 0);
   };
 
   const subtotal = calculateSubtotal();
+  const flowersTotal = calculateFlowersTotal();
   const discount = appliedCoupon ? 1500 : 0;
-  const tax = Math.round((subtotal - discount) * 0.18); // 18% GST
-  const total = subtotal - discount + tax;
+  // Tax is calculated on (Base + Flowers - Discount)
+  // Assuming flowers are taxable services
+  const taxableAmount = Math.max(0, subtotal + flowersTotal - discount);
+  const tax = Math.round(taxableAmount * 0.18); // 18% GST
+  const total = taxableAmount + tax;
 
   const handleContinueToReview = async () => {
     console.log('========== HANDLE CONTINUE TO REVIEW CLICKED ==========');
@@ -746,7 +773,7 @@ export default function CartPage() {
                                     {svc.title}
                                   </h3>
                                   <p className="text-lg font-bold text-[#2f9e44]">
-                                    ₹{getServicePrice(svc).toLocaleString()}
+                                    ₹{getServicePriceBreakdown(svc).base.toLocaleString()}
                                   </p>
                                 </div>
 
@@ -805,6 +832,12 @@ export default function CartPage() {
                           <span className="text-[#6c7d47]">Subtotal ({services.length} items)</span>
                           <span className="font-medium text-[#2f3a1f]">₹{subtotal.toLocaleString()}</span>
                         </div>
+                        {flowersTotal > 0 && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-[#6c7d47]">Flower Charges</span>
+                            <span className="font-medium text-[#2f3a1f]">₹{flowersTotal.toLocaleString()}</span>
+                          </div>
+                        )}
                         {appliedCoupon && (
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-[#6c7d47] flex items-center gap-1">
@@ -1142,7 +1175,7 @@ export default function CartPage() {
                               )}
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-bold text-[#2f3a1f] bg-[#eef4cf] px-2 py-1 rounded">₹{getServicePrice(svc).toLocaleString()}</p>
+                              <p className="text-sm font-bold text-[#2f3a1f] bg-[#eef4cf] px-2 py-1 rounded">₹{getServicePriceBreakdown(svc).base.toLocaleString()}</p>
                             </div>
                           </div>
                         ))}
@@ -1171,6 +1204,12 @@ export default function CartPage() {
                           <div className="flex justify-between text-sm">
                             <span className="text-[#6c7d47]">Discount</span>
                             <span className="text-green-600 font-medium">-₹{discount.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {flowersTotal > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-[#6c7d47]">Flower Charges</span>
+                            <span className="text-[#2f3a1f] font-medium">₹{flowersTotal.toLocaleString()}</span>
                           </div>
                         )}
                         <div className="flex justify-between text-sm">

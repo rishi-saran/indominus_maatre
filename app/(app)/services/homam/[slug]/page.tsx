@@ -276,9 +276,12 @@ export default function HomamDetailPage() {
 
       {/* Back Button */}
       <div className="fixed top-6 left-6 z-50">
-        <Link href="/services/homam" className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]">
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center justify-center rounded-full bg-[#2f9e44] p-3 shadow-lg text-white hover:bg-[#256b32]"
+        >
           <ArrowLeft className="h-5 w-5" />
-        </Link>
+        </button>
       </div>
 
       {/* Title */}
