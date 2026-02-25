@@ -25,30 +25,35 @@ export default function LoginPage() {
       return;
     }
 
-    // Admin Login Check
-    if (email === "maathre@gmail.com" && password === "maathre@2026") {
-      localStorage.setItem("adminAuth", "true");
-      router.push("/admin/dashboard");
-      return;
-    }
-
     try {
       const response = await AuthService.login(email, password);
 
-      if (response.user) {
-        // Store user info in localStorage and cookies for authentication
+      if (response.user && response.session) {
+        // Log the session object for backend debugging
+        console.log('[Auth] Supabase session after login:', response.session);
+
         const userId = response.user.id;
         const userEmail = response.user.email || email;
+        // Get role from user_metadata (Supabase default)
+        const userRole = response.user.user_metadata?.role || 'customer';
 
         localStorage.setItem('user_id', userId);
         localStorage.setItem('user_email', userEmail);
-
-        // Also set cookies for server-side authentication check with SameSite attribute
+        localStorage.setItem('user_role', userRole);
         document.cookie = `user_id=${userId}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         document.cookie = `user_email=${encodeURIComponent(userEmail)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+        document.cookie = `user_role=${userRole}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 
-        // Login successful, redirect to landing
-        router.push('/landing');
+        // Redirect based on role
+        if (
+          userEmail === 'maathre@gmail.com' &&
+          userId === 'd1f75355-5e06-4729-a12e-05d9c979bd3b' &&
+          userRole === 'admin'
+        ) {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/landing');
+        }
       } else {
         setError('Login failed. Please try again.');
       }

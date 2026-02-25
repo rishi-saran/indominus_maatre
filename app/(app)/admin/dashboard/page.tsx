@@ -20,101 +20,97 @@ import {
     Check
 } from "lucide-react";
 
-// Mock Data
-const stats = [
-    {
-        label: "Total Revenue",
-        value: "₹4.2L",
-        subtext: "+12% vs last month",
-        icon: Wallet,
-        color: "bg-orange-50 border border-orange-100",
-        textColor: "text-orange-700"
-    },
-    {
-        label: "Confirmed Bookings",
-        value: "85%",
-        subtext: "Completion Rate",
-        icon: CheckCircle2,
-        color: "bg-indigo-50 border border-indigo-100",
-        textColor: "text-indigo-700"
-    },
-    {
-        label: "Active Priests",
-        value: "56",
-        subtext: "Currently Online",
-        icon: Users,
-        color: "bg-rose-50 border border-rose-100",
-        textColor: "text-rose-700"
-    },
-    {
-        label: "Total Views",
-        value: "12K",
-        subtext: "Live Stream Aud.",
-        icon: Video,
-        color: "bg-violet-50 border border-violet-100",
-        textColor: "text-violet-700"
-    },
-];
+
+import { useEffect } from "react";
+
+function getAdminToken() {
+    if (typeof window !== "undefined") {
+        return localStorage.getItem("adminToken") || "";
+    }
+    return "";
+}
+    import { ApiService } from '@/lib/services/api.service';
+
 
 
 
 export default function AdminDashboard() {
     const currentDate = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
-    const [activities, setActivities] = useState([
-        {
-            id: 1,
-            title: "Ganapati Homam Request",
-            serviceName: "Ganapati Homam",
-            userName: "Rahul Sharma",
-            requestDate: "2 mins ago",
-            subtitle: "Requested by Rahul Sharma • 2 mins ago",
-            status: "Pending",
-            thumbnailColor: "bg-orange-100",
-            thumbnailIcon: Sparkles,
-            iconColor: "text-orange-600",
-            description: "A request for Ganapati Homam execution at the earliest convenience."
-        },
-        {
-            id: 2,
-            title: "Commission Payout Batch",
-            serviceName: "Commission Payout",
-            userName: "Admin System",
-            requestDate: "1 hour ago",
-            subtitle: "45 payments pending approval • ₹1.2L Total",
-            status: "Action Required",
-            thumbnailColor: "bg-emerald-100",
-            thumbnailIcon: Wallet,
-            iconColor: "text-emerald-600",
-            description: "Batch processing for 45 pending commission payouts."
-        },
-        {
-            id: 3,
-            title: "Live Stream: Morning Aarti",
-            serviceName: "Morning Aarti",
-            userName: "Pandit Ravi",
-            requestDate: "Live Now",
-            subtitle: "Started by Pandit Ravi • 145 Viewers",
-            status: "Live",
-            thumbnailColor: "bg-rose-100",
-            thumbnailIcon: Video,
-            iconColor: "text-rose-600",
-            description: "Live stream of the Morning Aarti session."
-        },
-        {
-            id: 4,
-            title: "New Priest Registration",
-            serviceName: "Registration",
-            userName: "Acharya Mishra",
-            requestDate: "1 day ago",
-            subtitle: "Acharya Mishra • Verification Pending",
-            status: "Review",
-            thumbnailColor: "bg-blue-100",
-            thumbnailIcon: Users,
-            iconColor: "text-blue-600",
-            description: "New priest registration verification required."
+    const [stats, setStats] = useState<any[]>([]);
+    const [activities, setActivities] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchDashboardData() {
+            setLoading(true);
+            setError(null);
+            try {
+                const headers = await ApiService.getAuthHeaders();
+                const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+                const [revenueRes, bookingsRes, priestsRes, streamsRes, activityRes] = await Promise.all([
+                    fetch(`${BASE_URL}/admin/dashboard/revenue`, { headers }),
+                    fetch(`${BASE_URL}/admin/dashboard/bookings`, { headers }),
+                    fetch(`${BASE_URL}/admin/dashboard/priests`, { headers }),
+                    fetch(`${BASE_URL}/admin/dashboard/live_streams`, { headers }),
+                    fetch(`${BASE_URL}/admin/dashboard/activity`, { headers })
+                ]);
+
+                if (!revenueRes.ok || !bookingsRes.ok || !priestsRes.ok || !streamsRes.ok || !activityRes.ok) {
+                    throw new Error('Failed to fetch dashboard data');
+                }
+
+                const revenue = await revenueRes.json();
+                const bookings = await bookingsRes.json();
+                const priests = await priestsRes.json();
+                const streams = await streamsRes.json();
+                const activity = await activityRes.json();
+
+                setStats([
+                    {
+                        label: 'Total Revenue',
+                        value: revenue.current_month,
+                        subtext: revenue.comparison_text,
+                        icon: Wallet,
+                        color: 'bg-orange-50 border border-orange-100',
+                        textColor: 'text-orange-700'
+                    },
+                    {
+                        label: 'Confirmed Bookings',
+                        value: bookings.completion_rate,
+                        subtext: 'Completion Rate',
+                        icon: CheckCircle2,
+                        color: 'bg-indigo-50 border border-indigo-100',
+                        textColor: 'text-indigo-700'
+                    },
+                    {
+                        label: 'Active Priests',
+                        value: priests.active_count,
+                        subtext: 'Currently Online',
+                        icon: Users,
+                        color: 'bg-rose-50 border border-rose-100',
+                        textColor: 'text-rose-700'
+                    },
+                    {
+                        label: 'Total Views',
+                        value: streams.total_views,
+                        subtext: 'Live Stream Aud.',
+                        icon: Video,
+                        color: 'bg-violet-50 border border-violet-100',
+                        textColor: 'text-violet-700'
+                    }
+                ]);
+                setActivities(activity.items || []);
+            } catch (e: any) {
+                setError(e.message || 'Failed to load dashboard');
+            } finally {
+                setLoading(false);
+            }
         }
-    ]);
+        fetchDashboardData();
+    }, []);
 
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
@@ -157,6 +153,12 @@ export default function AdminDashboard() {
         }
     };
 
+    if (loading) {
+        return <div className="text-center py-20 text-gray-500">Loading dashboard...</div>;
+    }
+    if (error) {
+        return <div className="text-center py-20 text-red-500">{error}</div>;
+    }
     return (
         <div className="font-sans space-y-10">
             {/* Header / Top Bar */}
@@ -208,22 +210,15 @@ export default function AdminDashboard() {
                     {stats.map((stat, i) => (
                         <div key={i} className="group relative">
                             <div className={`relative h-full rounded-[2rem] bg-white p-6 shadow-sm transition-all duration-300 group-hover:shadow-lg border border-gray-100 overflow-hidden`}>
-
-                                {/* Top Row: Label and Icon */}
                                 <div className="flex items-start justify-between mb-6">
                                     <div className="pt-1">
                                         <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{stat.label}</p>
                                     </div>
-                                    {/* Icon Container - Now Inside */}
                                     <div className={`w-14 h-14 rounded-2xl ${stat.color} shadow-[0_8px_16px_rgb(0,0,0,0.06)] flex items-center justify-center transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
                                         <stat.icon className={`w-7 h-7 ${stat.textColor}`} />
                                     </div>
                                 </div>
-
-                                {/* Middle: Value */}
                                 <h4 className="text-4xl font-black text-gray-900 tracking-tight mb-6">{stat.value}</h4>
-
-                                {/* Bottom: Subtext and Action */}
                                 <div className="flex items-center justify-between">
                                     <div className={`inline-flex items-center px-3 py-1.5 rounded-xl ${stat.color} bg-opacity-15`}>
                                         <span className={`text-[10px] font-bold ${stat.textColor} opacity-90`}>
@@ -248,78 +243,31 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100">
-                    {activities.map((activity, i) => (
-                        <div
-                            key={activity.id}
-                            onClick={() => handleViewDetails(activity)}
-                            className={`p-6 flex items-center justify-between transition-colors hover:bg-gray-50 cursor-pointer ${i === 0 ? 'rounded-t-[2rem]' : ''} ${i === activities.length - 1 ? 'rounded-b-[2rem]' : 'border-b border-gray-100'}`}
-                        >
-                            <div className="flex items-center gap-6">
-                                <div className={`w-16 h-16 rounded-2xl ${activity.thumbnailColor} flex items-center justify-center shrink-0`}>
-                                    <activity.thumbnailIcon className={`w-8 h-8 ${activity.iconColor}`} />
+                    {activities.length === 0 ? (
+                        <div className="text-center text-gray-400 py-12">No recent activity found.</div>
+                    ) : (
+                        activities.map((activity: any, i: number) => (
+                            <div
+                                key={activity.id || i}
+                                className={`p-6 flex items-center justify-between transition-colors hover:bg-gray-50 cursor-pointer ${i === 0 ? 'rounded-t-[2rem]' : ''} ${i === activities.length - 1 ? 'rounded-b-[2rem]' : 'border-b border-gray-100'}`}
+                            >
+                                <div className="flex items-center gap-6">
+                                    <div className={`w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center shrink-0`}>
+                                        <span className="text-2xl">📝</span>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-base font-bold text-gray-900 mb-1">{activity.title || activity.type}</h4>
+                                        <p className="text-sm text-gray-500 font-medium">{activity.subtitle || activity.description}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 className="text-base font-bold text-gray-900 mb-1">{activity.title}</h4>
-                                    <p className="text-sm text-gray-500 font-medium">{activity.subtitle}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-6">
-                                <span className={`hidden md:inline-flex px-3 py-1 rounded-full text-xs font-bold
-                                    ${activity.status === 'Pending' ? 'bg-orange-100 text-orange-700' :
-                                        activity.status === 'Action Required' ? 'bg-red-100 text-red-700' :
-                                            activity.status === 'Live' ? 'bg-rose-100 text-rose-700 animate-pulse' :
-                                                activity.status === 'Completed' ? 'bg-blue-50 text-blue-700' :
-                                                    'bg-gray-100 text-gray-700'
-                                    }`}>
-                                    {activity.status}
-                                </span>
-
-                                {/* Functional Menu */}
-                                <div className="relative">
-                                    <button
-                                        onClick={(e) => toggleMenu(activity.id, e)}
-                                        className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                                    >
-                                        <MoreHorizontal className="w-5 h-5" />
-                                    </button>
-
-                                    {/* Dropdown Menu */}
-                                    {openMenuId === activity.id && (
-                                        <>
-                                            <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }} />
-                                            <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 p-1 z-20 animate-in fade-in zoom-in-95 duration-200">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleViewDetails(activity); }}
-                                                    className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                                                >
-                                                    View Details
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleEdit(activity); }}
-                                                    className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <div className="h-px bg-gray-100 my-1"></div>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const newActivities = activities.filter(a => a.id !== activity.id);
-                                                        setActivities(newActivities);
-                                                        setOpenMenuId(null);
-                                                    }}
-                                                    className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </>
-                                    )}
+                                <div className="flex items-center gap-6">
+                                    <span className="hidden md:inline-flex px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">
+                                        {activity.status || activity.type}
+                                    </span>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
 

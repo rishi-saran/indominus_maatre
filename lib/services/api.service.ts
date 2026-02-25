@@ -5,6 +5,10 @@ interface FetchOptions extends RequestInit {
 }
 
 export class ApiService {
+  // Public method to get headers for authenticated requests
+  static async getAuthHeaders(extraHeaders?: HeadersInit) {
+    return await this.buildHeaders(extraHeaders);
+  }
   private static async buildHeaders(extraHeaders?: HeadersInit) {
     let accessToken: string | null = null;
 

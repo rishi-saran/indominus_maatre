@@ -44,8 +44,13 @@ export default function AdminLayout({
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const auth = localStorage.getItem("adminAuth");
-        if (auth === "true") {
+        // Check for admin user in localStorage (set by login logic)
+        const userId = localStorage.getItem('user_id');
+        const userEmail = localStorage.getItem('user_email');
+        if (
+            userId === 'd1f75355-5e06-4729-a12e-05d9c979bd3b' &&
+            userEmail === 'maathre@gmail.com'
+        ) {
             setIsAuthenticated(true);
         } else {
             router.push("/login");
@@ -54,7 +59,8 @@ export default function AdminLayout({
     }, [pathname, router]);
 
     const handleLogout = () => {
-        localStorage.removeItem("adminAuth");
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
         setIsAuthenticated(false);
         router.push("/login");
     };
