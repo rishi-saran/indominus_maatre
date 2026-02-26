@@ -3,74 +3,25 @@
 import { useState } from "react";
 import { UserPlus, Search, Filter, MoreHorizontal, Check, X, MapPin, Star, Phone, Mail, GraduationCap, Trash2, Edit, Eye } from "lucide-react";
 import { toast } from "sonner";
-// import {
-//     DropdownMenu,
-//     DropdownMenuContent,
-//     DropdownMenuItem,
-//     DropdownMenuSeparator,
-//     DropdownMenuTrigger,
-// } from "@/components/ui/dropdown-menu";
 
-// Mock Data
-const initialPriests = [
-    {
-        id: "PR001",
-        name: "Pandit Ravi Shastri",
-        email: "ravi.shastri@example.com",
-        phone: "+91 98765 43210",
-        location: "Mumbai, MH",
-        status: "Active",
-        rating: 4.9,
-        specialty: "Rig Veda",
-        experience: "12 Years",
-        imageColor: "bg-orange-100 text-orange-600"
-    },
-    {
-        id: "PR002",
-        name: "Acharya Amit Mishra",
-        email: "amit.mishra@example.com",
-        phone: "+91 98765 43211",
-        location: "New Delhi, DL",
-        status: "Active",
-        rating: 4.7,
-        specialty: "Yajur Veda",
-        experience: "8 Years",
-        imageColor: "bg-blue-100 text-blue-600"
-    },
-    {
-        id: "PR003",
-        name: "Swami Iyer",
-        email: "swami.iyer@example.com",
-        phone: "+91 98765 43212",
-        location: "Chennai, TN",
-        status: "Away",
-        rating: 4.8,
-        specialty: "Sama Veda",
-        experience: "15 Years",
-        imageColor: "bg-yellow-100 text-yellow-600"
-    },
-    {
-        id: "PR006",
-        name: "Pandit Vikram Joshi",
-        email: "vikram.j@example.com",
-        phone: "+91 98765 43215",
-        location: "Pune, MH",
-        status: "Active",
-        rating: 4.6,
-        specialty: "Atharva Veda",
-        experience: "6 Years",
-        imageColor: "bg-purple-100 text-purple-600"
-    },
-];
-
-const initialPendingPriests = [
-    { id: "PR004", name: "Guru Sharma", email: "sharma@example.com", location: "Bangalore", applied: "2 days ago", type: "Vedic Scholar" },
-    { id: "PR005", name: "Pandit Verma", email: "verma@example.com", location: "Pune", applied: "5 days ago", type: "Purohit" },
-];
+import { useEffect } from "react";
+import { AdminPriestsService, AdminPriest } from "@/lib/services/priests.service";
+// Helper to get admin JWT token (use the same key as the rest of the admin app)
+function getAdminToken() {
+    if (typeof window !== "undefined") {
+        return localStorage.getItem("adminToken") || "";
+    }
+    return "";
+}
+import { supabase } from "@/lib/supabase/client";
+import { AdminOnboardingService, AdminOnboardingRequest } from "@/lib/services/admin-onboarding.service";
 
 export default function PriestsPage() {
-    const [priests, setPriests] = useState(initialPriests);
-    const [pendingPriests, setPendingPriests] = useState(initialPendingPriests);
+    const [priests, setPriests] = useState<AdminPriest[]>([]);
+    const [pendingAdmins, setPendingAdmins] = useState<AdminOnboardingRequest[]>([]);
+    const [totalPriests, setTotalPriests] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState("all");
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [selectedPriest, setSelectedPriest] = useState<any>(null);
@@ -88,89 +39,155 @@ export default function PriestsPage() {
     const [editForm, setEditForm] = useState<any>(null);
 
     // New Priest Form State
-    const [newPriest, setNewPriest] = useState({
+    const [newAdmin, setNewAdmin] = useState({
         firstName: "",
         lastName: "",
         email: "",
         phone: "",
-        location: "",
-        experience: "",
-        specialty: ""
+        password: "",
+        retypePassword: ""
     });
 
-    // --- Actions ---
+    // --- Fetch Priests ---
+    useEffect(() => {
+        setLoading(true);
+        setError(null);
+        AdminPriestsService.list({
+            limit: 20,
+            offset: 0,
+            search: searchTerm,
+            status: filters.status[0],
+            location: filters.location[0],
+        })
+            .then((res) => {
+                setPriests(res.priests);
+                setTotalPriests(res.total);
+            })
+            .catch((err) => {
+                setError("Failed to load priests");
+            })
+            .finally(() => setLoading(false));
+    }, [searchTerm, filters]);
 
     const handleEditProfile = () => {
         setEditForm(selectedPriest);
         setIsEditing(true);
     };
 
-    const handleSaveProfile = (e: React.FormEvent) => {
+    const API_BASE = "http://localhost:8000/api/v1/admin/priests";
+
+    const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        setPriests(priests.map(p => p.id === editForm.id ? editForm : p));
-        setSelectedPriest(editForm);
-        setIsEditing(false);
-        toast.success("Priest profile updated successfully");
-    };
-
-    const handleDeletePriest = (id: string) => {
-        setPriests(priests.filter(p => p.id !== id));
-        toast.success("Priest removed successfully");
-        if (selectedPriest?.id === id) setSelectedPriest(null);
-    };
-
-    const handleApprove = (id: string) => {
-        const priestToApprove = pendingPriests.find(p => p.id === id);
-        if (priestToApprove) {
-            const newPriestProfile = {
-                id: priestToApprove.id,
-                name: priestToApprove.name,
-                email: priestToApprove.email,
-                phone: "",
-                location: priestToApprove.location,
-                status: "Active",
-                rating: 0,
-                specialty: priestToApprove.type,
-                experience: "0 Years",
-                imageColor: "bg-green-100 text-green-600"
-            };
-            setPriests([...priests, newPriestProfile]);
-            setPendingPriests(pendingPriests.filter(p => p.id !== id));
-            toast.success("Priest approved successfully");
+        try {
+            const token = getAdminToken();
+            const res = await fetch(`${API_BASE}/${editForm.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({
+                    first_name: editForm.first_name,
+                    last_name: editForm.last_name,
+                    email: editForm.email,
+                    phone: editForm.phone,
+                    is_active: editForm.is_active,
+                }),
+            });
+            if (!res.ok) {
+                let errMsg = "Failed to update priest";
+                try {
+                    const err = await res.json();
+                    errMsg = err.message || errMsg;
+                } catch {
+                    errMsg = `Server error: ${res.status}`;
+                }
+                throw new Error(errMsg);
+            }
+            setPriests(priests.map(p => p.id === editForm.id ? { ...p, ...editForm } : p));
+            setSelectedPriest({ ...selectedPriest, ...editForm });
+            setIsEditing(false);
+            toast.success("Priest profile updated successfully");
+        } catch (err: any) {
+            toast.error(err.message || "Failed to update priest");
         }
     };
 
-    const handleReject = (id: string) => {
-        setPendingPriests(pendingPriests.filter(p => p.id !== id));
-        toast.success("Priest rejected");
+    const handleDeletePriest = async (id: string) => {
+        try {
+            const token = getAdminToken();
+            const res = await fetch(`${API_BASE}/${id}`, {
+                method: "DELETE",
+                headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+            });
+            if (!res.ok) {
+                let errMsg = "Failed to delete priest";
+                try {
+                    const err = await res.json();
+                    errMsg = err.message || errMsg;
+                } catch {
+                    errMsg = `Server error: ${res.status}`;
+                }
+                throw new Error(errMsg);
+            }
+            setPriests(priests.filter(p => p.id !== id));
+            setSelectedPriest(null);
+            toast.success("Priest deleted successfully");
+        } catch (err: any) {
+            toast.error(err.message || "Failed to delete priest");
+        }
     };
 
-    const handleCreatePriest = () => {
-        if (!newPriest.firstName || !newPriest.lastName || !newPriest.email) {
+    const handleCreateAdmin = () => {
+        if (!newAdmin.firstName || !newAdmin.lastName || !newAdmin.email || !newAdmin.password || !newAdmin.retypePassword) {
             toast.error("Please fill in all required fields");
             return;
         }
-
-        const newProfile = {
-            id: `PR${Date.now()}`,
-            name: `${newPriest.firstName} ${newPriest.lastName}`,
-            email: newPriest.email,
-            phone: newPriest.phone,
-            location: newPriest.location,
-            status: "Active",
-            rating: 0,
-            specialty: newPriest.specialty || "General",
-            experience: newPriest.experience + " Years",
-            imageColor: "bg-emerald-100 text-emerald-600"
-        };
-
-        setPriests([...priests, newProfile]);
-        toast.success("Priest account created successfully");
-        setNewPriest({ firstName: "", lastName: "", email: "", phone: "", location: "", experience: "", specialty: "" });
+        if (newAdmin.password !== newAdmin.retypePassword) {
+            toast.error("Passwords do not match");
+            return;
+        }
+        toast.success("Priest account created (mock)");
         setActiveTab("all");
+        setNewAdmin({ firstName: "", lastName: "", email: "", phone: "", password: "", retypePassword: "" });
     };
 
-    // --- Filtering & Sorting ---
+    const fetchPendingAdmins = async () => {
+        try {
+            const data = await AdminOnboardingService.list();
+            setPendingAdmins(data);
+        } catch (err) {
+            setPendingAdmins([]);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === "onboarding") {
+            fetchPendingAdmins();
+        }
+    }, [activeTab]);
+
+    const handleApproveAdmin = async (id: string) => {
+        try {
+            await AdminOnboardingService.approve(id);
+            toast.success("Admin approved and created.");
+            fetchPendingAdmins();
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to approve admin");
+        }
+    };
+
+    const handleRejectAdmin = async (id: string) => {
+        try {
+            await AdminOnboardingService.reject(id);
+            toast.success("Admin onboarding request rejected.");
+            fetchPendingAdmins();
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to reject admin");
+        }
+    };
 
     const toggleFilter = (type: 'location' | 'status', value: string) => {
         setFilters(prev => {
@@ -182,33 +199,19 @@ export default function PriestsPage() {
         });
     };
 
-    const filteredPriests = priests
-        .filter(priest => {
-            const matchesSearch = priest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                priest.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                priest.location.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesLocation = filters.location.length === 0 || filters.location.some(loc => priest.location.includes(loc));
-            const matchesStatus = filters.status.length === 0 || filters.status.includes(priest.status);
-            return matchesSearch && matchesLocation && matchesStatus;
-        })
-        .sort((a, b) => {
-            if (sortOption === 'Name: A-Z') return a.name.localeCompare(b.name);
-            if (sortOption === 'Name: Z-A') return b.name.localeCompare(a.name); // Added Z-A
-            if (sortOption === 'Rating: High to Low') return b.rating - a.rating;
-            if (sortOption === 'Experience') return parseInt(b.experience) - parseInt(a.experience);
-            // Newest/Oldest usually implies creation date, effectively using ID here as proxy or maintaining order
-            if (sortOption === 'Newest') return -1;
-            return 0;
-        });
+    const filteredPriests = priests;
 
     return (
         <div className="space-y-8 font-sans">
+            {loading && (
+                <div className="text-center py-20 text-gray-400">Loading priests...</div>
+            )}
+            {error && (
+                <div className="text-center py-20 text-red-500">{error}</div>
+            )}
+
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Priests</h1>
-                    <p className="text-gray-500 font-medium mt-1">Manage your network of spiritual guides.</p>
-                </div>
                 <button
                     onClick={() => setActiveTab("add")}
                     className="group inline-flex items-center justify-center px-6 py-2.5 bg-[#1a5d1a] text-white rounded-full font-bold text-sm hover:bg-[#144414] transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
@@ -222,7 +225,7 @@ export default function PriestsPage() {
             <div className="flex items-center gap-2 mb-4">
                 {[
                     { id: "all", label: "All Priests" },
-                    { id: "onboarding", label: "Onboarding", count: pendingPriests.length },
+                    { id: "onboarding", label: "Onboarding", count: pendingAdmins.length },
                     { id: "add", label: "Register New" }
                 ].map((tab) => (
                     <button
@@ -235,7 +238,7 @@ export default function PriestsPage() {
                     >
                         {tab.label}
                         {tab.count !== undefined && (
-                            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${activeTab === tab.id ? "bg-white text-black" : "bg-gray-100 text-gray-600 group-hover:bg-gray-200"
+                            <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${activeTab === tab.id ? "bg-white text-black" : "bg-gray-100 text-gray-600"
                                 }`}>
                                 {tab.count}
                             </span>
@@ -244,7 +247,7 @@ export default function PriestsPage() {
                 ))}
             </div>
 
-            {/* Main Content Area */}
+            {/* ── ALL PRIESTS TAB ── */}
             {activeTab === "all" && (
                 <div className="space-y-6">
                     {/* Filters & Search Toolbar */}
@@ -263,7 +266,6 @@ export default function PriestsPage() {
                             />
                         </div>
 
-                        {/* Actions Divider */}
                         <div className="hidden sm:block w-px h-8 bg-gray-200 mx-2"></div>
 
                         {/* Action Buttons */}
@@ -333,10 +335,7 @@ export default function PriestsPage() {
                                             {['Newest', 'Name: A-Z', 'Name: Z-A', 'Rating: High to Low', 'Experience'].map((option) => (
                                                 <button
                                                     key={option}
-                                                    onClick={() => {
-                                                        setSortOption(option);
-                                                        setIsSortOpen(false);
-                                                    }}
+                                                    onClick={() => { setSortOption(option); setIsSortOpen(false); }}
                                                     className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-between
                                                         ${sortOption === option ? 'bg-[#1a5d1a]/10 text-[#1a5d1a]' : 'text-gray-600 hover:bg-gray-50'}`}
                                                 >
@@ -376,21 +375,14 @@ export default function PriestsPage() {
 
                     {/* Priest Cards Grid/List */}
                     <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" : "space-y-4"}>
-                        {filteredPriests.map((priest) => (
+                        {(filteredPriests || []).map((priest) => (
                             <div key={priest.id} className={`group relative bg-white rounded-[2rem] border border-gray-100 hover:border-gray-200 shadow-[0_2px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 ${viewMode === 'list' ? 'p-4 flex items-center justify-between gap-6' : 'p-6'}`}>
-                                {/* Grid View Structure */}
+
+                                {/* Grid View */}
                                 {viewMode === 'grid' && (
                                     <>
-                                        {/* Top Actions */}
-                                        {/* <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                            <button className="p-2 hover:bg-gray-50 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
-                                                <MoreHorizontal className="w-5 h-5" />
-                                            </button>
-                                        </div> */}
-
-                                        {/* Profile Header */}
                                         <div className="flex items-start gap-5 mb-6">
-                                            <div className={`w-20 h-20 rounded-2xl ${priest.imageColor} flex items-center justify-center text-2xl font-black shadow-inner`}>
+                                            <div className="w-20 h-20 rounded-2xl bg-gray-100 text-gray-600 flex items-center justify-center text-2xl font-black shadow-inner">
                                                 {priest.name.charAt(0)}
                                             </div>
                                             <div className="pt-1">
@@ -409,7 +401,6 @@ export default function PriestsPage() {
                                             </div>
                                         </div>
 
-                                        {/* Stats / Info Row */}
                                         <div className="grid grid-cols-2 gap-4 mb-6 py-4 border-y border-gray-50">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
@@ -431,7 +422,6 @@ export default function PriestsPage() {
                                             </div>
                                         </div>
 
-                                        {/* Contact & Actions */}
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-3 text-sm text-gray-500 hover:text-gray-800 transition-colors cursor-pointer group/item">
                                                 <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover/item:bg-gray-100 transition-colors">
@@ -445,7 +435,6 @@ export default function PriestsPage() {
                                                 </div>
                                                 <span>{priest.phone}</span>
                                             </div>
-
                                             <button
                                                 onClick={() => { setSelectedPriest(priest); setIsEditing(false); }}
                                                 className="w-full mt-4 py-3 rounded-xl bg-[#1a5d1a] border border-[#1a5d1a] text-white font-black text-xs hover:bg-[#144414] hover:border-[#144414] transition-all shadow-sm uppercase tracking-wide">
@@ -455,11 +444,11 @@ export default function PriestsPage() {
                                     </>
                                 )}
 
-                                {/* List View Structure */}
+                                {/* List View */}
                                 {viewMode === 'list' && (
                                     <>
                                         <div className="flex items-center gap-6 flex-1">
-                                            <div className={`w-16 h-16 rounded-2xl ${priest.imageColor} flex items-center justify-center text-xl font-black shadow-inner bg-opacity-80`}>
+                                            <div className="w-16 h-16 rounded-2xl bg-gray-100 text-gray-600 flex items-center justify-center text-xl font-black shadow-inner">
                                                 {priest.name.charAt(0)}
                                             </div>
                                             <div>
@@ -495,17 +484,11 @@ export default function PriestsPage() {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                onClick={() => { setSelectedPriest(priest); setIsEditing(false); }}
-                                                className="px-4 py-2.5 rounded-xl bg-[#1a5d1a] border border-[#1a5d1a] text-white font-black text-[10px] hover:bg-[#144414] hover:border-[#144414] transition-all shadow-sm uppercase tracking-wide whitespace-nowrap">
-                                                View Profile
-                                            </button>
-
-                                            {/* <button className="p-2 hover:bg-gray-50 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
-                                                <MoreHorizontal className="w-5 h-5" />
-                                            </button> */}
-                                        </div>
+                                        <button
+                                            onClick={() => { setSelectedPriest(priest); setIsEditing(false); }}
+                                            className="px-4 py-2.5 rounded-xl bg-[#1a5d1a] border border-[#1a5d1a] text-white font-black text-[10px] hover:bg-[#144414] hover:border-[#144414] transition-all shadow-sm uppercase tracking-wide whitespace-nowrap">
+                                            View Profile
+                                        </button>
                                     </>
                                 )}
                             </div>
@@ -519,7 +502,7 @@ export default function PriestsPage() {
                             <div className="relative bg-white rounded-[2.5rem] w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-300">
 
                                 {/* Header / Cover */}
-                                <div className={`h-32 ${selectedPriest.imageColor} relative sticky top-0 z-10`}>
+                                <div className="h-32 bg-gray-100 relative sticky top-0 z-10">
                                     <button
                                         onClick={() => { setSelectedPriest(null); setIsEditing(false); }}
                                         className="absolute top-4 right-4 p-2 bg-white/60 hover:bg-white/80 text-gray-900 rounded-full transition-colors backdrop-blur-md shadow-sm border border-white/40"
@@ -531,7 +514,7 @@ export default function PriestsPage() {
                                 {/* Content */}
                                 <div className="px-8 pb-8 -mt-12 relative z-20">
                                     <div className="flex justify-between items-end mb-6">
-                                        <div className={`w-24 h-24 rounded-[2rem] ${selectedPriest.imageColor} flex items-center justify-center text-3xl font-black shadow-lg border-4 border-white`}>
+                                        <div className="w-24 h-24 rounded-[2rem] bg-gray-100 text-gray-600 flex items-center justify-center text-3xl font-black shadow-lg border-4 border-white">
                                             {selectedPriest.name.charAt(0)}
                                         </div>
                                         <div className="mb-2">
@@ -545,8 +528,8 @@ export default function PriestsPage() {
                                         </div>
                                     </div>
 
+                                    {/* VIEW MODE */}
                                     {!isEditing ? (
-                                        // VIEW MODE
                                         <div className="space-y-6">
                                             <div>
                                                 <h2 className="text-2xl font-black text-gray-900 leading-tight mb-1">{selectedPriest.name}</h2>
@@ -607,100 +590,45 @@ export default function PriestsPage() {
                                                     className="w-full py-3.5 rounded-xl border border-[#1a5d1a] text-[#1a5d1a] font-bold text-sm hover:bg-[#1a5d1a] hover:text-white transition-all">
                                                     Edit Profile
                                                 </button>
+                                                <button
+                                                    onClick={() => handleDeletePriest(selectedPriest.id)}
+                                                    className="w-full py-3.5 rounded-xl border border-red-500 text-red-500 font-bold text-sm hover:bg-red-500 hover:text-white transition-all">
+                                                    Delete Priest
+                                                </button>
                                             </div>
                                         </div>
                                     ) : (
-                                        // EDIT MODE
-                                        <form onSubmit={handleSaveProfile} className="space-y-4">
-                                            <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Full Name</label>
+                                        /* EDIT MODE */
+                                        <div className="space-y-6">
+                                            <h2 className="text-2xl font-black text-gray-900">Edit Priest Profile</h2>
+                                            <form onSubmit={handleSaveProfile} className="space-y-4">
                                                 <input
                                                     type="text"
-                                                    value={editForm.name}
-                                                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5d1a]/20"
+                                                    value={editForm?.name || ''}
+                                                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                                    placeholder="Full Name"
+                                                    className="w-full border rounded-lg p-3"
                                                 />
-                                            </div>
-                                            <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Location</label>
+                                                <input
+                                                    type="email"
+                                                    value={editForm?.email || ''}
+                                                    onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                                                    placeholder="Email"
+                                                    className="w-full border rounded-lg p-3"
+                                                />
                                                 <input
                                                     type="text"
-                                                    value={editForm.location}
-                                                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5d1a]/20"
+                                                    value={editForm?.phone || ''}
+                                                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                                                    placeholder="Phone Number"
+                                                    className="w-full border rounded-lg p-3"
                                                 />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Phone</label>
-                                                    <input
-                                                        type="text"
-                                                        value={editForm.phone}
-                                                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5d1a]/20"
-                                                    />
+                                                <div className="flex gap-2 pt-2">
+                                                    <button type="submit" className="w-full py-3 rounded-xl bg-[#1a5d1a] text-white font-bold">Save</button>
+                                                    <button type="button" onClick={() => setIsEditing(false)} className="w-full py-3 rounded-xl bg-gray-200 text-gray-700 font-bold">Cancel</button>
                                                 </div>
-                                                <div>
-                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Experience</label>
-                                                    <input
-                                                        type="text"
-                                                        value={editForm.experience}
-                                                        onChange={(e) => setEditForm({ ...editForm, experience: e.target.value })}
-                                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5d1a]/20"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Specialty</label>
-                                                <input
-                                                    type="text"
-                                                    value={editForm.specialty}
-                                                    onChange={(e) => setEditForm({ ...editForm, specialty: e.target.value })}
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5d1a]/20"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Status</label>
-                                                <select
-                                                    value={editForm.status}
-                                                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1a5d1a]/20"
-                                                >
-                                                    <option value="Active">Active</option>
-                                                    <option value="Away">Away</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="pt-4 border-t border-gray-100">
-                                                <div className="flex gap-3 mb-3">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsEditing(false)}
-                                                        className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        type="submit"
-                                                        className="flex-1 py-3 text-sm font-bold text-white bg-[#1a5d1a] hover:bg-[#144414] rounded-xl transition-colors shadow-lg shadow-green-900/10"
-                                                    >
-                                                        Save Changes
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (confirm('Are you sure you want to delete this priest?')) {
-                                                            handleDeletePriest(editForm.id);
-                                                            setIsEditing(false); // Close modal implicitly via logic in handleDeletePriest if selectedPriest is cleared
-                                                        }
-                                                    }}
-                                                    className="w-full py-3 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center gap-2"
-                                                >
-                                                    <Trash2 className="w-4 h-4" /> Delete Priest Account
-                                                </button>
-                                            </div>
-                                        </form>
+                                            </form>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -709,33 +637,32 @@ export default function PriestsPage() {
                 </div>
             )}
 
+            {/* ── ONBOARDING TAB ── */}
             {activeTab === "onboarding" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {pendingPriests.map((priest) => (
-                        <div key={priest.id} className="bg-white rounded-[2rem] p-2 border border-yellow-100 mx-auto w-full group hover:shadow-xl hover:shadow-yellow-900/5 transition-all duration-300">
+                    {pendingAdmins.map((admin) => (
+                        <div key={admin.id} className="bg-white rounded-[2rem] p-2 border border-yellow-100 mx-auto w-full group hover:shadow-xl hover:shadow-yellow-900/5 transition-all duration-300">
                             <div className="bg-yellow-50/50 rounded-[1.5rem] p-6 h-full flex flex-col">
                                 <div className="flex justify-between items-start mb-6">
                                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-200 to-amber-300 flex items-center justify-center text-yellow-900 font-black text-xl shadow-lg shadow-yellow-500/20">
-                                        {priest.name.charAt(0)}
+                                        {admin.first_name.charAt(0)}
                                     </div>
                                     <span className="bg-white/80 backdrop-blur-sm text-yellow-700 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full shadow-sm">
                                         Pending Review
                                     </span>
                                 </div>
                                 <div className="mb-6">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-1">{priest.name}</h3>
-                                    <p className="text-sm font-medium text-gray-500">{priest.type} • {priest.location}</p>
-                                    <p className="text-xs text-gray-400 mt-2">Applied {priest.applied}</p>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-1">{admin.first_name} {admin.last_name}</h3>
+                                    <p className="text-sm font-medium text-gray-500">{admin.email} {admin.phone && <>• {admin.phone}</>}</p>
                                 </div>
-
                                 <div className="mt-auto flex gap-3">
                                     <button
-                                        onClick={() => handleApprove(priest.id)}
+                                        onClick={() => handleApproveAdmin(admin.id)}
                                         className="flex-1 bg-[#1a5d1a] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#154a15] hover:shadow-lg hover:shadow-green-900/20 transition-all active:scale-95 flex items-center justify-center gap-2">
                                         <Check className="w-4 h-4" /> Approve
                                     </button>
                                     <button
-                                        onClick={() => handleReject(priest.id)}
+                                        onClick={() => handleRejectAdmin(admin.id)}
                                         className="w-12 h-12 flex items-center justify-center bg-white text-gray-400 rounded-xl hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm">
                                         <X className="w-5 h-5" />
                                     </button>
@@ -743,7 +670,7 @@ export default function PriestsPage() {
                             </div>
                         </div>
                     ))}
-                    {pendingPriests.length === 0 && (
+                    {pendingAdmins.length === 0 && (
                         <div className="col-span-full text-center py-20 text-gray-400">
                             No pending onboarding requests.
                         </div>
@@ -751,14 +678,15 @@ export default function PriestsPage() {
                 </div>
             )}
 
+            {/* ── ADD / REGISTER TAB ── */}
             {activeTab === "add" && (
                 <div className="max-w-3xl mx-auto bg-white rounded-[2rem] p-8 md:p-12 shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-gray-100">
                     <div className="text-center mb-10">
                         <div className="w-16 h-16 bg-[#5cb85c]/10 text-[#5cb85c] rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <UserPlus className="w-8 h-8" />
                         </div>
-                        <h2 className="text-2xl font-black text-gray-900">Register New Priest</h2>
-                        <p className="text-gray-500 mt-2">Create a new priest account manually. They will receive an email to set their password.</p>
+                        <h2 className="text-2xl font-black text-gray-900">Register New Admin</h2>
+                        <p className="text-gray-500 mt-2">Create a new admin account. The account will be created only after approval.</p>
                     </div>
 
                     <form className="space-y-6">
@@ -767,8 +695,8 @@ export default function PriestsPage() {
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">First Name <span className="text-red-500">*</span></label>
                                 <input
                                     type="text"
-                                    value={newPriest.firstName}
-                                    onChange={(e) => setNewPriest({ ...newPriest, firstName: e.target.value })}
+                                    value={newAdmin.firstName}
+                                    onChange={(e) => setNewAdmin({ ...newAdmin, firstName: e.target.value })}
                                     className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
                                     placeholder="e.g. Rahul"
                                 />
@@ -777,8 +705,8 @@ export default function PriestsPage() {
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Last Name <span className="text-red-500">*</span></label>
                                 <input
                                     type="text"
-                                    value={newPriest.lastName}
-                                    onChange={(e) => setNewPriest({ ...newPriest, lastName: e.target.value })}
+                                    value={newAdmin.lastName}
+                                    onChange={(e) => setNewAdmin({ ...newAdmin, lastName: e.target.value })}
                                     className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
                                     placeholder="e.g. Sharma"
                                 />
@@ -789,64 +717,51 @@ export default function PriestsPage() {
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Email Address <span className="text-red-500">*</span></label>
                             <input
                                 type="email"
-                                value={newPriest.email}
-                                onChange={(e) => setNewPriest({ ...newPriest, email: e.target.value })}
+                                value={newAdmin.email}
+                                onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
                                 className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
-                                placeholder="priest@example.com"
+                                placeholder="admin@example.com"
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Phone Number</label>
-                                <input
-                                    type="tel"
-                                    value={newPriest.phone}
-                                    onChange={(e) => setNewPriest({ ...newPriest, phone: e.target.value })}
-                                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
-                                    placeholder="+91 98765 43210"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Location</label>
-                                <input
-                                    type="text"
-                                    value={newPriest.location}
-                                    onChange={(e) => setNewPriest({ ...newPriest, location: e.target.value })}
-                                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
-                                    placeholder="City, State"
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Phone Number</label>
+                            <input
+                                type="tel"
+                                value={newAdmin.phone}
+                                onChange={(e) => setNewAdmin({ ...newAdmin, phone: e.target.value })}
+                                className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
+                                placeholder="+91 98765 43210"
+                            />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Experience (Years)</label>
-                                <input
-                                    type="number"
-                                    value={newPriest.experience}
-                                    onChange={(e) => setNewPriest({ ...newPriest, experience: e.target.value })}
-                                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
-                                    placeholder="e.g. 5"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Specialty</label>
-                                <input
-                                    type="text"
-                                    value={newPriest.specialty}
-                                    onChange={(e) => setNewPriest({ ...newPriest, specialty: e.target.value })}
-                                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
-                                    placeholder="e.g. Vedic Rituals"
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Password <span className="text-red-500">*</span></label>
+                            <input
+                                type="password"
+                                value={newAdmin.password}
+                                onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                                className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
+                                placeholder="Enter password"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Retype Password <span className="text-red-500">*</span></label>
+                            <input
+                                type="password"
+                                value={newAdmin.retypePassword}
+                                onChange={(e) => setNewAdmin({ ...newAdmin, retypePassword: e.target.value })}
+                                className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-gray-900 font-medium focus:outline-none focus:border-[#5cb85c] focus:bg-white transition-all"
+                                placeholder="Retype password"
+                            />
                         </div>
 
                         <div className="pt-6 flex flex-col md:flex-row justify-end gap-3">
                             <button type="button" onClick={() => setActiveTab('all')} className="px-8 py-4 rounded-xl font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">Cancel</button>
                             <button
                                 type="button"
-                                onClick={handleCreatePriest}
+                                onClick={handleCreateAdmin}
                                 className="px-8 py-4 bg-[#1a5d1a] text-white rounded-xl font-bold hover:bg-[#144414] shadow-lg hover:shadow-green-900/20 active:scale-95 transition-all">
                                 Create Priest Account
                             </button>

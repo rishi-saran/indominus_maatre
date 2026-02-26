@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { ApiService } from '@/lib/services/api.service';
 import { 
   Download, 
   CheckCircle, 
@@ -57,30 +58,6 @@ interface Payout {
   status: PayoutStatus;
 }
 
-// --- Dummy Data ---
-const dummyTransactions: Transaction[] = [
-  { id: "TXN1001", user: "Rahul Sharma", amount: 5000, date: "Feb 10, 2024", method: "UPI", status: "Completed" },
-  { id: "TXN1002", user: "Priya Patel", amount: 3500, date: "Feb 09, 2024", method: "Credit Card", status: "Completed" },
-  { id: "TXN1003", user: "Amit Kumar", amount: 12000, date: "Feb 08, 2024", method: "Net Banking", status: "Failed" },
-  { id: "TXN1004", user: "Sneha Reddy", amount: 2100, date: "Feb 08, 2024", method: "UPI", status: "Pending" },
-  { id: "TXN1005", user: "Vikram Singh", amount: 7500, date: "Feb 07, 2024", method: "UPI", status: "Completed" },
-];
-
-const dummyPayouts: Payout[] = [
-  { id: "P0681", priest: "Pandit Ravi", amount: 15000, date: "Feb 01, 2024", status: "Processed" },
-  { id: "P0682", priest: "Acharya Mishra", amount: 8500, date: "Feb 01, 2024", status: "Processing" },
-  { id: "P0683", priest: "Swami Iyer", amount: 22000, date: "Jan 31, 2024", status: "Processing" },
-];
-
-const monthlyCommissionData = [
-  { name: "Jul", commission: 45000 },
-  { name: "Aug", commission: 52000 },
-  { name: "Sep", commission: 48000 },
-  { name: "Oct", commission: 61000 },
-  { name: "Nov", commission: 55000 },
-  { name: "Dec", commission: 63000 },
-];
-
 // --- Components ---
 
 const methodIcon = (method: string) => {
@@ -128,20 +105,106 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<"incoming" | "payouts" | "commission">("incoming");
-  const [transactions, setTransactions] = useState<Transaction[]>(dummyTransactions);
-  const [payouts, setPayouts] = useState<Payout[]>(dummyPayouts);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [errorTransactions, setErrorTransactions] = useState<string | null>(null);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
   const [selectedItem, setSelectedItem] = useState<Transaction | Payout | null>(null);
-  const [commissionRate, setCommissionRate] = useState(15);
+  const [commissionRate, setCommissionRate] = useState(0);
   const [isEditingRate, setIsEditingRate] = useState(false);
-  const [tempRate, setTempRate] = useState(15);
-
-  const totalVolume = 420000;
-  const platformEarnings = Math.round(totalVolume * commissionRate / 100);
-  const priestEarnings = totalVolume - platformEarnings;
+  const [tempRate, setTempRate] = useState(0);
+  const [summary, setSummary] = useState<{ totalRevenue: number; priestEarnings: number; platformCommission?: number } | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(true);
+  const [errorSummary, setErrorSummary] = useState<string | null>(null);
 
   const formatCurrency = (val: number) => {
     return `₹${val.toLocaleString('en-IN')}`;
   };
+
+  useEffect(() => {
+    async function fetchSummary() {
+      setLoadingSummary(true);
+      setErrorSummary(null);
+      try {
+        const headers = await ApiService.getAuthHeaders();
+        const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+        const res = await fetch(`${BASE_URL}/admin/finance/summary`, { headers });
+        if (!res.ok) throw new Error('Failed to fetch finance summary');
+        const data = await res.json();
+        setSummary(data);
+      } catch (e: any) {
+        setErrorSummary(e.message || 'Failed to load summary');
+      } finally {
+        setLoadingSummary(false);
+      }
+    }
+    fetchSummary();
+  }, []);
+
+  // Fetch incoming payments (transactions)
+  useEffect(() => {
+    async function fetchTransactions() {
+      setLoadingTransactions(true);
+      setErrorTransactions(null);
+      try {
+        // Ensure Authorization header is present
+        const headers = await ApiService.getAuthHeaders();
+        const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+        const res = await fetch(`${BASE_URL}/admin/finance/incoming-payments?limit=20`, {
+          method: 'GET',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) {
+          if (res.status === 401) throw new Error('Unauthorized: Please login as admin');
+          throw new Error('Failed to fetch incoming payments');
+        }
+        const data = await res.json();
+        // Map backend fields to Transaction type
+        const txns: Transaction[] = (data.orders || []).map((order: any) => ({
+          id: order.transaction_id,
+          user: order.customer,
+          amount: order.amount,
+          date: order.date,
+          method: order.method,
+          status: order.status as PaymentStatus,
+        }));
+        setTransactions(txns);
+      } catch (e: any) {
+        setErrorTransactions(e.message || 'Failed to load incoming payments');
+      } finally {
+        setLoadingTransactions(false);
+      }
+    }
+    fetchTransactions();
+  }, []);
+
+  // Commission chart data
+  const [commissionData, setCommissionData] = useState<any[]>([]);
+  const [loadingCommission, setLoadingCommission] = useState(true);
+  const [errorCommission, setErrorCommission] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchCommission() {
+      setLoadingCommission(true);
+      setErrorCommission(null);
+      try {
+        const headers = await ApiService.getAuthHeaders();
+        const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+        const res = await fetch(`${BASE_URL}/admin/finance/commission`, { headers });
+        if (!res.ok) throw new Error('Failed to fetch commission data');
+        const data = await res.json();
+        setCommissionData(data);
+      } catch (e: any) {
+        setErrorCommission(e.message || 'Failed to load commission data');
+      } finally {
+        setLoadingCommission(false);
+      }
+    }
+    fetchCommission();
+  }, []);
 
   // -- Actions --
 
@@ -165,11 +228,11 @@ export default function FinancePage() {
   };
 
   // -- Stat Cards --
-  const statCards = [
+  const statCards = summary ? [
     {
       title: "Total Revenue",
-      value: "₹4,20,000",
-      trend: "+12.5%",
+      value: formatCurrency(summary.totalRevenue),
+      trend: null,
       icon: IndianRupee,
       gradient: "from-emerald-50 to-green-50",
       iconBg: "bg-emerald-100",
@@ -179,8 +242,8 @@ export default function FinancePage() {
     },
     {
       title: "Platform Commission",
-      value: "₹63,000",
-      trend: "+8.2%",
+      value: summary.platformCommission !== undefined ? formatCurrency(summary.platformCommission) : "₹0",
+      trend: null,
       icon: PiggyBank,
       gradient: "from-amber-50 to-yellow-50",
       iconBg: "bg-amber-100",
@@ -190,7 +253,7 @@ export default function FinancePage() {
     },
     {
       title: "Priest Earnings",
-      value: "₹3,57,000",
+      value: formatCurrency(summary.priestEarnings),
       trend: null,
       icon: Wallet,
       gradient: "from-violet-50 to-purple-50",
@@ -199,60 +262,66 @@ export default function FinancePage() {
       trendColor: "",
       borderColor: "border-violet-100",
     },
-  ];
+  ] : [];
 
   // -- Render Tab Content --
 
   const renderIncoming = () => (
     <div className="bg-white rounded-3xl border border-gray-100/80 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead>
-            <tr className="bg-gradient-to-r from-gray-50 to-gray-50/50">
-              <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Transaction ID</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Customer</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Method</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Amount</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {transactions.map((txn, idx) => (
-              <tr key={txn.id} className="hover:bg-gradient-to-r hover:from-green-50/30 hover:to-transparent transition-all duration-200 group">
-                <td className="px-6 py-4">
-                  <span className="font-mono text-xs font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded-md">{txn.id}</span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center text-[11px] font-bold text-emerald-700">
-                      {txn.user.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <span className="font-semibold text-gray-800">{txn.user}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-500 text-xs font-medium">{txn.date}</td>
-                <td className="px-6 py-4">
-                  <span className="flex items-center gap-1.5 text-gray-600 text-xs font-medium">
-                    {methodIcon(txn.method)}
-                    {txn.method}
-                  </span>
-                </td>
-                <td className="px-6 py-4 font-bold text-gray-900">₹{txn.amount.toLocaleString()}</td>
-                <td className="px-6 py-4"><StatusBadge status={txn.status} /></td>
-                <td className="px-6 py-4 text-right">
-                  <button 
-                    onClick={() => setSelectedItem(txn)}
-                    className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3.5 py-1.5 rounded-lg transition-all hover:shadow-sm cursor-pointer"
-                  >
-                    Details
-                  </button>
-                </td>
+        {loadingTransactions ? (
+          <div className="text-center py-8 text-gray-400 text-lg font-semibold">Loading payments...</div>
+        ) : errorTransactions ? (
+          <div className="text-center py-8 text-red-500 text-lg font-semibold">{errorTransactions}</div>
+        ) : (
+          <table className="w-full text-sm text-left">
+            <thead>
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-50/50">
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Transaction ID</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Method</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {transactions.map((txn, idx) => (
+                <tr key={txn.id} className="hover:bg-gradient-to-r hover:from-green-50/30 hover:to-transparent transition-all duration-200 group">
+                  <td className="px-6 py-4">
+                    <span className="font-mono text-xs font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded-md">{txn.id}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center text-[11px] font-bold text-emerald-700">
+                        {txn.user?.split(' ').map((n: string) => n[0]).join('')}
+                      </div>
+                      <span className="font-semibold text-gray-800">{txn.user}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-gray-500 text-xs font-medium">{txn.date}</td>
+                  <td className="px-6 py-4">
+                    <span className="flex items-center gap-1.5 text-gray-600 text-xs font-medium">
+                      {methodIcon(txn.method)}
+                      {txn.method}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 font-bold text-gray-900">₹{txn.amount.toLocaleString()}</td>
+                  <td className="px-6 py-4"><StatusBadge status={txn.status} /></td>
+                  <td className="px-6 py-4 text-right">
+                    <button 
+                      onClick={() => setSelectedItem(txn)}
+                      className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3.5 py-1.5 rounded-lg transition-all hover:shadow-sm cursor-pointer"
+                    >
+                      Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
@@ -325,7 +394,7 @@ export default function FinancePage() {
         <p className="text-xs text-gray-400 font-medium mb-6 relative z-10">Breakdown of platform earnings</p>
         <div className="h-[280px] w-full relative z-10">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={monthlyCommissionData}>
+            <AreaChart data={commissionData}>
               <defs>
                 <linearGradient id="commGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
@@ -409,18 +478,26 @@ export default function FinancePage() {
          <div className="bg-white p-6 rounded-3xl border border-gray-100/80 shadow-sm">
             <h4 className="font-bold text-gray-900 text-sm mb-4 bg-gradient-to-r from-gray-100 to-gray-50 -mx-6 -mt-6 px-6 py-4 rounded-t-3xl border-b border-gray-100/50">Financial Summary</h4>
             <div className="space-y-3 mt-3">
-              <div className="flex justify-between items-center text-sm p-3.5 bg-gray-50/80 rounded-xl">
-                <span className="text-gray-500 font-medium text-xs">Total processed volume</span>
-                <span className="font-bold text-gray-900">{formatCurrency(totalVolume)}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-100/50">
-                <span className="text-emerald-700 font-medium text-xs">Platform earnings ({commissionRate}%)</span>
-                <span className="font-bold text-emerald-700">+ {formatCurrency(platformEarnings)}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm p-3.5 bg-amber-50/50 rounded-xl border border-amber-100/50">
-                <span className="text-amber-700 font-medium text-xs">Priest earnings ({100 - commissionRate}%)</span>
-                <span className="font-bold text-amber-700">{formatCurrency(priestEarnings)}</span>
-              </div>
+              {loadingSummary ? (
+                <div className="text-center py-8 text-gray-400 text-lg font-semibold">Loading summary...</div>
+              ) : errorSummary ? (
+                <div className="text-center py-8 text-red-500 text-lg font-semibold">{errorSummary}</div>
+              ) : summary ? (
+                <>
+                  <div className="flex justify-between items-center text-sm p-3.5 bg-gray-50/80 rounded-xl">
+                    <span className="text-gray-500 font-medium text-xs">Total processed volume</span>
+                    <span className="font-bold text-gray-900">{formatCurrency(summary.totalRevenue)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm p-3.5 bg-emerald-50/80 rounded-xl border border-emerald-100/50">
+                    <span className="text-emerald-700 font-medium text-xs">Platform earnings</span>
+                    <span className="font-bold text-emerald-700">+ {formatCurrency(summary.platformCommission ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm p-3.5 bg-amber-50/50 rounded-xl border border-amber-100/50">
+                    <span className="text-amber-700 font-medium text-xs">Priest earnings</span>
+                    <span className="font-bold text-amber-700">{formatCurrency(summary.priestEarnings)}</span>
+                  </div>
+                </>
+              ) : null}
             </div>
          </div>
       </div>
@@ -449,25 +526,31 @@ export default function FinancePage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {statCards.map((card) => (
-          <div key={card.title} className={`bg-gradient-to-br ${card.gradient} p-5 rounded-3xl border ${card.borderColor} shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300`}>
-            <div className="absolute -top-8 -right-8 w-24 h-24 bg-white/30 rounded-full blur-2xl"></div>
-            <div className="flex items-start justify-between relative z-10">
-              <div>
-                <p className="text-xs font-semibold text-gray-500 mb-1">{card.title}</p>
-                <h3 className="text-2xl font-black text-gray-900">{card.value}</h3>
-                {card.trend && (
-                  <span className={cn("inline-flex items-center gap-1 mt-2 text-[11px] font-bold px-2 py-0.5 rounded-full", card.trendColor)}>
-                    <TrendingUp className="h-3 w-3" /> {card.trend}
-                  </span>
-                )}
-              </div>
-              <div className={cn("p-3 rounded-2xl", card.iconBg)}>
-                <card.icon className={cn("h-5 w-5", card.iconColor)} />
+        {loadingSummary ? (
+          <div className="col-span-3 text-center py-8 text-gray-400 text-lg font-semibold">Loading summary...</div>
+        ) : errorSummary ? (
+          <div className="col-span-3 text-center py-8 text-red-500 text-lg font-semibold">{errorSummary}</div>
+        ) : (
+          statCards.map((card) => (
+            <div key={card.title} className={`bg-gradient-to-br ${card.gradient} p-5 rounded-3xl border ${card.borderColor} shadow-sm relative overflow-hidden group hover:shadow-md transition-all duration-300`}>
+              <div className="absolute -top-8 -right-8 w-24 h-24 bg-white/30 rounded-full blur-2xl"></div>
+              <div className="flex items-start justify-between relative z-10">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-1">{card.title}</p>
+                  <h3 className="text-2xl font-black text-gray-900">{card.value}</h3>
+                  {card.trend && (
+                    <span className={cn("inline-flex items-center gap-1 mt-2 text-[11px] font-bold px-2 py-0.5 rounded-full", card.trendColor)}>
+                      <TrendingUp className="h-3 w-3" /> {card.trend}
+                    </span>
+                  )}
+                </div>
+                <div className={cn("p-3 rounded-2xl", card.iconBg)}>
+                  <card.icon className={cn("h-5 w-5", card.iconColor)} />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Tabs & Content */}

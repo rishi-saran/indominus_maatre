@@ -44,6 +44,10 @@ export default function LoginPage() {
         document.cookie = `user_email=${encodeURIComponent(userEmail)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         document.cookie = `user_role=${userRole}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 
+          // Store access_token as adminToken for admin-protected endpoints
+          if (response.session.access_token) {
+            localStorage.setItem('adminToken', response.session.access_token);
+          }
         // Redirect based on role
         if (
           userEmail === 'maathre@gmail.com' &&
