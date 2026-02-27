@@ -394,7 +394,7 @@ export default function FinancePage() {
         <p className="text-xs text-gray-400 font-medium mb-6 relative z-10">Breakdown of platform earnings</p>
         <div className="h-[280px] w-full relative z-10">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={commissionData}>
+            <AreaChart data={Array.isArray(commissionData) ? commissionData : []}>
               <defs>
                 <linearGradient id="commGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>

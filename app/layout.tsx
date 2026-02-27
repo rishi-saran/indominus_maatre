@@ -20,7 +20,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Maathre - India's #1 Spiritual Platform",
+  title: "Maathre",
   description: "Book vedic rituals, join live darshans, and shop authentic spiritual products. Experience divinity in a modern way.",
   keywords: ["spiritual", "puja", "pandit", "temple", "vedic", "rituals", "darshan", "hindu"],
 };
@@ -32,6 +32,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
+      <head>
+        <link rel="icon" type="image/png" href="/maathre.png" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased min-h-screen bg-gradient-to-r from-[#d6f0a8] via-[#eaf5b5] to-[#ffe6a3]`}
         suppressHydrationWarning
