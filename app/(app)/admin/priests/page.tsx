@@ -6,13 +6,6 @@ import { toast } from "sonner";
 
 import { useEffect } from "react";
 import { AdminPriestsService, AdminPriest } from "@/lib/services/priests.service";
-// Helper to get admin JWT token (use the same key as the rest of the admin app)
-function getAdminToken() {
-    if (typeof window !== "undefined") {
-        return localStorage.getItem("adminToken") || "";
-    }
-    return "";
-}
 import { supabase } from "@/lib/supabase/client";
 import { AdminOnboardingService, AdminOnboardingRequest } from "@/lib/services/admin-onboarding.service";
 
@@ -48,64 +41,63 @@ export default function PriestsPage() {
         retypePassword: ""
     });
 
-    // --- Fetch Priests ---
-    useEffect(() => {
+    const fetchPriests = async () => {
         setLoading(true);
         setError(null);
-        AdminPriestsService.list({
-            limit: 20,
-            offset: 0,
-            search: searchTerm,
-            status: filters.status[0],
-            location: filters.location[0],
-        })
-            .then((res) => {
-                setPriests(res.priests);
-                setTotalPriests(res.total);
-            })
-            .catch((err) => {
+        try {
+            const res = await AdminPriestsService.list({
+                limit: 20,
+                offset: 0,
+                search: searchTerm,
+                status: filters.status[0],
+                location: filters.location[0],
+            });
+            setPriests(res.priests);
+            setTotalPriests(res.total);
+        } catch (err: any) {
+            const message = String(err?.message || "");
+            const isAdminMapping403 =
+                message.includes("403:") && message.includes("not found in users table");
+
+            if (isAdminMapping403 && priests.length > 0) {
+                setError(null);
+            } else if (isAdminMapping403) {
+                setError("Admin session out of sync. Please log out and log in again.");
+            } else {
                 setError("Failed to load priests");
-            })
-            .finally(() => setLoading(false));
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // --- Fetch Priests ---
+    useEffect(() => {
+        fetchPriests();
     }, [searchTerm, filters]);
 
     const handleEditProfile = () => {
-        setEditForm(selectedPriest);
+        const nameParts = (selectedPriest?.name || '').trim().split(' ');
+        const first_name = selectedPriest?.first_name || nameParts[0] || '';
+        const last_name = selectedPriest?.last_name || nameParts.slice(1).join(' ') || '';
+        setEditForm({ ...selectedPriest, first_name, last_name });
         setIsEditing(true);
     };
-
-    const API_BASE = "http://localhost:8000/api/v1/admin/priests";
 
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const token = getAdminToken();
-            const res = await fetch(`${API_BASE}/${editForm.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                body: JSON.stringify({
-                    first_name: editForm.first_name,
-                    last_name: editForm.last_name,
-                    email: editForm.email,
-                    phone: editForm.phone,
-                    is_active: editForm.is_active,
-                }),
+            const updated = await AdminPriestsService.update(editForm.id, {
+                first_name: editForm.first_name,
+                last_name: editForm.last_name,
+                email: editForm.email,
+                phone: editForm.phone,
+                is_active: editForm.is_active,
             });
-            if (!res.ok) {
-                let errMsg = "Failed to update priest";
-                try {
-                    const err = await res.json();
-                    errMsg = err.message || errMsg;
-                } catch {
-                    errMsg = `Server error: ${res.status}`;
-                }
-                throw new Error(errMsg);
-            }
-            setPriests(priests.map(p => p.id === editForm.id ? { ...p, ...editForm } : p));
-            setSelectedPriest({ ...selectedPriest, ...editForm });
+            const derivedName = `${editForm.first_name || ''} ${editForm.last_name || ''}`.trim() || editForm.name;
+            const merged = { ...editForm, name: derivedName };
+            setPriests(priests.map(p => p.id === editForm.id ? { ...p, ...merged } : p));
+            setSelectedPriest({ ...selectedPriest, ...merged });
             setIsEditing(false);
             toast.success("Priest profile updated successfully");
         } catch (err: any) {
@@ -115,23 +107,7 @@ export default function PriestsPage() {
 
     const handleDeletePriest = async (id: string) => {
         try {
-            const token = getAdminToken();
-            const res = await fetch(`${API_BASE}/${id}`, {
-                method: "DELETE",
-                headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-            });
-            if (!res.ok) {
-                let errMsg = "Failed to delete priest";
-                try {
-                    const err = await res.json();
-                    errMsg = err.message || errMsg;
-                } catch {
-                    errMsg = `Server error: ${res.status}`;
-                }
-                throw new Error(errMsg);
-            }
+            await AdminPriestsService.delete(id);
             setPriests(priests.filter(p => p.id !== id));
             setSelectedPriest(null);
             toast.success("Priest deleted successfully");
@@ -140,7 +116,7 @@ export default function PriestsPage() {
         }
     };
 
-    const handleCreateAdmin = () => {
+    const handleCreateAdmin = async () => {
         if (!newAdmin.firstName || !newAdmin.lastName || !newAdmin.email || !newAdmin.password || !newAdmin.retypePassword) {
             toast.error("Please fill in all required fields");
             return;
@@ -149,9 +125,29 @@ export default function PriestsPage() {
             toast.error("Passwords do not match");
             return;
         }
-        toast.success("Priest account created (mock)");
-        setActiveTab("all");
-        setNewAdmin({ firstName: "", lastName: "", email: "", phone: "", password: "", retypePassword: "" });
+        try {
+            const createdRequest = await AdminOnboardingService.create({
+                first_name: newAdmin.firstName,
+                last_name: newAdmin.lastName,
+                email: newAdmin.email,
+                phone: newAdmin.phone,
+                plain_password: newAdmin.password,
+            });
+            const normalizedRequest: AdminOnboardingRequest = {
+                id: createdRequest?.id || (typeof crypto !== "undefined" ? crypto.randomUUID() : `${Date.now()}`),
+                first_name: createdRequest?.first_name || newAdmin.firstName,
+                last_name: createdRequest?.last_name || newAdmin.lastName,
+                email: createdRequest?.email || newAdmin.email,
+                phone: createdRequest?.phone || newAdmin.phone,
+                created_at: createdRequest?.created_at || new Date().toISOString(),
+            };
+            toast.success("Priest onboarding request submitted. Awaiting approval.");
+            setPendingAdmins((prev) => [normalizedRequest, ...prev]);
+            setActiveTab("onboarding");
+            setNewAdmin({ firstName: "", lastName: "", email: "", phone: "", password: "", retypePassword: "" });
+        } catch (err: any) {
+            toast.error(err?.message || "Failed to submit onboarding request");
+        }
     };
 
     const fetchPendingAdmins = async () => {
@@ -172,8 +168,32 @@ export default function PriestsPage() {
     const handleApproveAdmin = async (id: string) => {
         try {
             await AdminOnboardingService.approve(id);
-            toast.success("Admin approved and created.");
-            fetchPendingAdmins();
+            const approvedAdmin = pendingAdmins.find((admin) => admin.id === id);
+            setPendingAdmins((prev) => prev.filter((admin) => admin.id !== id));
+            if (approvedAdmin) {
+                const optimisticPriest: AdminPriest = {
+                    id: approvedAdmin.id,
+                    name: `${approvedAdmin.first_name || ""} ${approvedAdmin.last_name || ""}`.trim() || approvedAdmin.email,
+                    email: approvedAdmin.email,
+                    phone: approvedAdmin.phone || "",
+                    location: "",
+                    status: "Active",
+                    rating: 0,
+                    specialty: "",
+                    experience: "",
+                    created_at: approvedAdmin.created_at,
+                    total_bookings: 0,
+                };
+                setPriests((prev) => {
+                    if (prev.some((priest) => priest.email === optimisticPriest.email)) {
+                        return prev;
+                    }
+                    return [optimisticPriest, ...prev];
+                });
+                setTotalPriests((prev) => prev + 1);
+            }
+            toast.success("Priest approved and created.");
+            setActiveTab("all");
         } catch (err: any) {
             toast.error(err?.message || "Failed to approve admin");
         }
@@ -182,8 +202,8 @@ export default function PriestsPage() {
     const handleRejectAdmin = async (id: string) => {
         try {
             await AdminOnboardingService.reject(id);
-            toast.success("Admin onboarding request rejected.");
-            fetchPendingAdmins();
+            setPendingAdmins((prev) => prev.filter((admin) => admin.id !== id));
+            toast.success("Priest onboarding request rejected.");
         } catch (err: any) {
             toast.error(err?.message || "Failed to reject admin");
         }
@@ -604,9 +624,16 @@ export default function PriestsPage() {
                                             <form onSubmit={handleSaveProfile} className="space-y-4">
                                                 <input
                                                     type="text"
-                                                    value={editForm?.name || ''}
-                                                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                                                    placeholder="Full Name"
+                                                    value={editForm?.first_name || ''}
+                                                    onChange={e => setEditForm({ ...editForm, first_name: e.target.value })}
+                                                    placeholder="First Name"
+                                                    className="w-full border rounded-lg p-3"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={editForm?.last_name || ''}
+                                                    onChange={e => setEditForm({ ...editForm, last_name: e.target.value })}
+                                                    placeholder="Last Name"
                                                     className="w-full border rounded-lg p-3"
                                                 />
                                                 <input
@@ -645,14 +672,14 @@ export default function PriestsPage() {
                             <div className="bg-yellow-50/50 rounded-[1.5rem] p-6 h-full flex flex-col">
                                 <div className="flex justify-between items-start mb-6">
                                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-200 to-amber-300 flex items-center justify-center text-yellow-900 font-black text-xl shadow-lg shadow-yellow-500/20">
-                                        {admin.first_name.charAt(0)}
+                                        {(admin.first_name || admin.email || "P").charAt(0)}
                                     </div>
                                     <span className="bg-white/80 backdrop-blur-sm text-yellow-700 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full shadow-sm">
                                         Pending Review
                                     </span>
                                 </div>
                                 <div className="mb-6">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-1">{admin.first_name} {admin.last_name}</h3>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-1">{admin.first_name || "Pending"} {admin.last_name || "Priest"}</h3>
                                     <p className="text-sm font-medium text-gray-500">{admin.email} {admin.phone && <>• {admin.phone}</>}</p>
                                 </div>
                                 <div className="mt-auto flex gap-3">
@@ -685,8 +712,8 @@ export default function PriestsPage() {
                         <div className="w-16 h-16 bg-[#5cb85c]/10 text-[#5cb85c] rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <UserPlus className="w-8 h-8" />
                         </div>
-                        <h2 className="text-2xl font-black text-gray-900">Register New Admin</h2>
-                        <p className="text-gray-500 mt-2">Create a new admin account. The account will be created only after approval.</p>
+                        <h2 className="text-2xl font-black text-gray-900">Register New Priest</h2>
+                        <p className="text-gray-500 mt-2">Create a new priest account. The account will be created only after approval.</p>
                     </div>
 
                     <form className="space-y-6">
