@@ -76,7 +76,7 @@ export default function EditPage() {
             const {
                 data: { session },
             } = await supabase.auth.getSession();
-            
+
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/pages/${slug}`,
                 {
@@ -110,22 +110,21 @@ export default function EditPage() {
     if (loading) return <p className="p-6">Loading…</p>;
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
-            <h1 className="text-2xl font-semibold mb-4">Edit Page</h1>
+        <div className="max-w-5xl mx-auto p-8 bg-white/60 backdrop-blur-xl rounded-[2.5rem] shadow-xl border border-white/40">
+            <h1 className="text-3xl font-black mb-6 text-[#1a5d1a]">Edit Page</h1>
 
             {error && <div className="bg-red-100 p-3 mb-4">{error}</div>}
 
             <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full border p-2 mb-3"
+                className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 mb-4 font-medium focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/30"
             />
 
             <input
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full border p-2 mb-3"
-            />
+                className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 mb-4 font-medium focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/30" />
 
             <label className="flex gap-2 mb-3">
                 <input
@@ -136,7 +135,7 @@ export default function EditPage() {
                 Published
             </label>
 
-            <div className="border rounded mb-4">
+            <div className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 mb-4 font-medium focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/30">
                 <div ref={editorRef} />
             </div>
 
