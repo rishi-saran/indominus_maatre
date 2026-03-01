@@ -69,7 +69,7 @@ export default function LoginPage() {
         if (userRole === 'admin') {
           router.push('/admin/dashboard');
         } else if (userRole === 'priest') {
-          router.push('/priest/dashboard');
+          router.push('/landing');
         } else {
           router.push('/landing');
         }
