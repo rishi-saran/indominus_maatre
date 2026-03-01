@@ -21,6 +21,9 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: "Maathre",
+  icons: {
+    icon: "/maathre.jpg"
+  },
   description: "Book vedic rituals, join live darshans, and shop authentic spiritual products. Experience divinity in a modern way.",
   keywords: ["spiritual", "puja", "pandit", "temple", "vedic", "rituals", "darshan", "hindu"],
 };

@@ -1,9 +1,11 @@
+import { renderDelta } from "./PageRenderer";
+
 export default async function PublicPage({
     params,
 }: {
     params: Promise<{ slug: string }>;
 }) {
-    const { slug } = await params; // required
+    const { slug } = await params;
 
     const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/pages/${slug}`,
@@ -16,13 +18,17 @@ export default async function PublicPage({
 
     const page = await res.json();
 
+    const section = page.content?.sections?.[0];
+    const html = section ? renderDelta(section.delta) : "";
+
     return (
         <div className="max-w-4xl mx-auto p-8">
             <h1 className="text-3xl font-bold mb-6">{page.title}</h1>
 
-            <pre className="bg-gray-100 p-4 rounded text-sm overflow-x-auto">
-                {JSON.stringify(page.content, null, 2)}
-            </pre>
+            <div
+                className="prose prose-lg max-w-none"
+                dangerouslySetInnerHTML={{ __html: html }}
+            />
         </div>
     );
 }
