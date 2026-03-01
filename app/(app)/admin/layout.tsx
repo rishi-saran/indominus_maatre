@@ -44,13 +44,10 @@ export default function AdminLayout({
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Check for admin user in localStorage (set by login logic)
+        // Check for admin role in localStorage (set by login)
         const userId = localStorage.getItem('user_id');
-        const userEmail = localStorage.getItem('user_email');
-        if (
-            userId === 'd1f75355-5e06-4729-a12e-05d9c979bd3b' &&
-            userEmail === 'maathre@gmail.com'
-        ) {
+        const userRole = localStorage.getItem('user_role');
+        if (userId && userRole === 'admin') {
             setIsAuthenticated(true);
         } else {
             router.push("/login");
@@ -61,6 +58,12 @@ export default function AdminLayout({
     const handleLogout = () => {
         localStorage.removeItem('user_id');
         localStorage.removeItem('user_email');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('access_token');
+        document.cookie = 'user_id=; path=/; max-age=0';
+        document.cookie = 'user_email=; path=/; max-age=0';
+        document.cookie = 'user_role=; path=/; max-age=0';
         setIsAuthenticated(false);
         router.push("/login");
     };

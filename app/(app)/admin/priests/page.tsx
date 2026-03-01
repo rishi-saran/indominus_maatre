@@ -71,6 +71,23 @@ export default function PriestsPage() {
         }
     };
 
+    // Silent refetch — replaces optimistic entries with real IDs, no loading spinner
+    const silentRefetchPriests = async () => {
+        try {
+            const res = await AdminPriestsService.list({
+                limit: 20,
+                offset: 0,
+                search: searchTerm,
+                status: filters.status[0],
+                location: filters.location[0],
+            });
+            setPriests(res.priests);
+            setTotalPriests(res.total);
+        } catch {
+            // ignore — optimistic data is still shown
+        }
+    };
+
     // --- Fetch Priests ---
     useEffect(() => {
         fetchPriests();
@@ -194,6 +211,9 @@ export default function PriestsPage() {
             }
             toast.success("Priest approved and created.");
             setActiveTab("all");
+            // Refetch in the background to replace optimistic entry (which has the
+            // onboarding request ID) with the real Supabase Auth UUID from the DB.
+            silentRefetchPriests();
         } catch (err: any) {
             toast.error(err?.message || "Failed to approve admin");
         }

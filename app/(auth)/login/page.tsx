@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AuthService } from '@/lib/services/auth.service';
+import { supabase } from '@/lib/supabase/client';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
@@ -34,27 +35,41 @@ export default function LoginPage() {
 
         const userId = response.user.id;
         const userEmail = response.user.email || email;
-        // Get role from user_metadata (Supabase default)
-        const userRole = response.user.user_metadata?.role || 'customer';
 
         localStorage.setItem('user_id', userId);
         localStorage.setItem('user_email', userEmail);
-        localStorage.setItem('user_role', userRole);
         document.cookie = `user_id=${userId}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         document.cookie = `user_email=${encodeURIComponent(userEmail)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+
+        // Store access token for API calls
+        if (response.session.access_token) {
+          localStorage.setItem('adminToken', response.session.access_token);
+          localStorage.setItem('access_token', response.session.access_token);
+        }
+
+        // Look up role from public.users (source of truth) rather than auth metadata
+        // which is not set for admin-created accounts
+        let userRole = 'customer';
+        try {
+          const { data: userRow } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', userId)
+            .single();
+          if (userRow?.role) userRole = userRow.role;
+        } catch {
+          // fall back to metadata if DB lookup fails
+          userRole = response.user.user_metadata?.role || 'customer';
+        }
+
+        localStorage.setItem('user_role', userRole);
         document.cookie = `user_role=${userRole}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 
-          // Store access_token as adminToken for admin-protected endpoints
-          if (response.session.access_token) {
-            localStorage.setItem('adminToken', response.session.access_token);
-          }
-        // Redirect based on role
-        if (
-          userEmail === 'maathre@gmail.com' &&
-          userId === 'd1f75355-5e06-4729-a12e-05d9c979bd3b' &&
-          userRole === 'admin'
-        ) {
+        // Route based on role
+        if (userRole === 'admin') {
           router.push('/admin/dashboard');
+        } else if (userRole === 'priest') {
+          router.push('/priest/dashboard');
         } else {
           router.push('/landing');
         }

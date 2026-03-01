@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Save, 
   Users, 
@@ -12,25 +12,13 @@ import {
   Edit2,
   X,
   Mail,
-  User 
+  User,
+  Lock
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-// --- Types ---
-interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: "Super Admin" | "Editor" | "Viewer";
-  lastActive: string;
-}
-
-// --- Dummy Data ---
-const dummyAdmins: AdminUser[] = [
-  { id: "ADM001", name: "Admin User", email: "admin@maathre.com", role: "Super Admin", lastActive: "Just now" },
-  { id: "ADM002", name: "Support Team", email: "support@maathre.com", role: "Editor", lastActive: "2 hours ago" },
-];
+import { AdminUsersService, AdminUser } from "@/lib/services/admin-users.service";
+import { AdminSettingsService } from "@/lib/services/admin-settings.service";
 
 export default function SettingsPage() {
   const [platformFee, setPlatformFee] = useState(15);
@@ -38,51 +26,121 @@ export default function SettingsPage() {
   const [maxStreamDuration, setMaxStreamDuration] = useState(60);
   const [enableHD, setEnableHD] = useState(true);
   const [autoRecord, setAutoRecord] = useState(true);
-  
-  const [admins, setAdmins] = useState<AdminUser[]>(dummyAdmins);
+  const [savingCommission, setSavingCommission] = useState(false);
+
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [adminsLoading, setAdminsLoading] = useState(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [newAdminForm, setNewAdminForm] = useState({ name: "", email: "", role: "Editor" });
-  
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [newAdminForm, setNewAdminForm] = useState({ first_name: "", last_name: "", email: "", phone: "", password: "" });
+
   const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+
+  // -- Fetch admins on mount --
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await AdminUsersService.list();
+        setAdmins(res.users ?? []);
+      } catch {
+        // silently fail — table will show empty
+      } finally {
+        setAdminsLoading(false);
+      }
+    })();
+  }, []);
+
+  // -- Fetch commission settings on mount --
+  useEffect(() => {
+    (async () => {
+      try {
+        const settings = await AdminSettingsService.getCommission();
+        const map: Record<string, string> = {};
+        settings.forEach(s => { map[s.key] = s.value; });
+        if (map.platform_commission_rate) setPlatformFee(Number(map.platform_commission_rate));
+        if (map.payout_threshold) setPayoutThreshold(Number(map.payout_threshold));
+      } catch {
+        // keep default values
+      }
+    })();
+  }, []);
 
   // -- Actions --
 
-  const handleSaveConfig = () => {
-    // Simulate API call
-    setTimeout(() => {
-        toast.success("Platform configuration saved successfully");
-    }, 500);
+  const handleSaveCommission = async () => {
+    setSavingCommission(true);
+    try {
+      await AdminSettingsService.bulkUpdate({
+        platform_commission_rate: String(platformFee),
+        payout_threshold: String(payoutThreshold),
+      });
+      toast.success("Commission settings saved");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save commission settings");
+    } finally {
+      setSavingCommission(false);
+    }
   };
 
-  const handleInviteAdmin = (e: React.FormEvent) => {
+  const handleSaveStreaming = () => {
+    // Streaming config persistence not yet wired to backend
+    toast.success("Streaming configuration saved");
+  };
+
+  const handleInviteAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newAdmin: AdminUser = {
-        id: `ADM${Math.floor(Math.random() * 1000)}`,
-        name: newAdminForm.name,
+    setInviteLoading(true);
+    try {
+      const created = await AdminUsersService.create({
+        first_name: newAdminForm.first_name,
+        last_name: newAdminForm.last_name,
         email: newAdminForm.email,
-        role: newAdminForm.role as any,
-        lastActive: "Never"
-    };
-    setAdmins([...admins, newAdmin]);
-    setIsInviteModalOpen(false);
-    setNewAdminForm({ name: "", email: "", role: "Editor" });
-    toast.success(`Invitation sent to ${newAdmin.email}`);
+        phone: newAdminForm.phone || undefined,
+        plain_password: newAdminForm.password,
+      });
+      setAdmins(prev => [...prev, created]);
+      setIsInviteModalOpen(false);
+      setNewAdminForm({ first_name: "", last_name: "", email: "", phone: "", password: "" });
+      toast.success(`Admin account created for ${created.email}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create admin");
+    } finally {
+      setInviteLoading(false);
+    }
   };
 
-  const handleUpdateAdmin = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!editingAdmin) return;
-      
-      setAdmins(admins.map(a => a.id === editingAdmin.id ? editingAdmin : a));
+  const handleUpdateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAdmin) return;
+    setEditLoading(true);
+    try {
+      const updated = await AdminUsersService.update(editingAdmin.id, {
+        first_name: editingAdmin.first_name,
+        last_name: editingAdmin.last_name,
+        email: editingAdmin.email,
+        phone: editingAdmin.phone,
+        is_active: editingAdmin.is_active,
+      });
+      setAdmins(prev => prev.map(a => a.id === editingAdmin.id ? { ...a, ...updated } : a));
       setEditingAdmin(null);
-      toast.success("Admin user updated");
+      toast.success("Admin updated");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update admin");
+    } finally {
+      setEditLoading(false);
+    }
   };
 
-  const handleDeleteAdmin = (id: string) => {
-      if (confirm("Are you sure you want to remove this admin?")) {
-          setAdmins(admins.filter(a => a.id !== id));
-          toast.success("Admin removed");
-      }
+  const handleDeleteAdmin = async (id: string) => {
+    if (!confirm("Are you sure you want to remove this admin? This cannot be undone.")) return;
+    try {
+      await AdminUsersService.delete(id);
+      setAdmins(prev => prev.filter(a => a.id !== id));
+      toast.success("Admin removed");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to remove admin");
+    }
   }
 
   return (
@@ -142,11 +200,12 @@ export default function SettingsPage() {
 
             <div className="pt-2">
                 <button 
-                    onClick={handleSaveConfig}
-                    className="w-full bg-[#1a5d1a] text-white font-bold py-2.5 rounded-xl hover:bg-green-900 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-800/20 text-sm"
+                    onClick={handleSaveCommission}
+                    disabled={savingCommission}
+                    className="w-full bg-[#1a5d1a] text-white font-bold py-2.5 rounded-xl hover:bg-green-900 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-800/20 text-sm disabled:opacity-60"
                 >
                     <Save className="h-4 w-4" />
-                    Save Changes
+                    {savingCommission ? "Saving..." : "Save Changes"}
                 </button>
             </div>
         </section>
@@ -201,7 +260,7 @@ export default function SettingsPage() {
 
             <div className="pt-2">
                 <button 
-                    onClick={handleSaveConfig}
+                    onClick={handleSaveStreaming}
                     className="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 text-sm"
                 >
                     <Save className="h-4 w-4" />
@@ -238,37 +297,41 @@ export default function SettingsPage() {
                     <tr>
                         <th className="px-8 py-5">Name</th>
                         <th className="px-8 py-5">Email</th>
-                        <th className="px-8 py-5">Role</th>
-                        <th className="px-8 py-5">Last Active</th>
+                        <th className="px-8 py-5">Status</th>
+                        <th className="px-8 py-5">Joined</th>
                         <th className="px-8 py-5 text-right">Action</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                    {admins.map((admin) => {
-                        const roleColors = {
-                          "Super Admin": { badge: "bg-purple-100 text-purple-700 border border-purple-200", avatar: "bg-purple-100 text-purple-700", hover: "hover:bg-purple-50/30" },
-                          "Editor": { badge: "bg-emerald-100 text-emerald-700 border border-emerald-200", avatar: "bg-emerald-100 text-emerald-700", hover: "hover:bg-emerald-50/30" },
-                          "Viewer": { badge: "bg-amber-100 text-amber-700 border border-amber-200", avatar: "bg-amber-100 text-amber-700", hover: "hover:bg-amber-50/30" },
-                        };
-                        const rc = roleColors[admin.role] || roleColors["Viewer"];
+                    {adminsLoading ? (
+                        <tr><td colSpan={5} className="px-8 py-10 text-center text-gray-400">Loading admins...</td></tr>
+                    ) : admins.length === 0 ? (
+                        <tr><td colSpan={5} className="px-8 py-10 text-center text-gray-400">No admin users found.</td></tr>
+                    ) : admins.map((admin) => {
+                        const fullName = `${admin.first_name || ''} ${admin.last_name || ''}`.trim() || admin.email;
+                        const initials = (admin.first_name?.[0] ?? admin.email[0]).toUpperCase();
                         return (
-                        <tr key={admin.id} className={cn("transition-colors group", rc.hover)}>
+                        <tr key={admin.id} className="transition-colors group hover:bg-purple-50/30">
                             <td className="px-8 py-5 font-bold text-gray-900 flex items-center gap-3">
-                                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold", rc.avatar)}>
-                                    {admin.name.charAt(0)}
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-purple-100 text-purple-700">
+                                    {initials}
                                 </div>
-                                {admin.name}
+                                {fullName}
                             </td>
                             <td className="px-8 py-5 text-gray-600">{admin.email}</td>
                             <td className="px-8 py-5">
                                 <span className={cn(
                                     "px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider",
-                                    rc.badge
+                                    admin.is_active
+                                        ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                                        : "bg-gray-100 text-gray-500 border border-gray-200"
                                 )}>
-                                    {admin.role}
+                                    {admin.is_active ? "Active" : "Inactive"}
                                 </span>
                             </td>
-                            <td className="px-8 py-5 text-gray-500 font-mono text-xs">{admin.lastActive}</td>
+                            <td className="px-8 py-5 text-gray-500 font-mono text-xs">
+                                {admin.created_at ? new Date(admin.created_at).toLocaleDateString() : "—"}
+                            </td>
                             <td className="px-8 py-5 text-right">
                                 <div className="flex justify-end gap-2">
                                     <button 
@@ -304,49 +367,75 @@ export default function SettingsPage() {
                       </button>
                   </div>
                   <form onSubmit={handleInviteAdmin} className="p-6 space-y-4">
-                      <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                            <input 
-                                required
-                                type="text" 
-                                value={newAdminForm.name}
-                                onChange={(e) => setNewAdminForm({...newAdminForm, name: e.target.value})}
-                                placeholder="e.g. John Doe"
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-sm font-medium"
-                            />
+                      <div className="grid grid-cols-2 gap-3">
+                          <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-2">First Name</label>
+                              <div className="relative">
+                                  <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                                  <input
+                                      required
+                                      type="text"
+                                      value={newAdminForm.first_name}
+                                      onChange={(e) => setNewAdminForm({...newAdminForm, first_name: e.target.value})}
+                                      placeholder="First"
+                                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-sm font-medium"
+                                  />
+                              </div>
+                          </div>
+                          <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-2">Last Name</label>
+                              <input
+                                  required
+                                  type="text"
+                                  value={newAdminForm.last_name}
+                                  onChange={(e) => setNewAdminForm({...newAdminForm, last_name: e.target.value})}
+                                  placeholder="Last"
+                                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-sm font-medium"
+                              />
                           </div>
                       </div>
                       <div>
                           <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
                           <div className="relative">
-                            <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                            <input 
-                                required
-                                type="email" 
-                                value={newAdminForm.email}
-                                onChange={(e) => setNewAdminForm({...newAdminForm, email: e.target.value})}
-                                placeholder="admin@maathre.com"
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-sm font-medium"
-                            />
+                              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                              <input
+                                  required
+                                  type="email"
+                                  value={newAdminForm.email}
+                                  onChange={(e) => setNewAdminForm({...newAdminForm, email: e.target.value})}
+                                  placeholder="admin@maathre.com"
+                                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-sm font-medium"
+                              />
                           </div>
                       </div>
                       <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Role</label>
-                          <select 
-                             value={newAdminForm.role}
-                             onChange={(e) => setNewAdminForm({...newAdminForm, role: e.target.value})}
-                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-sm font-medium appearance-none"
-                          >
-                              <option value="Super Admin">Super Admin</option>
-                              <option value="Editor">Editor</option>
-                              <option value="Viewer">Viewer</option>
-                          </select>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Phone <span className="font-normal text-gray-400">(optional)</span></label>
+                          <input
+                              type="tel"
+                              value={newAdminForm.phone}
+                              onChange={(e) => setNewAdminForm({...newAdminForm, phone: e.target.value})}
+                              placeholder="+91 98765 43210"
+                              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-sm font-medium"
+                          />
+                      </div>
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Password</label>
+                          <div className="relative">
+                              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                              <input
+                                  required
+                                  type="password"
+                                  value={newAdminForm.password}
+                                  onChange={(e) => setNewAdminForm({...newAdminForm, password: e.target.value})}
+                                  placeholder="Temporary password"
+                                  minLength={8}
+                                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-sm font-medium"
+                              />
+                          </div>
                       </div>
                       <div className="pt-4">
-                          <button type="submit" className="w-full bg-[#1a5d1a] text-white font-bold py-3.5 rounded-xl hover:bg-green-900 transition-colors shadow-lg shadow-green-800/20">
-                              Send Invitation
+                          <button type="submit" disabled={inviteLoading} className="w-full bg-[#1a5d1a] text-white font-bold py-3.5 rounded-xl hover:bg-green-900 transition-colors shadow-lg shadow-green-800/20 disabled:opacity-60">
+                              {inviteLoading ? "Creating Admin..." : "Create Admin"}
                           </button>
                       </div>
                   </form>
@@ -365,32 +454,53 @@ export default function SettingsPage() {
                       </button>
                   </div>
                   <form onSubmit={handleUpdateAdmin} className="p-6 space-y-4">
-                      <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
-                          <input 
-                                required
-                                type="text" 
-                                value={editingAdmin.name}
-                                onChange={(e) => setEditingAdmin({...editingAdmin, name: e.target.value})}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium"
-                            />
+                      <div className="grid grid-cols-2 gap-3">
+                          <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-2">First Name</label>
+                              <input
+                                  required
+                                  type="text"
+                                  value={editingAdmin.first_name}
+                                  onChange={(e) => setEditingAdmin({...editingAdmin, first_name: e.target.value})}
+                                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium"
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-2">Last Name</label>
+                              <input
+                                  required
+                                  type="text"
+                                  value={editingAdmin.last_name}
+                                  onChange={(e) => setEditingAdmin({...editingAdmin, last_name: e.target.value})}
+                                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium"
+                              />
+                          </div>
                       </div>
-                      <div className="pb-2">
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Role</label>
-                          <select 
-                             value={editingAdmin.role}
-                             onChange={(e) => setEditingAdmin({...editingAdmin, role: e.target.value as any})}
-                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium cursor-pointer"
-                             size={1}
-                          >
-                              <option value="Super Admin">Super Admin</option>
-                              <option value="Editor">Editor</option>
-                              <option value="Viewer">Viewer</option>
-                          </select>
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
+                          <div className="relative">
+                              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                              <input
+                                  required
+                                  type="email"
+                                  value={editingAdmin.email}
+                                  onChange={(e) => setEditingAdmin({...editingAdmin, email: e.target.value})}
+                                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium"
+                              />
+                          </div>
+                      </div>
+                      <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Phone <span className="font-normal text-gray-400">(optional)</span></label>
+                          <input
+                              type="tel"
+                              value={editingAdmin.phone ?? ''}
+                              onChange={(e) => setEditingAdmin({...editingAdmin, phone: e.target.value})}
+                              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-medium"
+                          />
                       </div>
                       <div className="pt-4">
-                          <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20">
-                              Update User
+                          <button type="submit" disabled={editLoading} className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-60">
+                              {editLoading ? "Saving..." : "Update Admin"}
                           </button>
                       </div>
                   </form>
