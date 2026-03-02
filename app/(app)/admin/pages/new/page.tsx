@@ -95,22 +95,19 @@ export default function AdminCreatePage() {
             {error && <div className="text-red-600 mb-3">{error}</div>}
 
             <input
-                className="border p-2 w-full mb-2"
-                placeholder="slug"
+                className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 mb-4 font-medium focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/30" placeholder="slug"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
             />
 
             <input
-                className="border p-2 w-full mb-2"
-                placeholder="title"
+                className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 mb-4 font-medium focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/30" placeholder="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
             />
 
             <input
-                className="border p-2 w-full mb-2"
-                placeholder="type"
+                className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 mb-4 font-medium focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/30" placeholder="type"
                 value={type}
                 onChange={(e) => setType(e.target.value)}
             />
@@ -124,8 +121,10 @@ export default function AdminCreatePage() {
                 Published
             </label>
 
-            <div ref={editorRef} className="bg-white mb-4" />
-
+            {/* <div ref={editorRef} className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 mb-4 font-medium focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/30" /> */}
+            <div className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 mb-4 font-medium focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/30">
+                <div ref={editorRef} />
+            </div>
             <button
                 onClick={handleSubmit}
                 className="bg-green-600 text-white px-4 py-2 rounded"
