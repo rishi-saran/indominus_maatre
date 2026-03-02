@@ -49,6 +49,14 @@ export const API_ENDPOINTS = {
     getById: (serviceId: string) => `${BASE_URL}/services/${serviceId}`,
   },
 
+  adminBookings: {
+    list: `${BASE_URL}/admin/bookings`,
+    getById: (bookingId: string) => `${BASE_URL}/admin/bookings/${bookingId}`,
+    create: `${BASE_URL}/admin/bookings`,
+    assignPriests: (bookingId: string) => `${BASE_URL}/admin/bookings/${bookingId}/assign-priests`,
+    cancel: (bookingId: string) => `${BASE_URL}/admin/bookings/${bookingId}/cancel`,
+  },
+
   pages: {
     getBySlug: (slug: string) => `${BASE_URL}/pages/${slug}`,
   },

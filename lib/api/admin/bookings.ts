@@ -26,6 +26,22 @@ export async function updateAdminBooking(id: string, data: any, token: string) {
   });
 }
 
+export async function assignPriestsToBooking(
+  bookingId: string,
+  data: { priests: { priest_id: string; commission_percent: number }[] },
+  token: string
+) {
+  return axios.post(`${API_URL}/${bookingId}/assign-priests`, data, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export async function cancelAdminBooking(id: string, token: string) {
+  return axios.patch(`${API_URL}/${id}/cancel`, {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
 export async function deleteAdminBooking(id: string, token: string) {
   return axios.delete(`${API_URL}/${id}`, {
     headers: { Authorization: `Bearer ${token}` }
