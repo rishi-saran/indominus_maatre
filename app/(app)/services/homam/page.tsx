@@ -3,13 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { HoverCard } from "@/components/ui/magic/hover-card";
 import { ViewCartButton } from "@/components/ui/view-cart";
 import { homamServices } from "@/data/homams";
-
-
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 const categories = [
   { name: "Chanting", href: "/services/chanting" },
@@ -18,10 +17,21 @@ const categories = [
   { name: "Virtual", href: "/services/virtual" }
 ];
 
-export default function HomamPage() {
-  const [currentPage, setCurrentPage] = useState(1);
+function HomamContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Read page from URL or default to 1
+  const currentPage = Number(searchParams.get("page")) || 1;
   const itemsPerPage = 20;
   const totalPages = 3;
+
+  const handlePageChange = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", page.toString());
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const getPageItems = () => {
     const startIdx = (currentPage - 1) * itemsPerPage;
@@ -84,7 +94,7 @@ export default function HomamPage() {
 
         <div className="mx-auto mt-6 flex max-w-5xl items-center justify-center gap-3">
           <button
-            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+            onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
             className="flex items-center justify-center rounded-full border border-[#cfd8a3] bg-white p-2 text-[#4f5d2f] transition hover:bg-[#eef4cf] disabled:opacity-50"
           >
@@ -95,7 +105,7 @@ export default function HomamPage() {
             {[1, 2, 3].map((page) => (
               <button
                 key={page}
-                onClick={() => setCurrentPage(page)}
+                onClick={() => handlePageChange(page)}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition ${currentPage === page
                   ? "bg-[#2f9e44] text-white shadow-sm"
                   : "border border-[#cfd8a3] bg-white text-[#4f5d2f] hover:bg-[#eef4cf]"
@@ -108,7 +118,7 @@ export default function HomamPage() {
 
           <button
             onClick={() =>
-              currentPage < totalPages && setCurrentPage(currentPage + 1)
+              currentPage < totalPages && handlePageChange(currentPage + 1)
             }
             disabled={currentPage === totalPages}
             className="flex items-center justify-center rounded-full border border-[#cfd8a3] bg-white p-2 text-[#4f5d2f] transition hover:bg-[#eef4cf] disabled:opacity-50"
@@ -135,5 +145,13 @@ export default function HomamPage() {
 
       </section >
     </>
+  );
+}
+
+export default function HomamPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen"></div>}>
+      <HomamContent />
+    </Suspense>
   );
 }
