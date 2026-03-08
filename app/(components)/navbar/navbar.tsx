@@ -16,15 +16,18 @@ const navItems = [
   { icon: Home, label: "Home", id: "home" },
   { icon: Search, label: "Explore", id: "explore" },
   { icon: Users, label: "Service", id: "service" },
-    { icon: Tv, label: "Live Streams", id: "live-streams" },
+  { icon: Tv, label: "Live Streams", id: "live-streams" },
   { icon: Calendar, label: "Panchang", id: "panchang" },
   { icon: User, label: "Profile", id: "profile" },
 ];
 
 export function Navbar() {
+  type UserRole = "admin" | "priest" | "customer";
+
   const [panchangOpen, setPanchangOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [role, setRole] = useState<"priest" | "customer" | null>(null);
+  // const [role, setRole] = useState<"priest" | "customer" | null>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -63,18 +66,18 @@ export function Navbar() {
       } else {
         router.push("/live-streams");
       }
-   } else if (id === "profile") {
-  const userId = localStorage.getItem("user_id");
-  const userEmail = localStorage.getItem("user_email");
+    } else if (id === "profile") {
+      const userId = localStorage.getItem("user_id");
+      const userEmail = localStorage.getItem("user_email");
 
-  if (!userId || !userEmail) {
-    toast.error("Please log in to view your profile");
-    return;
-  }
+      if (!userId || !userEmail) {
+        toast.error("Please log in to view your profile");
+        return;
+      }
 
-  router.push("/profile");
-}
- else {
+      router.push("/profile");
+    }
+    else {
       // Handle other navigation here
     }
   };
@@ -107,20 +110,19 @@ export function Navbar() {
             >
               {navItems.map((item, index) => {
                 const Icon = item.icon;
-                const isActive = 
-                  isRouteActive(item.id) || 
+                const isActive =
+                  isRouteActive(item.id) ||
                   (item.id === "panchang" && panchangOpen) ||
                   (item.id === "explore" && searchOpen);
-                
+
                 return (
                   <DockIcon
                     key={index}
                     label={item.label}
-                    className={`${
-                      isActive
+                    className={`${isActive
                         ? "bg-[var(--spiritual-green)] text-white"
                         : "bg-[var(--spiritual-green-light)]/50 text-[var(--spiritual-green-dark)] hover:bg-[var(--spiritual-green-light)]"
-                    } transition-colors cursor-pointer`}
+                      } transition-colors cursor-pointer`}
                     onClick={() => handleIconClick(item.id)}
                   >
                     <Icon className="w-5 h-5" />
@@ -130,18 +132,18 @@ export function Navbar() {
             </Dock>
 
             {/* Panchang Dropdown */}
-            <PanchangDropdown 
-              isOpen={panchangOpen} 
-              onClose={() => setPanchangOpen(false)} 
+            <PanchangDropdown
+              isOpen={panchangOpen}
+              onClose={() => setPanchangOpen(false)}
             />
           </div>
         </div>
       </motion.nav>
 
       {/* Search Dialog */}
-      <SearchDialog 
-        isOpen={searchOpen} 
-        onClose={() => setSearchOpen(false)} 
+      <SearchDialog
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
       />
     </>
   );

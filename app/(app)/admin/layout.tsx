@@ -18,6 +18,7 @@ import {
     ChevronRight,
     Sparkles,
     FileText,
+    Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
@@ -30,6 +31,7 @@ const sidebarItems = [
     { name: "Live Streams", href: "/admin/live-streams", icon: Radio }, // Updated icon
     { name: "Finance", href: "/admin/finance", icon: Wallet }, // Updated icon
     { name: "Reports", href: "/admin/reports", icon: BarChart3 }, // Updated icon
+    { name: "Video Calls", href: "/admin/video-calls", icon: Video },
     { name: "Pages", href: "/admin/pages", icon: FileText },
     { name: "Settings", href: "/admin/settings", icon: Settings2 }, // Updated icon
 ];
